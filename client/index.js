@@ -1,3 +1,9 @@
 import "./scripts/Components/Header/Header.js";
 import "./scripts/Components/Cards/Login/LoginCard.js"
-import { userRepo } from "./scripts/Core/startup.js"
+import { authState } from "./scripts/Core/startup.js"
+
+
+document.addEventListener("login", async (e) => {
+  const res = await authState.Login(e.detail.email, e.detail.password);
+  console.log("Login response :: ", res);
+})

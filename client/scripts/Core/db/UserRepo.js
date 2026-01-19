@@ -16,12 +16,20 @@ class UserRepo {
       profilePhoto,
       note: noteComment,
       online: false,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     });
 
   }
 
+  GetUserByEmail(email) {
+    return new Promise((resolve, reject) => {
+      const req = this.db.tx("users").index("email_indx").get(email);
+
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
 }
 
 

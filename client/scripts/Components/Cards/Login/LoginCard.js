@@ -1,3 +1,5 @@
+import { LoginCustomEvent } from "../../../events.js"
+
 const loginFormTemplate = document.createElement("template");
 
 loginFormTemplate.innerHTML = `
@@ -45,7 +47,7 @@ class LoginCard extends HTMLElement {
     });
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      console.log(e);
+      this.dispatchEvent(LoginCustomEvent(e.target[0].value, e.target[1].value));
     })
   }
 }
