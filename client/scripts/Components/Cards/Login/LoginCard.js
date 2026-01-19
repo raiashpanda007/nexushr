@@ -21,7 +21,7 @@ loginFormTemplate.innerHTML = `
             <label class="text-sm font-medium text-slate-700">Password</label>
             <input type="password" name="loginPassword" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors" placeholder="••••••••">
           </div>
-
+          <span class="text-red-500 font-semibold hidden" id="errorForm"></span>
           <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2.5 rounded-lg transition-colors">
             Sign In
           </button>
@@ -39,6 +39,7 @@ class LoginCard extends HTMLElement {
   }
   connectedCallback() {
     const form = this.querySelector('form');
+    const errorForm = this.querySelector('#errorForm');
     form.loginEmail.value = sessionStorage.getItem("userEmail");
     form.addEventListener("change", (e) => {
       if (e.target.name === "loginEmail") {
@@ -48,6 +49,12 @@ class LoginCard extends HTMLElement {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       this.dispatchEvent(LoginCustomEvent(e.target[0].value, e.target[1].value));
+    })
+    this.addEventListener("login-error", (e) => {
+      console.log("error caught", e);
+      console.log(errorForm);
+      errorForm.classList.remove("hidden");
+      errorForm.textContent = e.detail.error;
     })
   }
 }

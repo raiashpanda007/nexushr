@@ -16,3 +16,23 @@ export function LogoutCustomEvent() {
     composed: true
   })
 }
+
+export function LoginErrorEvent(err) {
+  return new CustomEvent("login-error", {
+    detail: {
+      error: err
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+
+export function LogoutMessageCustomEvent() {
+  return new CustomEvent("logout-message", { bubbles: true, composed: true });
+}
+
+
+export function LoginMessageCustoomEvent() {
+  return new CustomEvent("login-message", { bubbles: true, composed: true })
+}

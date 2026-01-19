@@ -37,6 +37,7 @@ class AppHeader extends HTMLElement {
     this.appendChild(headerTemplate.content.cloneNode(true));
   }
   connectedCallback() {
+
     const logOutBtn = this.querySelector('#header-logout-button');
     this.addEventListener("login", () => {
       logOutBtn.classList.remove("hidden");
@@ -46,6 +47,14 @@ class AppHeader extends HTMLElement {
     if (!ok) {
       logOutBtn.classList.add("hidden");
     }
+    this.addEventListener("logout-message", () => {
+      logOutBtn.classList.add("hidden");
+    })
+    this.addEventListener("login-message", () => {
+      console.log("login captured :: ");
+      logOutBtn.classList.remove("hidden");
+    })
+
     logOutBtn.addEventListener("click", (e) => {
       this.dispatchEvent(LogoutCustomEvent());
     })

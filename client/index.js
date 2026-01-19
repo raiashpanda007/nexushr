@@ -1,15 +1,30 @@
 import "./scripts/Components/Header/Header.js";
 import "./scripts/Components/Cards/Login/LoginCard.js"
 import { authState } from "./scripts/Core/startup.js"
+import { LoginErrorEvent, LoginMessageCustoomEvent, LogoutMessageCustomEvent } from "./scripts/events.js";
 
 
 document.addEventListener("login", async (e) => {
-  const res = await authState.Login(e.detail.email, e.detail.password);
-  console.log("Login response :: ", res);
+  const { ok, data } = await authState.Login(e.detail.email, e.detail.password);
+  if (!ok) {
+    const LoginForm = document.querySelector("app-card-login")
+    LoginForm.dispatchEvent(LoginErrorEvent(data));
+
+  }
+
+  const header = document.querySelector("app-header");
+  header.dispatchEvent(LoginMessageCustoomEvent());
+  console.log("Login response :: ", data);
 })
 
 
 document.addEventListener("logout", async (e) => {
-  const res = await authState.LogOut();
-  console.log("Response logout event listener :: ", res);
+  const { ok, _ } = await authState.LogOut();
+
+  if (ok) {
+    const header = document.querySelector("app-header");
+    header.dispatchEvent(LogoutMessageCustomEvent());
+  }
+
+
 })
