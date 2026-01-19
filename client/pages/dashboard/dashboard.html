@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-50 min-h-screen font-sans antialiased selection:bg-blue-500 selection:text-white">
+    <app-header></app-header>
+
+    <main class="relative flex w-full justify-evenly">
+        <app-dashboard-hr>
+            <app-add-dept-modal></app-add-dept-modal>
+            <app-add-skill-modal></app-add-skill-modal>
+            <app-add-leave-type-modal></app-add-leave-type-modal>
+        </app-dashboard-hr>
+    </main>
+
+
+
+    <script type="module" src="./dashboard.js"></script>
+</body>
+
+
+</html>

@@ -11,7 +11,6 @@ document.addEventListener("login", async (e) => {
     LoginForm.dispatchEvent(LoginErrorEvent(data));
 
   }
-
   const header = document.querySelector("app-header");
   header.dispatchEvent(LoginMessageCustoomEvent());
   console.log("Login response :: ", data);

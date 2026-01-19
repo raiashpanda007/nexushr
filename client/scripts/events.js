@@ -36,3 +36,16 @@ export function LogoutMessageCustomEvent() {
 export function LoginMessageCustoomEvent() {
   return new CustomEvent("login-message", { bubbles: true, composed: true })
 }
+
+
+export function AddDepartmentCustomEvent() {
+  return new CustomEvent("add-department-modal", { bubbles: true, composed: true });
+}
+
+export function AddSkillCustomEvent() {
+  return new CustomEvent("add-skill-modal", { bubbles: true, composed: true });
+}
+
+export function AddLeaveTypeCustomEvent() {
+  return new CustomEvent("add-leave-type-modal", { bubbles: true, composed: true });
+}
