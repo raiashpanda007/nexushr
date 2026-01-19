@@ -8,3 +8,11 @@ export function LoginCustomEvent(email, password) {
     composed: true,
   });
 }
+
+
+export function LogoutCustomEvent() {
+  return new CustomEvent("logout", {
+    bubbles: true,
+    composed: true
+  })
+}

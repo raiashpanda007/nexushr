@@ -7,3 +7,9 @@ document.addEventListener("login", async (e) => {
   const res = await authState.Login(e.detail.email, e.detail.password);
   console.log("Login response :: ", res);
 })
+
+
+document.addEventListener("logout", async (e) => {
+  const res = await authState.LogOut();
+  console.log("Response logout event listener :: ", res);
+})

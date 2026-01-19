@@ -8,6 +8,8 @@ export const dbManager = new IndexedDBManager(
 
     if (!db.objectStoreNames.contains("users")) {
       const users = db.createObjectStore("users", { keyPath: "id" });
+
+      users.createIndex("id_indx", "id", { unique: true });
       users.createIndex("email_indx", "email", { unique: true });
       users.createIndex("deptID_indx", "deptId");
       users.createIndex("role_indx", "role");

@@ -30,6 +30,20 @@ class UserRepo {
       req.onerror = () => reject(req.error);
     });
   }
+  SetUserOfflineById(id) {
+    return new Promise((resolve, reject) => {
+      const userStore = this.db.tx("users", "readwrite");
+      const req = userStore.get(id);
+      req.onsuccess = (event) => {
+        const user = event.target.result;
+        user.online = false;
+        userStore.put(user);
+        resolve(user);
+      };
+      req.onerror = () => reject(req.error);
+
+    })
+  }
 }
 
 
