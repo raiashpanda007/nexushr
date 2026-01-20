@@ -49,3 +49,34 @@ export function AddSkillCustomEvent() {
 export function AddLeaveTypeCustomEvent() {
   return new CustomEvent("add-leave-type-modal", { bubbles: true, composed: true });
 }
+
+
+
+export function CreateDepartmentCustomEvent(name, description) {
+  return new CustomEvent("create-dept", {
+    detail: {
+      name,
+      description
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function CreateDepartmentErrorCustomEvent(err) {
+  return new CustomEvent("create-dept-err", {
+    detail: {
+      error: err
+    },
+    bubbles: true,
+    composed: true
+
+  })
+}
+
+export function CreateDepartmentSuccessEvent() {
+  return new CustomEvent("create-dept-success", {
+    bubbles: true,
+    composed: true
+  })
+}

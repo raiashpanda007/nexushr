@@ -1,6 +1,8 @@
 import { IndexedDBManager } from "./db/InitDb.js";
 import UserRepo from "./db/UserRepo.js";
 import AuthState from "./controllers/AuthHandler.js";
+import DepartmentRepo from "./db/DepartmentRepo.js";
+import UserPermissions from "./controllers/UserPermissions.js";
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
   1,
@@ -9,7 +11,6 @@ export const dbManager = new IndexedDBManager(
     if (!db.objectStoreNames.contains("users")) {
       const users = db.createObjectStore("users", { keyPath: "id" });
 
-      users.createIndex("id_indx", "id", { unique: true });
       users.createIndex("email_indx", "email", { unique: true });
       users.createIndex("deptID_indx", "deptId");
       users.createIndex("role_indx", "role");
@@ -28,6 +29,11 @@ export const dbManager = new IndexedDBManager(
         updatedAt: new Date().toISOString(),
       });
     }
+    if (!db.objectStoreNames.contains("departments")) {
+      const departments = db.createObjectStore("departments", { keyPath: "id" });
+      departments.createIndex("name_indx", "name", { unique: true });
+    }
+
   }
 );
 
@@ -36,7 +42,7 @@ await dbManager.init();
 
 
 export const userRepo = new UserRepo(dbManager);
-
-
+export const deptRepo = new DepartmentRepo(dbManager);
 
 export const authState = new AuthState(userRepo);
+export const permissions = new UserPermissions(authState.GetCurrUserState().data, userRepo, deptRepo);

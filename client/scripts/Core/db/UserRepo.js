@@ -3,7 +3,7 @@ class UserRepo {
     this.user = null;
     this.db = db;
   }
-  Create(email, firstName, lastName, password, deptId, profilePhoto, noteComment) {
+  Create(email, firstName, lastName, password, dept, profilePhoto, noteComment) {
     const id = crypto.randomUUID();
     return this.db.tx("users", "readwrite").add({
       id,
@@ -12,7 +12,7 @@ class UserRepo {
       lastName,
       password,
       role: "EMP",
-      deptId,
+      dept,
       profilePhoto,
       note: noteComment,
       online: false,

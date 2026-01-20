@@ -7,6 +7,7 @@ class AuthState {
 
   GetCurrUserState() {
     try {
+      if (this.userState) return { ok: true, data: this.userState };
       const user = JSON.parse(localStorage.getItem("userDetails"));
       if (!user) {
         return {

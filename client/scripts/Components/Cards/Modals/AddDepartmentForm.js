@@ -1,9 +1,10 @@
-import { authState } from "../../../Core/startup.js"
+import { CreateDepartmentCustomEvent } from "../../../events.js";
+
 const AddDepartmentTemplate = document.createElement("template");
 
 
 AddDepartmentTemplate.innerHTML = `
-  <div id="add-department-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <form id="add-department-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
 
     <div class="fixed inset-0 z-10 overflow-y-auto">
@@ -35,31 +36,32 @@ AddDepartmentTemplate.innerHTML = `
           </div>
 
           <div class="bg-white px-4 py-6 sm:p-6">
-            <form id="add-dept-form" class="space-y-4">
+            <div id="add-dept-form" class="space-y-4">
               <div>
-                <label for="dept-name" class="block text-sm font-medium leading-6 text-slate-900">Department Name</label>
+                <label for="deptName" class="block text-sm font-medium leading-6 text-slate-900">Department Name</label>
                 <div class="mt-2">
-                  <input type="text" name="dept-name" id="dept-name" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="e.g. Engineering">
+                  <input type="text" name="deptName" id="dept-name" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="e.g. Engineering">
                 </div>
               </div>
               
               <div>
-                <label for="dept-desc" class="block text-sm font-medium leading-6 text-slate-900">Description</label>
+                <label for="deptDesc" class="block text-sm font-medium leading-6 text-slate-900">Description</label>
                 <div class="mt-2">
-                  <textarea id="dept-desc" name="dept-desc" rows="3" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:px-1" placeholder="Brief description of the department's role..."></textarea>
+                  <textarea id="deptDesc" name="dept-desc" rows="3" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:px-1" placeholder="Brief description of the department's role..."></textarea>
                 </div>
               </div>
-            </form>
+              <span class="text-red-500 font-semibold hidden" id="errorDeptForm"></span>
+            </div>
           </div>
 
           <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100">
-            <button type="button" class="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">Create Department</button>
+            <button type="submit" class="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">Create Department</button>
             <button type="button" id="cancel-modal-btn" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-all duration-200">Cancel</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </form>
 `
 
 
@@ -76,9 +78,19 @@ class AddDepartment extends HTMLElement {
     const panel = this.querySelector("#modal-panel");
     const closeBtn = this.querySelector("#close-modal-btn");
     const cancelBtn = this.querySelector("#cancel-modal-btn");
+    const deptCreationForm = this.querySelector('form');
 
+
+
+    deptCreationForm.deptName.value = sessionStorage.getItem("deptName");
+    deptCreationForm.deptDesc.value = sessionStorage.getItem("deptDesc");
+
+
+    const errDept = this.querySelector("#errorDeptForm");
+    ;
     const openModal = () => {
       modal.classList.remove("hidden");
+      errDept.classList.add("hidden")
       requestAnimationFrame(() => {
         backdrop.classList.remove("opacity-0");
         panel.classList.remove("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
@@ -102,8 +114,29 @@ class AddDepartment extends HTMLElement {
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
+    deptCreationForm.addEventListener('change', (e) => {
+      e.target.name === "deptName" ? sessionStorage.setItem("deptName", e.target.value) : sessionStorage.setItem("deptDescription", e.target.value);
+    })
 
     backdrop.addEventListener("click", closeModal);
+
+
+    deptCreationForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      console.log("Submit event triggered :: ", e);
+      this.dispatchEvent(CreateDepartmentCustomEvent(e.target[1].value, e.target[2].value));
+    })
+
+
+    this.addEventListener("create-dept-err", (event) => {
+      console.log("Error caught :: ", event);
+      errDept.classList.remove("hidden");
+      errDept.textContent = event.detail.error;
+    })
+    this.addEventListener("create-dept-success", () => {
+      closeModal();
+    })
+
   }
 
 

@@ -1,0 +1,71 @@
+class DepartmentRepo {
+  constructor(db) {
+    this.db = db;
+  }
+
+
+  Create(name, description) {
+    return new Promise((resolve, reject) => {
+      const id = crypto.randomUUID();
+
+      let store;
+      try {
+        store = this.db.tx("departments", "readwrite");
+      } catch (err) {
+        return reject(err);
+      }
+
+      const request = store.add({
+        id,
+        name: name.trim(),
+        description: description?.trim() ?? "",
+        empCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      request.onsuccess = () => {
+        resolve({ ok: true, data: id });
+      };
+
+      request.onerror = () => {
+        reject({ ok: false, data: request.error });
+      };
+    });
+  }
+
+
+  GetAllDepartments() {
+    return new Promise((res, rej) => {
+      const deptStore = this.db.tx("departments");
+      const req = deptStore.openCursor();
+      const results = [];
+      req.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          results.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(results);
+        }
+      }
+      res.onerror = () => {
+        rej(res.error);
+      }
+
+    })
+  }
+  GetDepartment(id) {
+    return new Promise((resolve, reject) => {
+      const deptStore = this.db.tx("departments");
+      const request = deptStore.get(id);
+      request.onsuccess = (event) => {
+        const dept = event.target.result;
+        resolve(dept);
+      };
+      request.onerror = () => reject(request.error);
+    })
+  }
+}
+
+export default DepartmentRepo; 
