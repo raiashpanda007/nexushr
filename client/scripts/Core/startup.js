@@ -5,6 +5,9 @@ import DepartmentRepo from "./db/DepartmentRepo.js";
 import UserPermissions from "./controllers/UserPermissions.js";
 import SkillRepo from "./db/SkillsRepo.js";
 import LeaveTypeRepo from "./db/LeaveTypeRepo.js";
+import DepartmentHandler from "./controllers/DepartmentHandler.js";
+import SkillHandler from "./controllers/SkillHandler.js";
+import UserHandler from "./controllers/UserHandler.js";
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
   1,
@@ -61,4 +64,7 @@ export const deptRepo = new DepartmentRepo(dbManager);
 export const skillRepo = new SkillRepo(dbManager);
 export const leaveTypeRepo = new LeaveTypeRepo(dbManager);
 export const authState = new AuthState(userRepo);
+export const deptHandler = new DepartmentHandler(deptRepo, authState.GetCurrUserState());
+export const skillHandler = new SkillHandler(skillRepo, authState.GetCurrUserState());
+export const userHandler = new UserHandler(userRepo, authState.GetCurrUserState());
 export const permissions = new UserPermissions(authState.GetCurrUserState().data, userRepo, deptRepo, skillRepo, leaveTypeRepo);

@@ -137,3 +137,41 @@ export function CreateLeaveTypeSuccessEvent() {
     composed: true
   })
 }
+
+export function AddUserCustomEvent() {
+  return new CustomEvent("add-user-modal", { bubbles: true, composed: true });
+}
+
+export function CreateUserCustomEvent(email, firstName, lastName, password, dept, skill, profilePhoto, note) {
+  return new CustomEvent("create-user", {
+    detail: {
+      email,
+      firstName,
+      lastName,
+      password,
+      dept,
+      skill,
+      profilePhoto,
+      note
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function CreateUserErrorCustomEvent(err) {
+  return new CustomEvent("create-user-err", {
+    detail: {
+      error: err
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function CreateUserSuccessEvent() {
+  return new CustomEvent("create-user-success", {
+    bubbles: true,
+    composed: true
+  })
+}

@@ -32,23 +32,7 @@ class Permissions {
 
   }
 
-  async GetAllDepartments() {
 
-    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can See All departments" };
-    try {
-      const allDepts = await this.deptRepo.GetAllDepartments();
-      return {
-        ok: true,
-        data: allDepts
-      }
-    } catch (e) {
-      console.error("Get All Department Controller :: ", e)
-      return {
-        ok: false,
-        data: String(e)
-      }
-    }
-  }
 
 
   async GetDepartment(id) {
@@ -124,6 +108,48 @@ class Permissions {
       }
     }
 
+  }
+
+  async CreateUser(email, firstName, lastName, password, dept, skillId, profilePhoto, note) {
+    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create user" };
+
+    if (!email || !firstName || !lastName || !password || !dept) {
+      return {
+        ok: false,
+        data: "Please provide all required fields"
+      }
+    }
+
+    try {
+      // Create(email, firstName, lastName, password, dept, profilePhoto, noteComment)
+      const userId = await this.userRepo.Create(email, firstName, lastName, password, dept, profilePhoto, note);
+
+      if (skillId) {
+        const skillRes = await this.skillRepo.GetSkillFromId(skillId);
+        if (skillRes.ok) {
+          const skillObj = skillRes.data;
+          const userObj = {
+            id: userId,
+            firstName,
+            lastName,
+            profilePhoto: profilePhoto,
+            dept
+          };
+          await this.skillRepo.AttachSkillToUser(skillObj, userObj);
+        }
+      }
+
+      return {
+        ok: true,
+        data: userId
+      }
+    } catch (e) {
+      console.error("Error in creating new user :: ", e);
+      return {
+        ok: false,
+        data: e.message || String(e)
+      }
+    }
   }
 
 };

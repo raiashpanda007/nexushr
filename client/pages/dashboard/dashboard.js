@@ -3,10 +3,11 @@ import "../../scripts/Components/Cards/HRDashboardOptions.js"
 import "../../scripts/Components/Cards/Modals/AddDepartmentForm.js"
 import "../../scripts/Components/Cards/Modals/AddSkillForm.js"
 import "../../scripts/Components/Cards/Modals/AddLeaveTypeForm.js"
-
+import "../../scripts/Components/Cards/Modals/AddUserForm.js"
+import "../../scripts/Components/Cards/HRDashboardCreateUser.js"
 
 import { permissions } from "../../scripts/Core/startup.js";
-import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent } from "../../scripts/events.js"
+import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent, CreateUserErrorCustomEvent, CreateUserSuccessEvent } from "../../scripts/events.js"
 
 
 
@@ -34,6 +35,8 @@ document.addEventListener("create-leave-type", async (event) => {
   const LeaveTypeForm = document.querySelector("app-add-leave-type-modal");
   !ok ? LeaveTypeForm.dispatchEvent(CreateLeaveTypeErrorCustomEvent(data)) : LeaveTypeForm.dispatchEvent(CreateLeaveTypeSuccessEvent());
 })
+
+
 
 
 
