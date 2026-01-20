@@ -25,7 +25,7 @@ class SkillRepo {
         name,
         category,
         createdAt: new Date().toISOString(),
-
+        updatedAt: new Date().toISOString()
       })
 
       request.onsuccess = () => {

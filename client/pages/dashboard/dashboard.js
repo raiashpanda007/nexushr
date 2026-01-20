@@ -6,7 +6,7 @@ import "../../scripts/Components/Cards/Modals/AddLeaveTypeForm.js"
 
 
 import { permissions } from "../../scripts/Core/startup.js";
-import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent } from "../../scripts/events.js"
+import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent } from "../../scripts/events.js"
 
 
 
@@ -25,6 +25,14 @@ document.addEventListener("create-skill", async (event) => {
   console.log({ ok, data });
   const SkillForm = document.querySelector("app-add-skill-modal");
   !ok ? SkillForm.dispatchEvent(CreateSkillErrorCustomEvent(data)) : SkillForm.dispatchEvent(CreateSkillSuccessEvent());
+})
+
+document.addEventListener("create-leave-type", async (event) => {
+  console.log("create-leave-type triggered:: ", event);
+  const { ok, data } = await permissions.CreateLeaveType(event.detail.code, event.detail.name, event.detail.length);
+  console.log({ ok, data });
+  const LeaveTypeForm = document.querySelector("app-add-leave-type-modal");
+  !ok ? LeaveTypeForm.dispatchEvent(CreateLeaveTypeErrorCustomEvent(data)) : LeaveTypeForm.dispatchEvent(CreateLeaveTypeSuccessEvent());
 })
 
 

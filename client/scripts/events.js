@@ -108,3 +108,32 @@ export function CreateSkillSuccessEvent() {
     composed: true
   })
 }
+
+export function CreateLeaveTypeCustomEvent(name, code, length) {
+  return new CustomEvent("create-leave-type", {
+    detail: {
+      name,
+      code,
+      length
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function CreateLeaveTypeErrorCustomEvent(err) {
+  return new CustomEvent("create-leave-type-err", {
+    detail: {
+      error: err
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function CreateLeaveTypeSuccessEvent() {
+  return new CustomEvent("create-leave-type-success", {
+    bubbles: true,
+    composed: true
+  })
+}

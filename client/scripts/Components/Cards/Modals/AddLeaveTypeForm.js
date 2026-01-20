@@ -1,8 +1,9 @@
-import { authState } from "../../../Core/startup.js"
+import { CreateLeaveTypeCustomEvent } from "../../../events.js";
+
 const AddLeaveTypeTemplate = document.createElement("template");
 
 AddLeaveTypeTemplate.innerHTML = `
-  <div id="add-leave-type-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <form id="add-leave-type-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
 
     <div class="fixed inset-0 z-10 overflow-y-auto">
@@ -33,31 +34,42 @@ AddLeaveTypeTemplate.innerHTML = `
           </div>
 
           <div class="bg-white px-4 py-6 sm:p-6">
-            <form id="add-leave-type-form" class="space-y-4">
+            <div id="add-leave-type-form" class="space-y-4">
               <div>
-                <label for="leave-type-name" class="block text-sm font-medium leading-6 text-slate-900">Leave Type Name</label>
+                <label for="leaveTypeName" class="block text-sm font-medium leading-6 text-slate-900">Leave Type Name</label>
                 <div class="mt-2">
-                  <input type="text" name="leave-type-name" id="leave-type-name" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-violet-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="e.g. Sick Leave">
+                  <input type="text" name="leaveTypeName" id="leave-type-name" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-violet-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="e.g. Sick Leave">
                 </div>
               </div>
               
               <div>
-                <label for="leave-type-desc" class="block text-sm font-medium leading-6 text-slate-900">Description</label>
+                <label for="leaveTypeCode" class="block text-sm font-medium leading-6 text-slate-900">Leave Code</label>
                 <div class="mt-2">
-                  <textarea id="leave-type-desc" name="leave-type-desc" rows="3" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-violet-600 sm:text-sm sm:leading-6 transition-all placeholder:px-1" placeholder="Brief description of the leave type..."></textarea>
+                  <input type="text" name="leaveTypeCode" id="leave-type-code" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-violet-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="e.g. SL, CL, PL">
                 </div>
               </div>
-            </form>
+
+              <div>
+                <label for="leaveLength" class="block text-sm font-medium leading-6 text-slate-900">Length of Leave</label>
+                <div class="mt-2">
+                  <select id="leave-length" name="leaveLength" class="block w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-violet-600 sm:text-sm sm:leading-6 transition-all p-2">
+                    <option value="full">Full Day</option>
+                    <option value="half">Half Day</option>
+                  </select>
+                </div>
+              </div>
+              <span class="text-red-500 font-semibold hidden" id="errorLeaveTypeForm"></span>
+            </div>
           </div>
 
           <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100">
-            <button type="button" class="inline-flex w-full justify-center rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-500 sm:ml-3 sm:w-auto transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">Create Leave Type</button>
+            <button type="submit" class="inline-flex w-full justify-center rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-500 sm:ml-3 sm:w-auto transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">Create Leave Type</button>
             <button type="button" id="cancel-modal-btn" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-all duration-200">Cancel</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </form>
 `
 
 class AddLeaveType extends HTMLElement {
@@ -71,9 +83,17 @@ class AddLeaveType extends HTMLElement {
     const panel = this.querySelector("#modal-panel");
     const closeBtn = this.querySelector("#close-modal-btn");
     const cancelBtn = this.querySelector("#cancel-modal-btn");
+    const leaveTypeForm = this.querySelector('form');
+
+    leaveTypeForm.leaveTypeName.value = sessionStorage.getItem("leaveTypeName");
+    leaveTypeForm.leaveTypeCode.value = sessionStorage.getItem("leaveTypeCode");
+    leaveTypeForm.leaveLength.value = sessionStorage.getItem("leaveLength") || "full";
+
+    const errLeaveType = this.querySelector("#errorLeaveTypeForm");
 
     const openModal = () => {
       modal.classList.remove("hidden");
+      errLeaveType.classList.add("hidden");
       requestAnimationFrame(() => {
         backdrop.classList.remove("opacity-0");
         panel.classList.remove("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
@@ -98,7 +118,28 @@ class AddLeaveType extends HTMLElement {
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
 
+    leaveTypeForm.addEventListener('change', (e) => {
+      if (e.target.name === "leaveTypeName") sessionStorage.setItem("leaveTypeName", e.target.value);
+      else if (e.target.name === "leaveTypeCode") sessionStorage.setItem("leaveTypeCode", e.target.value);
+      else if (e.target.name === "leaveLength") sessionStorage.setItem("leaveLength", e.target.value);
+    });
+
     backdrop.addEventListener("click", closeModal);
+
+    leaveTypeForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      console.log("Submit event triggered :: ", e);
+      this.dispatchEvent(CreateLeaveTypeCustomEvent(e.target[1].value, e.target[2].value, e.target[3].value));
+    })
+
+    this.addEventListener("create-leave-type-err", (event) => {
+      console.log("Error caught :: ", event);
+      errLeaveType.classList.remove("hidden");
+      errLeaveType.textContent = event.detail.error;
+    })
+    this.addEventListener("create-leave-type-success", () => {
+      closeModal();
+    })
   }
 }
 customElements.define("app-add-leave-type-modal", AddLeaveType);

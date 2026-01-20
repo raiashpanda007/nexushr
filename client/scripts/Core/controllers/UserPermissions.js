@@ -1,9 +1,10 @@
 class Permissions {
-  constructor(userState, userRepo, deptRepo, skillRepo) {
+  constructor(userState, userRepo, deptRepo, skillRepo, leaveTypeRepo) {
     this.user = userState;
     this.deptRepo = deptRepo;
     this.userRepo = userRepo;
-    this.skillRepo = skillRepo
+    this.skillRepo = skillRepo;
+    this.leaveTypeRepo = leaveTypeRepo;
   }
 
   async CreateDept(name, description) {
@@ -33,7 +34,7 @@ class Permissions {
 
   async GetAllDepartments() {
 
-    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create departments" };
+    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can See All departments" };
     try {
       const allDepts = await this.deptRepo.GetAllDepartments();
       return {
@@ -51,7 +52,7 @@ class Permissions {
 
 
   async GetDepartment(id) {
-    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create departments" };
+    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can get department" };
     try {
       const dept = await this.deptRepo.GetDepartment(id);
       return {
@@ -69,7 +70,7 @@ class Permissions {
   }
 
   async CreateSkill(name, category) {
-    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create departments" };
+    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create a skill" };
 
     try {
       if (!name || !category) {
@@ -89,6 +90,40 @@ class Permissions {
         data: e.data
       }
     }
+  }
+
+  async CreateLeaveType(code, name, length) {
+    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create leave type" };
+
+    if (!name || !code || !length) {
+      return {
+        ok: false,
+        data: "Please provide every field"
+      }
+    }
+    console.log(name, code, length);
+    if (length === "full" || length === "half") {
+      try {
+        const { ok, data } = await this.leaveTypeRepo.Create(code, name, length);
+        return {
+          ok,
+          data
+        }
+      } catch (e) {
+        console.error("Error in creating new leave type  :: ", e);
+        return {
+          ok: false,
+          data: e.data
+        }
+      }
+
+    } else {
+      return {
+        ok: false,
+        data: "Please provide a valid leave type length"
+      }
+    }
+
   }
 
 };
