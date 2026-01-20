@@ -12,7 +12,10 @@ class DepartmentRepo {
       try {
         store = this.db.tx("departments", "readwrite");
       } catch (err) {
-        return reject(err);
+        return reject({
+          ok: false,
+          data: "Department table doesn't exists"
+        });
       }
 
       const request = store.add({
@@ -46,11 +49,17 @@ class DepartmentRepo {
           results.push(cursor.value);
           cursor.continue();
         } else {
-          resolve(results);
+          res({
+            ok: true,
+            data: results
+          });
         }
       }
-      res.onerror = () => {
-        rej(res.error);
+      req.onerror = () => {
+        rej({
+          ok: false,
+          data: req.error
+        });
       }
 
     })
@@ -61,9 +70,15 @@ class DepartmentRepo {
       const request = deptStore.get(id);
       request.onsuccess = (event) => {
         const dept = event.target.result;
-        resolve(dept);
+        resolve({
+          ok: true,
+          data: dept
+        });
       };
-      request.onerror = () => reject(request.error);
+      request.onerror = () => reject({
+        ok: false,
+        data: request.error
+      });
     })
   }
 }

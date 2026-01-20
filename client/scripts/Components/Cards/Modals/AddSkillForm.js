@@ -1,8 +1,9 @@
-import { authState } from "../../../Core/startup.js"
+import { CreateSkillCustomEvent } from "../../../events.js";
+
 const AddSkillTemplate = document.createElement("template");
 
 AddSkillTemplate.innerHTML = `
-  <div id="add-skill-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <form id="add-skill-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
 
     <div class="fixed inset-0 z-10 overflow-y-auto">
@@ -35,72 +36,99 @@ AddSkillTemplate.innerHTML = `
           </div>
 
           <div class="bg-white px-4 py-6 sm:p-6">
-            <form id="add-skill-form" class="space-y-4">
+            <div id="add-skill-form" class="space-y-4">
               <div>
-                <label for="skill-name" class="block text-sm font-medium leading-6 text-slate-900">Skill Name</label>
+                <label for="skillName" class="block text-sm font-medium leading-6 text-slate-900">Skill Name</label>
                 <div class="mt-2">
-                  <input type="text" name="skill-name" id="skill-name" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="e.g. React.js">
+                  <input type="text" name="skillName" id="skill-name" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="e.g. React.js">
                 </div>
               </div>
               
               <div>
-                <label for="skill-desc" class="block text-sm font-medium leading-6 text-slate-900">Description</label>
+                <label for="skillCategory" class="block text-sm font-medium leading-6 text-slate-900">Description</label>
                 <div class="mt-2">
-                  <textarea id="skill-desc" name="skill-desc" rows="3" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 transition-all placeholder:px-1" placeholder="Brief description of the skill..."></textarea>
+                  <input id="skillCategory" name="skillCategory" rows="3" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 transition-all placeholder:px-1" placeholder="Brief description of the skill..."></input>
                 </div>
               </div>
-            </form>
+              <span class="text-red-500 font-semibold hidden" id="errorSkillForm"></span>
+            </div>
           </div>
 
           <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100">
-            <button type="button" class="inline-flex w-full justify-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 sm:ml-3 sm:w-auto transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">Create Skill</button>
+            <button type="submit" class="inline-flex w-full justify-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 sm:ml-3 sm:w-auto transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">Create Skill</button>
             <button type="button" id="cancel-modal-btn" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-all duration-200">Cancel</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </form>
 `
 
 class AddSkill extends HTMLElement {
-    constructor() {
-        super();
-        this.appendChild(AddSkillTemplate.content.cloneNode(true));
-    }
-    connectedCallback() {
-        const modal = this.querySelector("#add-skill-modal");
-        const backdrop = this.querySelector("#modal-backdrop");
-        const panel = this.querySelector("#modal-panel");
-        const closeBtn = this.querySelector("#close-modal-btn");
-        const cancelBtn = this.querySelector("#cancel-modal-btn");
+  constructor() {
+    super();
+    this.appendChild(AddSkillTemplate.content.cloneNode(true));
+  }
+  connectedCallback() {
+    const modal = this.querySelector("#add-skill-modal");
+    const backdrop = this.querySelector("#modal-backdrop");
+    const panel = this.querySelector("#modal-panel");
+    const closeBtn = this.querySelector("#close-modal-btn");
+    const cancelBtn = this.querySelector("#cancel-modal-btn");
+    const skillCreationForm = this.querySelector('form');
 
-        const openModal = () => {
-            modal.classList.remove("hidden");
-            requestAnimationFrame(() => {
-                backdrop.classList.remove("opacity-0");
-                panel.classList.remove("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
-                panel.classList.add("opacity-100", "translate-y-0", "sm:scale-100");
-            });
-        };
+    skillCreationForm.skillName.value = sessionStorage.getItem("skillName");
+    skillCreationForm.skillCategory.value = sessionStorage.getItem("skillCategory");
 
-        const closeModal = () => {
-            backdrop.classList.add("opacity-0");
-            panel.classList.remove("opacity-100", "translate-y-0", "sm:scale-100");
-            panel.classList.add("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
+    const errSkill = this.querySelector("#errorSkillForm");
 
-            setTimeout(() => {
-                modal.classList.add("hidden");
-            }, 300);
-        };
+    const openModal = () => {
+      modal.classList.remove("hidden");
+      errSkill.classList.add("hidden");
+      requestAnimationFrame(() => {
+        backdrop.classList.remove("opacity-0");
+        panel.classList.remove("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
+        panel.classList.add("opacity-100", "translate-y-0", "sm:scale-100");
+      });
+    };
 
-        document.addEventListener("add-skill-modal", () => {
-            openModal();
-        });
+    const closeModal = () => {
+      backdrop.classList.add("opacity-0");
+      panel.classList.remove("opacity-100", "translate-y-0", "sm:scale-100");
+      panel.classList.add("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
 
-        closeBtn.addEventListener("click", closeModal);
-        cancelBtn.addEventListener("click", closeModal);
+      setTimeout(() => {
+        modal.classList.add("hidden");
+      }, 300);
+    };
 
-        backdrop.addEventListener("click", closeModal);
-    }
+    document.addEventListener("add-skill-modal", () => {
+      openModal();
+    });
+
+    closeBtn.addEventListener("click", closeModal);
+    cancelBtn.addEventListener("click", closeModal);
+
+    skillCreationForm.addEventListener('change', (e) => {
+      e.target.name === "skillName" ? sessionStorage.setItem("skillName", e.target.value) : sessionStorage.setItem("skillCategory", e.target.value);
+    })
+
+    backdrop.addEventListener("click", closeModal);
+
+    skillCreationForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      console.log("Submit event triggered :: ", e);
+      this.dispatchEvent(CreateSkillCustomEvent(e.target[1].value, e.target[2].value));
+    })
+
+    this.addEventListener("create-skill-err", (event) => {
+      console.log("Error caught :: ", event);
+      errSkill.classList.remove("hidden");
+      errSkill.textContent = event.detail.error;
+    })
+    this.addEventListener("create-skill-success", () => {
+      closeModal();
+    })
+  }
 }
 customElements.define("app-add-skill-modal", AddSkill);

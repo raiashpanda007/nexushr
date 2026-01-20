@@ -80,3 +80,31 @@ export function CreateDepartmentSuccessEvent() {
     composed: true
   })
 }
+
+export function CreateSkillCustomEvent(name, description) {
+  return new CustomEvent("create-skill", {
+    detail: {
+      name,
+      description
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function CreateSkillErrorCustomEvent(err) {
+  return new CustomEvent("create-skill-err", {
+    detail: {
+      error: err
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function CreateSkillSuccessEvent() {
+  return new CustomEvent("create-skill-success", {
+    bubbles: true,
+    composed: true
+  })
+}

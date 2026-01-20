@@ -1,8 +1,9 @@
 class Permissions {
-  constructor(userState, userRepo, deptRepo) {
+  constructor(userState, userRepo, deptRepo, skillRepo) {
     this.user = userState;
     this.deptRepo = deptRepo;
     this.userRepo = userRepo;
+    this.skillRepo = skillRepo
   }
 
   async CreateDept(name, description) {
@@ -65,6 +66,29 @@ class Permissions {
       }
     }
 
+  }
+
+  async CreateSkill(name, category) {
+    if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create departments" };
+
+    try {
+      if (!name || !category) {
+        return {
+          ok: false,
+          data: "Please provide every field"
+        }
+      }
+      const { ok, data } = await this.skillRepo.Create(name, category);
+      return {
+        ok, data
+      }
+    } catch (e) {
+      console.error("Error in creating new skill :: ", e);
+      return {
+        ok: false,
+        data: e.data
+      }
+    }
   }
 
 };
