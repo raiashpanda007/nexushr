@@ -77,7 +77,7 @@ class SkillsView extends HTMLElement {
 
         data.forEach(skill => {
             const card = document.createElement("div");
-            card.className = "bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow group relative";
+            card.className = "bg-white rounded-xl border border-slate-200 p-6 transition-colors group relative";
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-4">
                     <div class="p-2 bg-purple-50 rounded-lg">

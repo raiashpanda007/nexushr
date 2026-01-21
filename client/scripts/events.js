@@ -279,3 +279,33 @@ export function EditSkillErrorCustomEvent(err) {
     composed: true
   });
 }
+export function OpenEditLeaveTypeModalEvent(leaveType) {
+  return new CustomEvent("open-edit-leave-type-modal", {
+    detail: { leaveType },
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditLeaveTypeCustomEvent(id, code, name, length) {
+  return new CustomEvent("edit-leave-type", {
+    detail: { id, code, name, length },
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditLeaveTypeSuccessEvent() {
+  return new CustomEvent("edit-leave-type-success", {
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditLeaveTypeErrorCustomEvent(err) {
+  return new CustomEvent("edit-leave-type-err", {
+    detail: { error: err },
+    bubbles: true,
+    composed: true
+  });
+}

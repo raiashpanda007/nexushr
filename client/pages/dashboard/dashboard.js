@@ -7,9 +7,10 @@ import "../../scripts/Components/Views/LeavesView.js";
 import "../../scripts/Components/Views/AttendanceView.js";
 import "../../scripts/Components/Cards/Modals/EditDepartmentModal.js";
 import "../../scripts/Components/Cards/Modals/EditSkillModal.js";
+import "../../scripts/Components/Cards/Modals/EditLeaveTypeModal.js";
 
-import { permissions, userHandler, deptHandler, skillHandler } from "../../scripts/Core/startup.js";
-import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent, CreateUserErrorCustomEvent, CreateUserSuccessEvent, EditUserErrorCustomEvent, EditUserSuccessEvent, EditDepartmentErrorCustomEvent, EditDepartmentSuccessEvent, EditSkillErrorCustomEvent, EditSkillSuccessEvent } from "../../scripts/events.js"
+import { permissions, userHandler, deptHandler, skillHandler, leaveTypeHandler } from "../../scripts/Core/startup.js";
+import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent, CreateUserErrorCustomEvent, CreateUserSuccessEvent, EditUserErrorCustomEvent, EditUserSuccessEvent, EditDepartmentErrorCustomEvent, EditDepartmentSuccessEvent, EditSkillErrorCustomEvent, EditSkillSuccessEvent, EditLeaveTypeErrorCustomEvent, EditLeaveTypeSuccessEvent } from "../../scripts/events.js"
 
 // Navigation Logic
 const views = {
@@ -41,11 +42,6 @@ document.addEventListener("sidebar-toggle", (e) => {
 
 
 
-async function main() {
-  const { ok, data } = await userHandler.GetAllUser();
-  console.log("All users :: ", { ok, data });
-}
-main();
 document.addEventListener("create-dept", async (event) => {
   const { ok, data } = await permissions.CreateDept(event.detail.name, event.detail.description);
   console.log({ ok, data });
@@ -105,6 +101,15 @@ document.addEventListener("edit-skill", async (event) => {
   console.log({ ok, data });
   const EditSkillForm = document.querySelector("app-edit-skill-modal");
   !ok ? EditSkillForm.dispatchEvent(EditSkillErrorCustomEvent(data)) : EditSkillForm.dispatchEvent(EditSkillSuccessEvent());
+})
+
+document.addEventListener("edit-leave-type", async (event) => {
+  console.log("edit-leave-type triggered:: ", event);
+  const { id, code, name, length } = event.detail;
+  const { ok, data } = await leaveTypeHandler.EditLeaveType(id, code, name, length);
+  console.log({ ok, data });
+  const EditLeaveTypeForm = document.querySelector("app-edit-leave-type-modal");
+  !ok ? EditLeaveTypeForm.dispatchEvent(EditLeaveTypeErrorCustomEvent(data)) : EditLeaveTypeForm.dispatchEvent(EditLeaveTypeSuccessEvent());
 })
 
 

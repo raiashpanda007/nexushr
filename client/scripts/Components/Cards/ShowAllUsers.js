@@ -4,7 +4,7 @@ import { OpenEditUserModalEvent } from "../../events.js";
 const ShowAllUsersTemplate = document.createElement("template");
 ShowAllUsersTemplate.innerHTML = `
 <div class="w-full max-w-7xl mx-auto mt-8 mb-8">
-    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-100">
+    <div class="bg-white rounded-2xl overflow-hidden border border-slate-200">
         <div class="px-6 py-5 border-b border-slate-100 bg-white flex justify-between items-center">
             <h5 class="text-xl font-bold text-slate-800">All Employees</h5>
             <div class="text-sm text-slate-500">Manage your team members</div>

@@ -1,9 +1,9 @@
-import { EditDepartmentCustomEvent } from "../../../events.js";
+import { EditLeaveTypeCustomEvent } from "../../../events.js";
 
-const EditDepartmentTemplate = document.createElement("template");
+const EditLeaveTypeTemplate = document.createElement("template");
 
-EditDepartmentTemplate.innerHTML = `
-  <form id="edit-department-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+EditLeaveTypeTemplate.innerHTML = `
+  <form id="edit-leave-type-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
 
     <div class="fixed inset-0 z-10 overflow-y-auto">
@@ -20,9 +20,9 @@ EditDepartmentTemplate.innerHTML = `
                 </svg>
               </div>
               <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                <h3 class="text-xl font-semibold leading-6 text-slate-900" id="modal-title">Edit Department</h3>
+                <h3 class="text-xl font-semibold leading-6 text-slate-900" id="modal-title">Edit Leave Type</h3>
                 <div class="mt-2">
-                  <p class="text-sm text-slate-500">Update department details.</p>
+                  <p class="text-sm text-slate-500">Update leave type details.</p>
                 </div>
               </div>
               <button type="button" id="close-modal-btn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-500 transition-colors">
@@ -35,22 +35,33 @@ EditDepartmentTemplate.innerHTML = `
           </div>
 
           <div class="bg-white px-4 py-6 sm:p-6">
-            <div id="edit-dept-form" class="space-y-4">
-              <input type="hidden" id="dept-id" name="deptId">
+            <div id="edit-leave-type-form" class="space-y-4">
+              <input type="hidden" id="leave-type-id" name="leaveTypeId">
+              
               <div>
-                <label for="deptName" class="block text-sm font-medium leading-6 text-slate-900">Department Name</label>
+                <label for="leaveCode" class="block text-sm font-medium leading-6 text-slate-900">Leave Code</label>
                 <div class="mt-2">
-                  <input type="text" name="deptName" id="dept-name" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" required>
+                  <input type="text" name="leaveCode" id="leave-code" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" required>
+                </div>
+              </div>
+
+              <div>
+                <label for="leaveName" class="block text-sm font-medium leading-6 text-slate-900">Leave Name</label>
+                <div class="mt-2">
+                  <input type="text" name="leaveName" id="leave-name" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" required>
                 </div>
               </div>
               
               <div>
-                <label for="deptDesc" class="block text-sm font-medium leading-6 text-slate-900">Description</label>
+                <label for="leaveLength" class="block text-sm font-medium leading-6 text-slate-900">Length</label>
                 <div class="mt-2">
-                  <textarea id="deptDesc" name="deptDesc" rows="3" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:px-1"></textarea>
+                  <select name="leaveLength" id="leave-length" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all">
+                    <option value="full">Full Day</option>
+                    <option value="half">Half Day</option>
+                  </select>
                 </div>
               </div>
-              <span class="text-red-500 font-semibold hidden" id="errorDeptForm"></span>
+              <span class="text-red-500 font-semibold hidden" id="errorLeaveTypeForm"></span>
             </div>
           </div>
 
@@ -64,28 +75,29 @@ EditDepartmentTemplate.innerHTML = `
   </form>
 `;
 
-class EditDepartment extends HTMLElement {
+class EditLeaveType extends HTMLElement {
   constructor() {
     super();
-    this.appendChild(EditDepartmentTemplate.content.cloneNode(true));
+    this.appendChild(EditLeaveTypeTemplate.content.cloneNode(true));
   }
 
   connectedCallback() {
-    const modal = this.querySelector("#edit-department-modal");
+    const modal = this.querySelector("#edit-leave-type-modal");
     const backdrop = this.querySelector("#modal-backdrop");
     const panel = this.querySelector("#modal-panel");
     const closeBtn = this.querySelector("#close-modal-btn");
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const form = this.querySelector('form');
-    const errDept = this.querySelector("#errorDeptForm");
+    const errLeaveType = this.querySelector("#errorLeaveTypeForm");
 
-    const openModal = (dept) => {
-      form.deptId.value = dept.id;
-      form.deptName.value = dept.name;
-      form.deptDesc.value = dept.description || "";
+    const openModal = (leaveType) => {
+      form.leaveTypeId.value = leaveType.id;
+      form.leaveCode.value = leaveType.code;
+      form.leaveName.value = leaveType.name;
+      form.leaveLength.value = leaveType.length;
 
       modal.classList.remove("hidden");
-      errDept.classList.add("hidden");
+      errLeaveType.classList.add("hidden");
       requestAnimationFrame(() => {
         backdrop.classList.remove("opacity-0");
         panel.classList.remove("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
@@ -103,8 +115,8 @@ class EditDepartment extends HTMLElement {
       }, 300);
     };
 
-    document.addEventListener("open-edit-dept-modal", (e) => {
-      openModal(e.detail.dept);
+    document.addEventListener("open-edit-leave-type-modal", (e) => {
+      openModal(e.detail.leaveType);
     });
 
     closeBtn.addEventListener("click", closeModal);
@@ -113,22 +125,23 @@ class EditDepartment extends HTMLElement {
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      this.dispatchEvent(EditDepartmentCustomEvent(
-        form.deptId.value,
-        form.deptName.value,
-        form.deptDesc.value
+      this.dispatchEvent(EditLeaveTypeCustomEvent(
+        form.leaveTypeId.value,
+        form.leaveCode.value,
+        form.leaveName.value,
+        form.leaveLength.value
       ));
     });
 
-    this.addEventListener("edit-dept-err", (event) => {
-      errDept.classList.remove("hidden");
-      errDept.textContent = event.detail.error;
+    this.addEventListener("edit-leave-type-err", (event) => {
+      errLeaveType.classList.remove("hidden");
+      errLeaveType.textContent = event.detail.error;
     });
 
-    this.addEventListener("edit-dept-success", () => {
+    this.addEventListener("edit-leave-type-success", () => {
       closeModal();
     });
   }
 }
 
-customElements.define("app-edit-dept-modal", EditDepartment);
+customElements.define("app-edit-leave-type-modal", EditLeaveType);

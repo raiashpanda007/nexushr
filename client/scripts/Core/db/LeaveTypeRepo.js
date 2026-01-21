@@ -98,6 +98,53 @@ class LeaveTypeRepo {
       ]
     })
   }
+
+  EditLeaveType(id, code, name, length) {
+    return new Promise((resolve, reject) => {
+      const store = this.db.tx("leave_types", "readwrite");
+      const request = store.get(id);
+      request.onsuccess = (event) => {
+        const leaveType = event.target.result;
+        leaveType.code = code;
+        leaveType.name = name;
+        leaveType.length = length;
+        leaveType.updatedAt = new Date().toISOString();
+
+        const updateRequest = store.put(leaveType);
+        updateRequest.onsuccess = () => {
+          resolve({
+            ok: true,
+            data: id
+          });
+        };
+        updateRequest.onerror = () => reject({
+          ok: false,
+          data: updateRequest.error
+        });
+      };
+      request.onerror = () => reject({
+        ok: false,
+        data: request.error
+      });
+    });
+  }
+
+  DeleteLeaveType(id) {
+    return new Promise((resolve, reject) => {
+      const store = this.db.tx("leave_types", "readwrite");
+      const request = store.delete(id);
+      request.onsuccess = () => {
+        resolve({
+          ok: true,
+          data: id
+        });
+      };
+      request.onerror = () => reject({
+        ok: false,
+        data: request.error
+      });
+    });
+  }
 }
 
 

@@ -4,7 +4,7 @@ const loginFormTemplate = document.createElement("template");
 
 loginFormTemplate.innerHTML = `
   <form name="loginForm" class="w-full max-w-md mx-auto">
-    <div class="bg-white rounded-xl shadow border border-slate-200">
+    <div class="bg-white rounded-xl border border-slate-200">
       <div class="p-8">
         <div class="text-center mb-8">
           <h2 class="text-2xl font-bold text-slate-800">Welcome Back</h2>

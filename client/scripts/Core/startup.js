@@ -8,6 +8,8 @@ import LeaveTypeRepo from "./db/LeaveTypeRepo.js";
 import DepartmentHandler from "./controllers/DepartmentHandler.js";
 import SkillHandler from "./controllers/SkillHandler.js";
 import UserHandler from "./controllers/UserHandler.js";
+import LeaveTypeHandler from "./controllers/LeaveTypeHandler.js";
+
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
   1,
@@ -50,7 +52,7 @@ export const dbManager = new IndexedDBManager(
 
     if (!db.objectStoreNames.contains("leave_types")) {
       const leave_types = db.createObjectStore("leave_types", { keyPath: "id" });
-      leave_types.createIndex("code_indx", "code", { unique: true });
+      leave_types.createIndex("code_indx", "code", { unique: false });
     }
   }
 );
@@ -67,4 +69,5 @@ export const authState = new AuthState(userRepo);
 export const deptHandler = new DepartmentHandler(deptRepo, authState.GetCurrUserState());
 export const skillHandler = new SkillHandler(skillRepo, authState.GetCurrUserState());
 export const userHandler = new UserHandler(userRepo, authState.GetCurrUserState());
+export const leaveTypeHandler = new LeaveTypeHandler(leaveTypeRepo, authState.GetCurrUserState());
 export const permissions = new UserPermissions(authState.GetCurrUserState().data, userRepo, deptRepo, skillRepo, leaveTypeRepo);

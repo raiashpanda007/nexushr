@@ -6,7 +6,7 @@ class DepartmentHandler {
   }
 
   async GetAllDepartments() {
-    if (!this.user) return { ok: false, data: "Pleas login first" }
+    if (!this.user || !this.user.data || !this.user.data.user || this.user.data.user.role !== "HR") return { ok: false, data: "Please login first" }
     try {
       const { ok, data } = await this.deptRepo.GetAllDepartments();
       return {
