@@ -3,7 +3,7 @@ class UserRepo {
     this.user = null;
     this.db = db;
   }
-  Create(email, firstName, lastName, password, deptId, profilePhoto, noteComment, skills, department) {
+  Create(email, firstName, lastName, password, profilePhoto, noteComment, skills, department) {
     return new Promise((resolve, reject) => {
       const id = crypto.randomUUID();
       const req = this.db.tx("users", "readwrite").add({
@@ -13,7 +13,6 @@ class UserRepo {
         lastName,
         password,
         role: "EMP",
-        deptId,
         department,
         profilePhoto,
         note: noteComment,
@@ -76,6 +75,45 @@ class UserRepo {
 
   }
 
+  EditUser(id, email, firstName, lastName, password, profilePhoto, noteComment, skills, department) {
+    return new Promise((resolve, reject) => {
+      const userStore = this.db.tx("users", "readwrite");
+      const req = userStore.get(id);
+      req.onsuccess = (event) => {
+        const user = event.target.result;
+        user.email = email;
+        user.firstName = firstName;
+        user.lastName = lastName;
+        user.password = password;
+        user.profilePhoto = profilePhoto;
+        user.note = noteComment;
+        user.skills = skills;
+        user.department = department;
+        user.updatedAt = new Date().toISOString();
+        userStore.put(user);
+        resolve({
+          ok: true,
+          data: user
+        });
+      };
+      req.onerror = () => {
+        console.error("Edit user controller :: ", req.error);
+        reject({
+          ok: false,
+          data: req.error
+        });
+      };
+    })
+
+  }
+  DeleteUser(id) {
+    return new Promise((resolve, reject) => {
+      const userStore = this.db.tx("users", "readwrite");
+      const req = userStore.delete(id);
+      req.onsuccess = () => resolve({ ok: true, data: id });
+      req.onerror = () => reject({ ok: false, data: req.error });
+    })
+  }
 }
 
 

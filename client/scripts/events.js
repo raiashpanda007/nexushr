@@ -142,17 +142,16 @@ export function AddUserCustomEvent() {
   return new CustomEvent("add-user-modal", { bubbles: true, composed: true });
 }
 
-export function CreateUserCustomEvent(email, firstName, lastName, password, dept, skill, profilePhoto, note) {
+export function CreateUserCustomEvent(email, firstName, lastName, password, note, skills, department) {
   return new CustomEvent("create-user", {
     detail: {
       email,
       firstName,
       lastName,
       password,
-      dept,
-      skill,
-      profilePhoto,
-      note
+      note,
+      skills,
+      department
     },
     bubbles: true,
     composed: true
@@ -174,4 +173,49 @@ export function CreateUserSuccessEvent() {
     bubbles: true,
     composed: true
   })
+}
+
+export function EditUserCustomEvent(id, email, firstName, lastName, password, profilePhoto, note, skills, department) {
+  return new CustomEvent("edit-user", {
+    detail: {
+      id,
+      email,
+      firstName,
+      lastName,
+      password,
+      profilePhoto,
+      note,
+      skills,
+      department
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function EditUserErrorCustomEvent(err) {
+  return new CustomEvent("edit-user-err", {
+    detail: {
+      error: err
+    },
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function EditUserSuccessEvent() {
+  return new CustomEvent("edit-user-success", {
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function OpenEditUserModalEvent(user) {
+  return new CustomEvent("edit-user-modal", {
+    detail: {
+      user
+    },
+    bubbles: true,
+    composed: true
+  });
 }

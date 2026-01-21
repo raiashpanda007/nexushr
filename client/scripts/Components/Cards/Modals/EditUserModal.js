@@ -1,10 +1,10 @@
-import { CreateUserCustomEvent } from "../../../events.js";
+import { EditUserCustomEvent } from "../../../events.js";
 import { deptHandler, skillHandler } from "../../../Core/startup.js";
 
-const AddUserTemplate = document.createElement("template");
+const EditUserTemplate = document.createElement("template");
 
-AddUserTemplate.innerHTML = `
-  <form id="add-user-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+EditUserTemplate.innerHTML = `
+  <form id="edit-user-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
 
     <div class="fixed inset-0 z-10 overflow-y-auto">
@@ -17,13 +17,13 @@ AddUserTemplate.innerHTML = `
             <div class="sm:flex sm:items-start">
               <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
                 <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                 </svg>
               </div>
               <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                <h3 class="text-xl font-semibold leading-6 text-slate-900" id="modal-title">Add New User</h3>
+                <h3 class="text-xl font-semibold leading-6 text-slate-900" id="modal-title">Edit User</h3>
                 <div class="mt-2">
-                  <p class="text-sm text-slate-500">Create a new user account.</p>
+                  <p class="text-sm text-slate-500">Update user details.</p>
                 </div>
               </div>
               <button type="button" id="close-modal-btn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-500 transition-colors">
@@ -36,7 +36,7 @@ AddUserTemplate.innerHTML = `
           </div>
 
           <div class="bg-white px-4 py-6 sm:p-6">
-            <div id="add-user-form" class="space-y-4">
+            <div id="edit-user-form" class="space-y-4">
               <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="firstName" class="block text-sm font-medium leading-6 text-slate-900">First Name</label>
@@ -60,9 +60,9 @@ AddUserTemplate.innerHTML = `
               </div>
 
               <div>
-                <label for="password" class="block text-sm font-medium leading-6 text-slate-900">Password</label>
+                <label for="password" class="block text-sm font-medium leading-6 text-slate-900">Password <span class="text-xs text-slate-400 font-normal">(Leave blank to keep current)</span></label>
                 <div class="mt-2">
-                  <input type="password" name="password" id="password" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="********" required>
+                  <input type="password" name="password" id="password" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="********">
                 </div>
               </div>
 
@@ -93,7 +93,7 @@ AddUserTemplate.innerHTML = `
           </div>
 
           <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100">
-            <button type="submit" class="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">Create User</button>
+            <button type="submit" class="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">Save Changes</button>
             <button type="button" id="cancel-user-modal-btn" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-all duration-200">Cancel</button>
           </div>
         </div>
@@ -102,37 +102,41 @@ AddUserTemplate.innerHTML = `
   </form>
 `;
 
-class AddUserForm extends HTMLElement {
+class EditUserModal extends HTMLElement {
   constructor() {
     super();
-    this.appendChild(AddUserTemplate.content.cloneNode(true));
+    this.appendChild(EditUserTemplate.content.cloneNode(true));
+    this.currentUser = null;
   }
   connectedCallback() {
-    console.log("AddUserForm connectedCallback");
-    const modal = this.querySelector("#add-user-modal");
+    console.log("EditUserModal connectedCallback");
+    const modal = this.querySelector("#edit-user-modal");
     const backdrop = this.querySelector("#modal-backdrop");
     const panel = this.querySelector("#modal-panel");
     const closeBtn = this.querySelector("#close-modal-btn");
     const cancelBtn = this.querySelector("#cancel-user-modal-btn");
-    const userCreationForm = this.querySelector('form');
+    const userEditForm = this.querySelector('form');
     const errUser = this.querySelector("#errorUserForm");
-    const deptSelect = this.querySelector("#dept");
-
     const skillsContainer = this.querySelector("#skills-container");
-    let allDepartments = [];
+    const deptSelect = this.querySelector("#dept");
     let selectedSkills = new Set();
     let allSkills = [];
 
-    const loadDepartments = async () => {
+    let allDepartments = [];
+
+    const loadDepartments = async (selectedDeptId) => {
       const res = await deptHandler.GetAllDepartments();
-      console.log("departments fetched :: ", res);
+      console.log("departments fetched :: ", res.data);
       if (res.ok) {
         allDepartments = res.data;
-        deptSelect.innerHTML = '<option value="" disabled selected>Select a Department</option>';
+        deptSelect.innerHTML = '<option value="" disabled>Select a Department</option>';
         res.data.forEach(dept => {
           const option = document.createElement("option");
           option.value = dept.id;
           option.textContent = dept.name;
+          if (dept.id === selectedDeptId) {
+            option.selected = true;
+          }
           deptSelect.appendChild(option);
         })
       } else {
@@ -185,19 +189,43 @@ class AddUserForm extends HTMLElement {
       renderSkills();
     };
 
-    const loadSkills = async () => {
+    const loadSkills = async (userSkills) => {
       const res = await skillHandler.GetAllSkills();
       if (res.ok) {
         allSkills = res.data;
+        selectedSkills.clear();
+
+        if (userSkills) {
+          if (Array.isArray(userSkills)) {
+            userSkills.forEach(s => {
+              if (typeof s === 'object' && s.id) {
+                selectedSkills.add(s.id);
+              } else if (typeof s === 'string') {
+                // Try to find skill by name if stored as string, or assume it's an ID
+                if (found) selectedSkills.add(found.id);
+              }
+            });
+          }
+        }
         renderSkills();
       } else {
         skillsContainer.innerHTML = '<p class="text-xs text-red-500 col-span-2">Failed to load skills</p>';
       }
     };
 
-    const openModal = () => {
-      loadDepartments();
-      loadSkills();
+    const openModal = (user) => {
+      this.currentUser = user;
+
+      this.querySelector("#firstName").value = user.firstName || "";
+      this.querySelector("#lastName").value = user.lastName || "";
+      this.querySelector("#email").value = user.email || "";
+      this.querySelector("#password").value = ""; // Clear password field
+      this.querySelector("#note").value = user.note || "";
+
+      const deptId = user.deptId || (user.department ? user.department.id : "");
+      loadDepartments(deptId);
+      loadSkills(user.skills);
+
       modal.classList.remove("hidden");
       errUser.classList.add("hidden");
       requestAnimationFrame(() => {
@@ -214,45 +242,66 @@ class AddUserForm extends HTMLElement {
 
       setTimeout(() => {
         modal.classList.add("hidden");
-        userCreationForm.reset();
+        userEditForm.reset();
+        this.currentUser = null;
         selectedSkills.clear();
-        renderSkills();
       }, 300);
     };
 
-    document.addEventListener("add-user-modal", () => {
-      console.log("add-user-modal event received in AddUserForm");
-      openModal();
+    document.addEventListener("edit-user-modal", (event) => {
+      console.log("edit-user-modal event received in EditUserModal", event.detail);
+      if (event.detail && event.detail.user) {
+        openModal(event.detail.user);
+      }
     });
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
     backdrop.addEventListener("click", closeModal);
 
-    userCreationForm.addEventListener("submit", (e) => {
+    userEditForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      const formData = new FormData(userCreationForm);
+      if (!this.currentUser) return;
+      console.log("Form submitted in EditUserModal", e);
+      const formData = new FormData(userEditForm);
       const firstName = formData.get("firstName");
       const lastName = formData.get("lastName");
       const email = formData.get("email");
-      const password = formData.get("password");
+      let password = formData.get("password");
       const deptId = formData.get("dept");
       const note = formData.get("note");
 
-      const department = allDepartments.find(d => d.id === deptId);
+      if (!password) {
+        password = this.currentUser.password;
+      }
+
+      const profilePhoto = this.currentUser.profilePhoto;
+
       const skills = allSkills.filter(s => selectedSkills.has(s.id));
 
-      this.dispatchEvent(CreateUserCustomEvent(email, firstName, lastName, password, note, skills, department));
+      const department = allDepartments.find(d => d.id === deptId) || this.currentUser.department;
+
+      this.dispatchEvent(EditUserCustomEvent(
+        this.currentUser.id,
+        email,
+        firstName,
+        lastName,
+        password,
+        profilePhoto,
+        note,
+        skills,
+        department
+      ));
     });
 
-    this.addEventListener("create-user-err", (event) => {
+    this.addEventListener("edit-user-err", (event) => {
       errUser.classList.remove("hidden");
       errUser.textContent = event.detail.error;
     });
 
-    this.addEventListener("create-user-success", () => {
+    this.addEventListener("edit-user-success", () => {
       closeModal();
     });
   }
 }
-customElements.define("app-add-user-modal", AddUserForm);
+customElements.define("app-edit-user-modal", EditUserModal);

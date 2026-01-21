@@ -110,10 +110,10 @@ class Permissions {
 
   }
 
-  async CreateUser(email, firstName, lastName, password, dept, skillId, profilePhoto, note) {
+  async CreateUser(email, firstName, lastName, password, skillId, profilePhoto, note, department) {
     if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create user" };
 
-    if (!email || !firstName || !lastName || !password || !dept) {
+    if (!email || !firstName || !lastName || !password || !department) {
       return {
         ok: false,
         data: "Please provide all required fields"
@@ -121,23 +121,8 @@ class Permissions {
     }
 
     try {
-      // Create(email, firstName, lastName, password, dept, profilePhoto, noteComment)
-      const userId = await this.userRepo.Create(email, firstName, lastName, password, dept, profilePhoto, note);
-
-      if (skillId) {
-        const skillRes = await this.skillRepo.GetSkillFromId(skillId);
-        if (skillRes.ok) {
-          const skillObj = skillRes.data;
-          const userObj = {
-            id: userId,
-            firstName,
-            lastName,
-            profilePhoto: profilePhoto,
-            dept
-          };
-          await this.skillRepo.AttachSkillToUser(skillObj, userObj);
-        }
-      }
+      // Create(email, firstName, lastName, password, profilePhoto, noteComment, skills, department)
+      const userId = await this.userRepo.Create(email, firstName, lastName, password, profilePhoto, note, skillId, department);
 
       return {
         ok: true,

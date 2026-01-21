@@ -20,6 +20,38 @@ class SkillHandler {
       }
     }
   }
+  async EditSkill(id, name, category) {
+    if (!this.user || !this.user.user.role != "HR") return { ok: false, data: "You are not authorized to edit skills" }
+    try {
+      const { ok, data } = await this.skillRepo.EditSkill(id, name, category);
+      return {
+        ok,
+        data
+      }
+    } catch (e) {
+      console.error("Edit skill controller :: ", e)
+      return {
+        ok: false,
+        data: String(e)
+      }
+    }
+  }
+  async DeleteSkill(id) {
+    if (!this.user || !this.user.user.role != "HR") return { ok: false, data: "You are not authorized to delete skills" }
+    try {
+      const { ok, data } = await this.skillRepo.DeleteSkill(id);
+      return {
+        ok,
+        data
+      }
+    } catch (e) {
+      console.error("Delete skill controller :: ", e)
+      return {
+        ok: false,
+        data: String(e)
+      }
+    }
+  }
 }
 
 

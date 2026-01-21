@@ -170,6 +170,55 @@ class SkillRepo {
       }
     })
   }
+  EditSkill(id, name, category) {
+    return new Promise((resolve, reject) => {
+      const skillStore = this.db.tx("skills", "readwrite");
+      const request = skillStore.get(id);
+      request.onsuccess = (event) => {
+        const skill = event.target.result;
+        skill.name = name;
+        skill.category = category;
+        skill.updatedAt = new Date().toISOString();
+        const updateRequest = skillStore.put(skill);
+        updateRequest.onsuccess = () => {
+          resolve({
+            ok: true,
+            data: id
+          })
+        }
+        updateRequest.onerror = () => {
+          reject({
+            ok: false,
+            data: updateRequest.error
+          })
+        }
+      }
+      request.onerror = () => {
+        reject({
+          ok: false,
+          data: request.error
+        })
+      }
+    })
+  }
+  DeleteSkill(id) {
+    return new Promise((resolve, reject) => {
+      const skillStore = this.db.tx("skills", "readwrite");
+      const request = skillStore.delete(id);
+      request.onsuccess = () => {
+        resolve({
+          ok: true,
+          data: id
+        })
+      }
+      request.onerror = () => {
+        reject({
+          ok: false,
+          data: request.error
+        })
+      }
+    })
+  }
 }
 
 
