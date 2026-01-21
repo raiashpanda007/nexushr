@@ -9,7 +9,7 @@ EditSkillTemplate.innerHTML = `
     <div class="fixed inset-0 z-10 overflow-y-auto">
       <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         <!-- Modal Panel -->
-        <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" id="modal-panel">
+        <div class="relative transform overflow-hidden rounded-2xl bg-white text-left transition-all sm:my-8 sm:w-full sm:max-w-lg opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" id="modal-panel">
           
           <!-- Header -->
           <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-slate-100">
@@ -65,70 +65,70 @@ EditSkillTemplate.innerHTML = `
 `;
 
 class EditSkill extends HTMLElement {
-    constructor() {
-        super();
-        this.appendChild(EditSkillTemplate.content.cloneNode(true));
-    }
+  constructor() {
+    super();
+    this.appendChild(EditSkillTemplate.content.cloneNode(true));
+  }
 
-    connectedCallback() {
-        const modal = this.querySelector("#edit-skill-modal");
-        const backdrop = this.querySelector("#modal-backdrop");
-        const panel = this.querySelector("#modal-panel");
-        const closeBtn = this.querySelector("#close-modal-btn");
-        const cancelBtn = this.querySelector("#cancel-modal-btn");
-        const form = this.querySelector('form');
-        const errSkill = this.querySelector("#errorSkillForm");
+  connectedCallback() {
+    const modal = this.querySelector("#edit-skill-modal");
+    const backdrop = this.querySelector("#modal-backdrop");
+    const panel = this.querySelector("#modal-panel");
+    const closeBtn = this.querySelector("#close-modal-btn");
+    const cancelBtn = this.querySelector("#cancel-modal-btn");
+    const form = this.querySelector('form');
+    const errSkill = this.querySelector("#errorSkillForm");
 
-        const openModal = (skill) => {
-            form.skillId.value = skill.id;
-            form.skillName.value = skill.name;
-            form.skillCategory.value = skill.category || "";
+    const openModal = (skill) => {
+      form.skillId.value = skill.id;
+      form.skillName.value = skill.name;
+      form.skillCategory.value = skill.category || "";
 
-            modal.classList.remove("hidden");
-            errSkill.classList.add("hidden");
-            requestAnimationFrame(() => {
-                backdrop.classList.remove("opacity-0");
-                panel.classList.remove("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
-                panel.classList.add("opacity-100", "translate-y-0", "sm:scale-100");
-            });
-        };
+      modal.classList.remove("hidden");
+      errSkill.classList.add("hidden");
+      requestAnimationFrame(() => {
+        backdrop.classList.remove("opacity-0");
+        panel.classList.remove("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
+        panel.classList.add("opacity-100", "translate-y-0", "sm:scale-100");
+      });
+    };
 
-        const closeModal = () => {
-            backdrop.classList.add("opacity-0");
-            panel.classList.remove("opacity-100", "translate-y-0", "sm:scale-100");
-            panel.classList.add("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
+    const closeModal = () => {
+      backdrop.classList.add("opacity-0");
+      panel.classList.remove("opacity-100", "translate-y-0", "sm:scale-100");
+      panel.classList.add("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
 
-            setTimeout(() => {
-                modal.classList.add("hidden");
-            }, 300);
-        };
+      setTimeout(() => {
+        modal.classList.add("hidden");
+      }, 300);
+    };
 
-        document.addEventListener("open-edit-skill-modal", (e) => {
-            openModal(e.detail.skill);
-        });
+    document.addEventListener("open-edit-skill-modal", (e) => {
+      openModal(e.detail.skill);
+    });
 
-        closeBtn.addEventListener("click", closeModal);
-        cancelBtn.addEventListener("click", closeModal);
-        backdrop.addEventListener("click", closeModal);
+    closeBtn.addEventListener("click", closeModal);
+    cancelBtn.addEventListener("click", closeModal);
+    backdrop.addEventListener("click", closeModal);
 
-        form.addEventListener("submit", (e) => {
-            e.preventDefault();
-            this.dispatchEvent(EditSkillCustomEvent(
-                form.skillId.value,
-                form.skillName.value,
-                form.skillCategory.value
-            ));
-        });
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.dispatchEvent(EditSkillCustomEvent(
+        form.skillId.value,
+        form.skillName.value,
+        form.skillCategory.value
+      ));
+    });
 
-        this.addEventListener("edit-skill-err", (event) => {
-            errSkill.classList.remove("hidden");
-            errSkill.textContent = event.detail.error;
-        });
+    this.addEventListener("edit-skill-err", (event) => {
+      errSkill.classList.remove("hidden");
+      errSkill.textContent = event.detail.error;
+    });
 
-        this.addEventListener("edit-skill-success", () => {
-            closeModal();
-        });
-    }
+    this.addEventListener("edit-skill-success", () => {
+      closeModal();
+    });
+  }
 }
 
 customElements.define("app-edit-skill-modal", EditSkill);

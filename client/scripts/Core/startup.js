@@ -9,6 +9,8 @@ import DepartmentHandler from "./controllers/DepartmentHandler.js";
 import SkillHandler from "./controllers/SkillHandler.js";
 import UserHandler from "./controllers/UserHandler.js";
 import LeaveTypeHandler from "./controllers/LeaveTypeHandler.js";
+import AttendanceRepo from "./db/AttendanceRepo.js";
+import AttendanceHandler from "./controllers/AttendanceHandler.js";
 
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
@@ -43,16 +45,19 @@ export const dbManager = new IndexedDBManager(
 
     if (!db.objectStoreNames.contains("skills")) {
       const skills = db.createObjectStore("skills", { keyPath: "id" });
-      const skills_users = db.createObjectStore("skills_users", { keyPath: "id" });
       skills.createIndex("category_indx", "category", { unique: false });
-      skills_users.createIndex("userID_indx", "userID", { unique: false });
-      skills_users.createIndex("skillsID_indx", "skillID", { unique: false });
-      skills_users.createIndex("skills_users_indx", ["userID", "skillID"], { unique: true });
     }
 
     if (!db.objectStoreNames.contains("leave_types")) {
       const leave_types = db.createObjectStore("leave_types", { keyPath: "id" });
       leave_types.createIndex("code_indx", "code", { unique: false });
+    }
+    if (!db.objectStoreNames.contains("attendance")) {
+      const attendance = db.createObjectStore("attendance", { keyPath: "id" });
+      attendance.createIndex("userID_indx", "userId", { unique: false });
+      attendance.createIndex("type_indx", "type", { unique: false });
+      attendance.createIndex("entry_date_indx", "entryDate", { unique: false });
+      attendance.createIndex("exit_date_indx", "exitDate", { unique: false });
     }
   }
 );
@@ -68,6 +73,10 @@ export const leaveTypeRepo = new LeaveTypeRepo(dbManager);
 export const authState = new AuthState(userRepo);
 export const deptHandler = new DepartmentHandler(deptRepo, authState.GetCurrUserState());
 export const skillHandler = new SkillHandler(skillRepo, authState.GetCurrUserState());
+export const attendanceRepo = new AttendanceRepo(dbManager);
+export const attendanceHandler = new AttendanceHandler(attendanceRepo, authState);
 export const userHandler = new UserHandler(userRepo, authState.GetCurrUserState());
 export const leaveTypeHandler = new LeaveTypeHandler(leaveTypeRepo, authState.GetCurrUserState());
+
+
 export const permissions = new UserPermissions(authState.GetCurrUserState().data, userRepo, deptRepo, skillRepo, leaveTypeRepo);

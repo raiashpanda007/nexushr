@@ -1,4 +1,5 @@
 class AuthState {
+
   constructor(userRepo) {
     this.repo = userRepo;
     this.userState = null;
@@ -39,7 +40,6 @@ class AuthState {
           user: req
         });
         localStorage.setItem('userDetails', JSON.stringify(this.userState));
-        await this.repo.SetUserOnlineById(this.userState.user.id);
         return { ok: true, data: this.userState }
       }
       return {

@@ -1,4 +1,4 @@
-import { authState } from "../Core/startup.js";
+import { authState, attendanceHandler } from "../Core/startup.js";
 
 const SidebarTemplate = document.createElement("template");
 SidebarTemplate.innerHTML = `
@@ -62,7 +62,11 @@ class Sidebar extends HTMLElement {
 
         this.renderLinks(nav, role);
 
-        this.querySelector("#logout-btn").addEventListener("click", () => {
+        this.querySelector("#logout-btn").addEventListener("click", async () => {
+            const { ok, data } = authState.GetCurrUserState();
+            if (ok && data && data.user) {
+                await authState.LogOut();
+            }
             window.location.href = "/";
         });
 

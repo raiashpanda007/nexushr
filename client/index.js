@@ -1,6 +1,6 @@
 import "./scripts/Components/Header/Header.js";
 import "./scripts/Components/Cards/Login/LoginCard.js"
-import { authState } from "./scripts/Core/startup.js"
+import { authState, attendanceHandler } from "./scripts/Core/startup.js"
 import { LoginErrorEvent, LoginMessageCustoomEvent, LogoutMessageCustomEvent } from "./scripts/events.js";
 
 document.addEventListener("login", async (e) => {
@@ -8,8 +8,10 @@ document.addEventListener("login", async (e) => {
   if (!ok) {
     const LoginForm = document.querySelector("app-card-login")
     LoginForm.dispatchEvent(LoginErrorEvent(data));
-
+    return;
   }
+
+
   const header = document.querySelector("app-header");
   header.dispatchEvent(LoginMessageCustoomEvent());
   console.log("Login response :: ", data);

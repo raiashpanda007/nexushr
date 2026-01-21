@@ -5,7 +5,7 @@ import { LogoutCustomEvent } from "../../events.js";
 const headerTemplate = document.createElement("template");
 
 headerTemplate.innerHTML = `
-  <header class="w-full bg-slate-900/95 sticky top-0 z-50">
+  <header class="w-full bg-slate-900 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-20">
         <div class="flex-shrink-0 flex items-center cursor-pointer group">
@@ -14,7 +14,7 @@ headerTemplate.innerHTML = `
           </h1>
         </div>
 
-        <nav class="hidden md:flex space-x-8 bg-white/5 px-6 py-2 rounded-full border border-white/5 backdrop-blur-sm">
+        <nav class="hidden md:flex space-x-8 bg-slate-800 px-6 py-2 rounded-full border border-slate-700">
           <span class="text-slate-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer  text-sm font-medium">LPS</span>
           <span class="text-slate-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">SSE</span>
           <span class="text-slate-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">SPS</span>
