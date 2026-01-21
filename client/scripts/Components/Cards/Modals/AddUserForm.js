@@ -79,8 +79,8 @@ AddUserTemplate.innerHTML = `
               <div>
                 <label for="skill" class="block text-sm font-medium leading-6 text-slate-900">Skill</label>
                 <div class="mt-2">
-                  <select name="skill" id="skill" class="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all" required>
-                    <option value="" disabled selected>Select a Skill</option>
+                  <select name="skill" id="skill" class="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all" multiple required>
+                    <!-- Options will be populated dynamically -->
                   </select>
                 </div>
               </div>
@@ -129,12 +129,15 @@ class AddUserForm extends HTMLElement {
     const errUser = this.querySelector("#errorUserForm");
     const deptSelect = this.querySelector("#dept");
     const skillSelect = this.querySelector("#skill");
+    let AllDepartments = [];
+    let AllSkills = [];
 
     const loadDepartments = async () => {
       const res = await deptHandler.GetAllDepartments();
       console.log("departments fetched :: ", res);
       if (res.ok) {
         deptSelect.innerHTML = '<option value="" disabled selected>Select a Department</option>';
+        AllDepartments = res.data;
         res.data.forEach(dept => {
           const option = document.createElement("option");
           option.value = dept.id;
@@ -150,7 +153,8 @@ class AddUserForm extends HTMLElement {
       const res = await skillHandler.GetAllSkills();
       console.log("Skills fetched", res);
       if (res.ok) {
-        skillSelect.innerHTML = '<option value="" disabled selected>Select a Skill</option>';
+        skillSelect.innerHTML = ''; // Clear existing options
+        AllSkills = res.data;
         res.data.forEach(skill => {
           const option = document.createElement("option");
           option.value = skill.id;
@@ -201,12 +205,19 @@ class AddUserForm extends HTMLElement {
       const lastName = formData.get("lastName");
       const email = formData.get("email");
       const password = formData.get("password");
-      const dept = formData.get("dept");
+      const deptId = formData.get("dept");
       const note = formData.get("note");
-      const skill = formData.get("skill");
-      const profilePhoto = formData.get("profilePhoto");
+      const profilePhoto = formData.get("profilePhoto"); // This is a File object (Blob)
 
-      const res = await userHandler.CreateUser(email, firstName, lastName, password, dept, profilePhoto, note, skill, dept);
+      // Get selected skills (multiple)
+      const selectedSkillIds = Array.from(skillSelect.selectedOptions).map(option => option.value);
+      const selectedSkills = AllSkills.filter(skill => selectedSkillIds.includes(skill.id));
+
+      const selectedDept = AllDepartments.find((item) => item.id === deptId);
+
+      console.log("user form submitted :: ", { firstName, lastName, email, deptId, selectedSkills, selectedDept });
+
+      const res = await userHandler.CreateUser(email, firstName, lastName, password, deptId, profilePhoto, note, selectedSkills, selectedDept);
       if (res.ok) {
         closeModal();
       } else {

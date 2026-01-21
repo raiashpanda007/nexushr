@@ -6,13 +6,14 @@ import "../../scripts/Components/Cards/Modals/AddLeaveTypeForm.js"
 import "../../scripts/Components/Cards/Modals/AddUserForm.js"
 import "../../scripts/Components/Cards/HRDashboardCreateUser.js"
 
-import { permissions } from "../../scripts/Core/startup.js";
+import { permissions, userHandler } from "../../scripts/Core/startup.js";
 import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent, CreateUserErrorCustomEvent, CreateUserSuccessEvent } from "../../scripts/events.js"
 
-
-
-
-
+async function main() {
+  const { ok, data } = await userHandler.GetAllUser();
+  console.log("All users :: ", { ok, data });
+}
+main();
 document.addEventListener("create-dept", async (event) => {
   const { ok, data } = await permissions.CreateDept(event.detail.name, event.detail.description);
   console.log({ ok, data });

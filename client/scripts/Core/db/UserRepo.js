@@ -3,7 +3,7 @@ class UserRepo {
     this.user = null;
     this.db = db;
   }
-  Create(email, firstName, lastName, password, dept, profilePhoto, noteComment, skill, department) {
+  Create(email, firstName, lastName, password, deptId, profilePhoto, noteComment, skills, department) {
     return new Promise((resolve, reject) => {
       const id = crypto.randomUUID();
       const req = this.db.tx("users", "readwrite").add({
@@ -13,12 +13,12 @@ class UserRepo {
         lastName,
         password,
         role: "EMP",
-        dept,
+        deptId,
+        department,
         profilePhoto,
         note: noteComment,
         online: false,
-        skill,
-        department,
+        skills,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -63,6 +63,19 @@ class UserRepo {
 
     })
   }
+
+  async GetAllUser() {
+    return new Promise((resolve, reject) => {
+      const userStore = this.db.tx("users");
+      const req = userStore.getAll();
+      req.onsuccess = () => resolve({ ok: true, data: req.result });
+      req.onerror = () => reject({ ok: false, data: req.error });
+    }
+    )
+
+
+  }
+
 }
 
 
