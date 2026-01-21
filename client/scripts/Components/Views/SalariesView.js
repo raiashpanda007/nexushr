@@ -35,7 +35,6 @@ class SalariesView extends HTMLElement {
     constructor() {
         super();
         this.appendChild(SalariesViewTemplate.content.cloneNode(true));
-        console.log("Salaries page should appear");
     }
 
     async connectedCallback() {
@@ -65,24 +64,17 @@ class SalariesView extends HTMLElement {
         }
 
         try {
-            // For EMP, we might need to use a different method if the backend restricted GetAllSalaries
-            // But based on previous instructions, we filter on client side.
-            // However, SalaryHandler.GetAllSalaries checks for HR role.
-            // We need to use GetAllSalariesByUserID for EMP or update GetAllSalaries to allow EMP.
-            // Since the user said "he should be able to see only his salary you can do filter on client page", 
-            // implies we might fetch all and filter, BUT the handler restricts it.
-            // Let's check SalaryHandler.GetAllSalaries again. It restricts to HR.
-            // So for EMP we must use GetAllSalariesByUserID(currentUserId) or similar if available.
-            // SalaryHandler has GetAllSalariesByUserID(userId).
+
 
             let response;
             if (isHR) {
                 response = await salaryHandler.GetAllSalaries();
             } else {
+                console.log("currentUserId :: ", currentUserId);
                 response = await salaryHandler.GetAllSalariesByUserID(currentUserId);
+                console.log("response :: ", response);
             }
 
-            console.log("response :: ", response);
             if (!response.ok) {
                 console.error("Failed to fetch salaries", response);
                 tbody.innerHTML = `<tr><td colspan="8" class="text-center text-red-500 py-8">Failed to load salaries: ${response.data}</td></tr>`;

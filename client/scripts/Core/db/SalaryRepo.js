@@ -44,7 +44,7 @@ class SalaryRepo {
     async GetAllSalariesByUserID(userId) {
         return new Promise((resolve, reject) => {
             const store = this.db.tx("salaries");
-            const request = store.index("userId").getAll(userId);
+            const request = store.index("userID_indx").getAll(userId);
             request.onsuccess = () => {
                 resolve({
                     ok: true,

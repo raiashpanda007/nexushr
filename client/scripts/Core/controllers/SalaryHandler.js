@@ -27,12 +27,7 @@ class SalaryHandler {
         }
     }
     async GetAllSalariesByUserID(userId) {
-        if (!this.user || !this.user.IsAuthenticated) {
-            return {
-                ok: false,
-                data: "Unauthorized"
-            }
-        }
+
         try {
             const data = await this.salaryRepo.GetAllSalariesByUserID(userId);
             return {
