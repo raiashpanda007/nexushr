@@ -24,7 +24,7 @@ class DepartmentHandler {
   }
 
   async EditDepartment(id, name, description) {
-    if (!this.user || this.user.data.user.role !== "HR") return { ok: false, data: "Please login first" }
+    if (!this.user || !this.user.data || !this.user.data.user || this.user.data.user.role !== "HR") return { ok: false, data: "Please login first" }
     try {
       const { ok, data } = await this.deptRepo.EditDepartment(id, name, description);
       return {
@@ -43,7 +43,7 @@ class DepartmentHandler {
 
 
   async DeleteDepartment(id) {
-    if (!this.user || this.user.data.user.role !== "HR") return { ok: false, data: "Please login first" }
+    if (!this.user || !this.user.data || !this.user.data.user || this.user.data.user.role !== "HR") return { ok: false, data: "Please login first" }
     try {
       const { ok, data } = await this.deptRepo.DeleteDepartment(id);
       return {

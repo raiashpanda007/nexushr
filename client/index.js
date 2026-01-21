@@ -13,7 +13,7 @@ document.addEventListener("login", async (e) => {
   const header = document.querySelector("app-header");
   header.dispatchEvent(LoginMessageCustoomEvent());
   console.log("Login response :: ", data);
-  window.location.href = "http://localhost:5000/dashboard/"
+  window.location.href = "/dashboard/"
 })
 
 

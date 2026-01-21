@@ -1,6 +1,8 @@
 import { AddLeaveTypeCustomEvent } from "../../events.js";
 import "../Cards/Modals/AddLeaveTypeForm.js";
 
+import { authState } from "../../Core/startup.js";
+
 const LeavesViewTemplate = document.createElement("template");
 LeavesViewTemplate.innerHTML = `
     <div class="w-full max-w-7xl mx-auto p-6">
@@ -39,6 +41,12 @@ class LeavesView extends HTMLElement {
     }
 
     connectedCallback() {
+        const { ok, data } = authState.GetCurrUserState();
+        if (ok && data && data.user && data.user.role !== "HR") {
+            const btn = this.querySelector("#add-leavetype-btn");
+            if (btn) btn.style.display = "none";
+        }
+
         this.querySelector("#add-leavetype-btn").addEventListener("click", () => {
             this.dispatchEvent(AddLeaveTypeCustomEvent());
         });

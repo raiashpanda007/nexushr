@@ -48,7 +48,7 @@ class Sidebar extends HTMLElement {
         const { ok, data } = authState.GetCurrUserState();
 
         if (!ok || !data) {
-            window.location.href = "../../index.html";
+            window.location.href = "/";
             return;
         }
 
@@ -63,7 +63,7 @@ class Sidebar extends HTMLElement {
         this.renderLinks(nav, role);
 
         this.querySelector("#logout-btn").addEventListener("click", () => {
-            window.location.href = "../../index.html";
+            window.location.href = "/";
         });
 
         this.querySelector("#toggle-btn").addEventListener("click", () => {

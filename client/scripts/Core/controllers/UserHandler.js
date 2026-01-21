@@ -5,7 +5,7 @@ class UserHandler {
   }
 
   async CreateUser(email, firstName, lastName, password, profilePhoto, noteComment, skills, department) {
-    if ((!this.user) || (this.user.data.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create new Employess" };
+    if ((!this.user) || (!this.user.data) || (!this.user.data.user) || (this.user.data.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create new Employess" };
     try {
       const data = await this.repo.Create(
         email, firstName, lastName, password, profilePhoto, noteComment, skills, department
@@ -24,7 +24,7 @@ class UserHandler {
   }
 
   async GetAllUser() {
-    if ((!this.user) || (this.user.data.user.role != "HR")) return { ok: false, data: "Only HR/Admin can see all Employess" };
+    if ((!this.user) || (!this.user.data) || (!this.user.data.user) || (this.user.data.user.role != "HR")) return { ok: false, data: "Only HR/Admin can see all Employess" };
     try {
       const data = await this.repo.GetAllUser();
       return {
@@ -40,7 +40,7 @@ class UserHandler {
     }
   }
   async EditUser(id, email, firstName, lastName, password, profilePhoto, noteComment, skills, department) {
-    if ((!this.user) || (this.user.data.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Edit Employess" };
+    if ((!this.user) || (!this.user.data) || (!this.user.data.user) || (this.user.data.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Edit Employess" };
     try {
       const data = await this.repo.EditUser(id, email, firstName, lastName, password, profilePhoto, noteComment, skills, department);
       return {
@@ -58,7 +58,7 @@ class UserHandler {
   }
 
   async DeleteUser(id) {
-    if ((!this.user) || (this.user.data.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Delete Employess" };
+    if ((!this.user) || (!this.user.data) || (!this.user.data.user) || (this.user.data.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Delete Employess" };
     try {
       const data = await this.repo.DeleteUser(id);
       return {
