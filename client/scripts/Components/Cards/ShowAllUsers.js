@@ -161,6 +161,17 @@ class ShowAllUsers extends HTMLElement {
                 const salaryBtn = createBtn("Add salary", "bg-emerald-600", "hover:bg-emerald-700");
                 const payrollBtn = createBtn("Generate payroll", "bg-purple-600", "hover:bg-purple-700");
                 const deleteBtn = createBtn("Delete", "bg-rose-600", "hover:bg-rose-700");
+                deleteBtn.addEventListener("click", async () => {
+                    if (confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}?`)) {
+                        const res = await userHandler.DeleteUser(user.id);
+                        if (res.ok) {
+                            alert("User deleted successfully");
+                            window.location.reload();
+                        } else {
+                            alert("Failed to delete user: " + res.data);
+                        }
+                    }
+                });
 
                 actionDiv.appendChild(editBtn);
                 actionDiv.appendChild(salaryBtn);

@@ -81,6 +81,50 @@ class DepartmentRepo {
       });
     })
   }
+  EditDepartment(id, name, description) {
+    return new Promise((resolve, reject) => {
+      const deptStore = this.db.tx("departments", "readwrite");
+      const request = deptStore.get(id);
+      request.onsuccess = (event) => {
+        const dept = event.target.result;
+        dept.name = name;
+        dept.description = description;
+        dept.updatedAt = new Date().toISOString();
+        const updateRequest = deptStore.put(dept);
+        updateRequest.onsuccess = () => {
+          resolve({
+            ok: true,
+            data: dept
+          });
+        };
+        updateRequest.onerror = () => reject({
+          ok: false,
+          data: updateRequest.error
+        });
+      };
+      request.onerror = () => reject({
+        ok: false,
+        data: request.error
+      });
+    })
+  }
+  DeleteDepartment(id) {
+    return new Promise((resolve, reject) => {
+      const deptStore = this.db.tx("departments", "readwrite");
+      const request = deptStore.delete(id);
+      request.onsuccess = () => {
+        resolve({
+          ok: true,
+          data: id
+        });
+      };
+      request.onerror = () => reject({
+        ok: false,
+        data: request.error
+      });
+    })
+  }
+
 }
 
 export default DepartmentRepo; 

@@ -21,7 +21,7 @@ class SkillHandler {
     }
   }
   async EditSkill(id, name, category) {
-    if (!this.user || !this.user.user.role != "HR") return { ok: false, data: "You are not authorized to edit skills" }
+    if (!this.user || this.user.data.user.role !== "HR") return { ok: false, data: "You are not authorized to edit skills" }
     try {
       const { ok, data } = await this.skillRepo.EditSkill(id, name, category);
       return {
@@ -37,7 +37,7 @@ class SkillHandler {
     }
   }
   async DeleteSkill(id) {
-    if (!this.user || !this.user.user.role != "HR") return { ok: false, data: "You are not authorized to delete skills" }
+    if (!this.user || this.user.data.user.role !== "HR") return { ok: false, data: "You are not authorized to delete skills" }
     try {
       const { ok, data } = await this.skillRepo.DeleteSkill(id);
       return {

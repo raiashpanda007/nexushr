@@ -219,3 +219,63 @@ export function OpenEditUserModalEvent(user) {
     composed: true
   });
 }
+export function OpenEditDepartmentModalEvent(dept) {
+  return new CustomEvent("open-edit-dept-modal", {
+    detail: { dept },
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditDepartmentCustomEvent(id, name, description) {
+  return new CustomEvent("edit-dept", {
+    detail: { id, name, description },
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditDepartmentSuccessEvent() {
+  return new CustomEvent("edit-dept-success", {
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditDepartmentErrorCustomEvent(err) {
+  return new CustomEvent("edit-dept-err", {
+    detail: { error: err },
+    bubbles: true,
+    composed: true
+  });
+}
+export function OpenEditSkillModalEvent(skill) {
+  return new CustomEvent("open-edit-skill-modal", {
+    detail: { skill },
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditSkillCustomEvent(id, name, category) {
+  return new CustomEvent("edit-skill", {
+    detail: { id, name, category },
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditSkillSuccessEvent() {
+  return new CustomEvent("edit-skill-success", {
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditSkillErrorCustomEvent(err) {
+  return new CustomEvent("edit-skill-err", {
+    detail: { error: err },
+    bubbles: true,
+    composed: true
+  });
+}
