@@ -309,3 +309,65 @@ export function EditLeaveTypeErrorCustomEvent(err) {
     composed: true
   });
 }
+
+export function OpenAddSalaryModalEvent(user) {
+  return new CustomEvent("open-add-salary-modal", {
+    detail: user,
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function CreateSalaryCustomEvent(data) {
+  return new CustomEvent("create-salary", {
+    detail: data,
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function CreateSalarySuccessEvent() {
+  return new CustomEvent("create-salary-success", {
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function CreateSalaryErrorCustomEvent(error) {
+  return new CustomEvent("create-salary-error", {
+    detail: { error },
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function OpenEditSalaryModalEvent(salary) {
+  return new CustomEvent("open-edit-salary-modal", {
+    detail: salary,
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditSalaryCustomEvent(data) {
+  return new CustomEvent("edit-salary", {
+    detail: data,
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditSalarySuccessEvent() {
+  return new CustomEvent("edit-salary-success", {
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function EditSalaryErrorCustomEvent(error) {
+  return new CustomEvent("edit-salary-error", {
+    detail: { error },
+    bubbles: true,
+    composed: true
+  });
+}

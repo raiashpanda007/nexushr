@@ -11,6 +11,8 @@ import UserHandler from "./controllers/UserHandler.js";
 import LeaveTypeHandler from "./controllers/LeaveTypeHandler.js";
 import AttendanceRepo from "./db/AttendanceRepo.js";
 import AttendanceHandler from "./controllers/AttendanceHandler.js";
+import SalaryRepo from "./db/SalaryRepo.js";
+import SalaryHandler from "./controllers/SalaryHandler.js";
 
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
@@ -52,6 +54,10 @@ export const dbManager = new IndexedDBManager(
       const leave_types = db.createObjectStore("leave_types", { keyPath: "id" });
       leave_types.createIndex("code_indx", "code", { unique: false });
     }
+    if (!db.objectStoreNames.contains("salaries")) {
+      const salaries = db.createObjectStore("salaries", { keyPath: "id" });
+      salaries.createIndex("userID_indx", "userId", { unique: false });
+    }
     if (!db.objectStoreNames.contains("attendance")) {
       const attendance = db.createObjectStore("attendance", { keyPath: "id" });
       attendance.createIndex("userID_indx", "userId", { unique: false });
@@ -77,6 +83,6 @@ export const attendanceRepo = new AttendanceRepo(dbManager);
 export const attendanceHandler = new AttendanceHandler(attendanceRepo, authState);
 export const userHandler = new UserHandler(userRepo, authState.GetCurrUserState());
 export const leaveTypeHandler = new LeaveTypeHandler(leaveTypeRepo, authState.GetCurrUserState());
-
-
+export const salaryRepo = new SalaryRepo(dbManager);
+export const salaryHandler = new SalaryHandler(salaryRepo, authState.GetCurrUserState());
 export const permissions = new UserPermissions(authState.GetCurrUserState().data, userRepo, deptRepo, skillRepo, leaveTypeRepo);

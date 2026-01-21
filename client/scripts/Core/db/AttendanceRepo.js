@@ -56,9 +56,8 @@ class AttendanceRepo {
     GetAttendanceByUser(userId) {
         return new Promise((resolve, reject) => {
             const attendanceStore = this.db.tx("attendance").index("userID_indx");
-            console.log("Attendance store :: ", attendanceStore);
             const request = attendanceStore.getAll(userId);
-            console.log("Request :: ", request);
+
             request.onsuccess = () => {
                 resolve({
                     ok: true,

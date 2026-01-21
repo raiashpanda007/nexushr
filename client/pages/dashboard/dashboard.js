@@ -5,20 +5,24 @@ import "../../scripts/Components/Views/DepartmentsView.js";
 import "../../scripts/Components/Views/SkillsView.js";
 import "../../scripts/Components/Views/LeavesView.js";
 import "../../scripts/Components/Views/AttendanceView.js";
+import "../../scripts/Components/Views/SalariesView.js";
 import "../../scripts/Components/Cards/Modals/EditDepartmentModal.js";
 import "../../scripts/Components/Cards/Modals/EditSkillModal.js";
 import "../../scripts/Components/Cards/Modals/EditLeaveTypeModal.js";
+import "../../scripts/Components/Cards/Modals/AddSalaryModal.js";
+import "../../scripts/Components/Cards/Modals/EditSalaryModal.js";
 
-import { permissions, userHandler, deptHandler, skillHandler, leaveTypeHandler } from "../../scripts/Core/startup.js";
-import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent, CreateUserErrorCustomEvent, CreateUserSuccessEvent, EditUserErrorCustomEvent, EditUserSuccessEvent, EditDepartmentErrorCustomEvent, EditDepartmentSuccessEvent, EditSkillErrorCustomEvent, EditSkillSuccessEvent, EditLeaveTypeErrorCustomEvent, EditLeaveTypeSuccessEvent } from "../../scripts/events.js"
+import { permissions, userHandler, deptHandler, skillHandler, leaveTypeHandler, salaryHandler } from "../../scripts/Core/startup.js";
+import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent, CreateUserErrorCustomEvent, CreateUserSuccessEvent, EditUserErrorCustomEvent, EditUserSuccessEvent, EditDepartmentErrorCustomEvent, EditDepartmentSuccessEvent, EditSkillErrorCustomEvent, EditSkillSuccessEvent, EditLeaveTypeErrorCustomEvent, EditLeaveTypeSuccessEvent, CreateSalaryErrorCustomEvent, CreateSalarySuccessEvent, EditSalaryErrorCustomEvent, EditSalarySuccessEvent } from "../../scripts/events.js"
 
-// Navigation Logic
+
 const views = {
   "nav-employees": "app-employees-view",
   "nav-departments": "app-departments-view",
   "nav-skills": "app-skills-view",
   "nav-leaves": "app-leaves-view",
-  "nav-attendance": "app-attendance-view"
+  "nav-attendance": "app-attendance-view",
+  "nav-salaries": "app-salaries-view"
 };
 
 Object.keys(views).forEach(event => {
@@ -110,6 +114,24 @@ document.addEventListener("edit-leave-type", async (event) => {
   console.log({ ok, data });
   const EditLeaveTypeForm = document.querySelector("app-edit-leave-type-modal");
   !ok ? EditLeaveTypeForm.dispatchEvent(EditLeaveTypeErrorCustomEvent(data)) : EditLeaveTypeForm.dispatchEvent(EditLeaveTypeSuccessEvent());
+})
+
+document.addEventListener("create-salary", async (event) => {
+  console.log("create-salary triggered:: ", event);
+  const { userId, base, hra, lta, userFirstName, userLastName, userDepartment } = event.detail;
+  const { ok, data } = await salaryHandler.CreateSalary(userId, base, hra, lta, userFirstName, userLastName, userDepartment);
+  console.log({ ok, data });
+  const AddSalaryForm = document.querySelector("app-add-salary-modal");
+  !ok ? AddSalaryForm.dispatchEvent(CreateSalaryErrorCustomEvent(data)) : AddSalaryForm.dispatchEvent(CreateSalarySuccessEvent());
+})
+
+document.addEventListener("edit-salary", async (event) => {
+  console.log("edit-salary triggered:: ", event);
+  const { id, base, hra, lta } = event.detail;
+  const { ok, data } = await salaryHandler.EditSalary(id, base, hra, lta);
+  console.log({ ok, data });
+  const EditSalaryForm = document.querySelector("app-edit-salary-modal");
+  !ok ? EditSalaryForm.dispatchEvent(EditSalaryErrorCustomEvent(data)) : EditSalaryForm.dispatchEvent(EditSalarySuccessEvent());
 })
 
 

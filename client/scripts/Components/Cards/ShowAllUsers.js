@@ -1,5 +1,6 @@
 import { userHandler } from "../../Core/startup.js";
-import { OpenEditUserModalEvent } from "../../events.js";
+import { OpenEditUserModalEvent, OpenAddSalaryModalEvent } from "../../events.js";
+import "./Modals/AddSalaryModal.js";
 
 const ShowAllUsersTemplate = document.createElement("template");
 ShowAllUsersTemplate.innerHTML = `
@@ -29,6 +30,7 @@ ShowAllUsersTemplate.innerHTML = `
             </table>
         </div>
     </div>
+    <app-add-salary-modal></app-add-salary-modal>
 </div>`;
 
 class ShowAllUsers extends HTMLElement {
@@ -159,6 +161,9 @@ class ShowAllUsers extends HTMLElement {
                     this.dispatchEvent(OpenEditUserModalEvent(user));
                 });
                 const salaryBtn = createBtn("Add salary", "bg-emerald-600", "hover:bg-emerald-700");
+                salaryBtn.addEventListener("click", () => {
+                    this.dispatchEvent(OpenAddSalaryModalEvent(user));
+                });
                 const payrollBtn = createBtn("Generate payroll", "bg-purple-600", "hover:bg-purple-700");
                 const deleteBtn = createBtn("Delete", "bg-rose-600", "hover:bg-rose-700");
                 deleteBtn.addEventListener("click", async () => {
