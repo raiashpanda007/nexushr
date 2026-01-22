@@ -10,6 +10,12 @@ class PayrollController {
                 data: "Only HR can create payrolls"
             }
         }
+        if (total < 0) {
+            return {
+                ok: false,
+                data: "Total salary cannot be negative"
+            }
+        }
         try {
             const { ok, data } = await this.payrollRepo.CreatePayroll(userId, userFirstName, userLastName, month, year, salary, bonuses, deductions, total);
             return {
