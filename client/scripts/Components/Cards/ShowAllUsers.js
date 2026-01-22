@@ -3,74 +3,9 @@ import { OpenEditUserModalEvent, OpenAddSalaryModalEvent, OpenGeneratePayrollMod
 import "./Modals/AddSalaryModal.js";
 import "./Modals/GeneratePayrollModal.js";
 
-const ShowAllUsersTemplate = document.createElement("template");
-ShowAllUsersTemplate.innerHTML = `
-<div class="w-full max-w-7xl mx-auto mt-8 mb-8">
-    <div class="bg-white rounded-2xl overflow-hidden border border-slate-200">
-        <div class="px-6 py-5 border-b border-slate-100 bg-white flex justify-between items-center">
-            <h5 class="text-xl font-bold text-slate-800">All Employees</h5>
-            <div class="text-sm text-slate-500">Manage your team members</div>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-100">
-                <thead class="bg-slate-50/50">
-                    <tr>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Profile Photo</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email ID</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Department</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">All Skills</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Note</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Online</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-slate-100" id="users-table-body">
-                    <!-- Rows will be populated here -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <app-add-salary-modal></app-add-salary-modal>
-    <app-generate-payroll-modal></app-generate-payroll-modal>
-</div>`;
 
-class ShowAllUsers extends HTMLElement {
-    constructor() {
-        super();
-    }
-
-    async connectedCallback() {
-        this.innerHTML = '';
-        this.appendChild(ShowAllUsersTemplate.content.cloneNode(true));
-
-        const tbody = this.querySelector("#users-table-body");
-
-        try {
-            const response = await userHandler.GetAllUser();
-
-            let users = [];
-            // Handle nested response structure from UserHandler -> UserRepo
-            if (response.ok) {
-                if (response.data && response.data.ok && Array.isArray(response.data.data)) {
-                    users = response.data.data;
-                } else if (response.data && Array.isArray(response.data.data)) {
-                    users = response.data.data;
-                } else if (Array.isArray(response.data)) {
-                    users = response.data;
-                }
-            } else {
-                console.error("Failed to fetch users", response);
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-red-500 py-8">Failed to load users: ${response.data}</td></tr>`;
-                return;
-            }
-
-            if (users.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-slate-500 py-8">No users found</td></tr>`;
-                return;
-            }
-
-            users.forEach(user => {
+function RenderUsers(users, tbody) {
+    users.forEach(user => {
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-slate-50/80 transition-colors duration-150 group";
 
@@ -192,6 +127,91 @@ class ShowAllUsers extends HTMLElement {
                 tr.appendChild(actionsTd);
                 tbody.appendChild(tr);
             });
+}
+
+const ShowAllUsersTemplate = document.createElement("template");
+ShowAllUsersTemplate.innerHTML = `
+<div class="w-full max-w-7xl mx-auto mt-8 mb-8">
+    <div class="bg-white rounded-2xl overflow-hidden border border-slate-200">
+        <div class="px-6 py-5 border-b border-slate-100 bg-white flex justify-between items-center">
+            <h5 class="text-xl font-bold text-slate-800">All Employees</h5>
+            <div class="text-sm text-slate-500">Manage your team members</div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100">
+                <thead class="bg-slate-50/50">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Profile Photo</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email ID</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Department</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">All Skills</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Note</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Online</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-100" id="users-table-body">
+                    <!-- Rows will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <app-add-salary-modal></app-add-salary-modal>
+    <app-generate-payroll-modal></app-generate-payroll-modal>
+</div>`;
+
+class ShowAllUsers extends HTMLElement {
+    constructor() {
+        super();
+    }
+
+    async connectedCallback() {
+        this.innerHTML = '';
+        this.appendChild(ShowAllUsersTemplate.content.cloneNode(true));
+
+        const tbody = this.querySelector("#users-table-body");
+
+        try {
+            const response = await userHandler.GetAllUser();
+
+            let users = [];
+            // Handle nested response structure from UserHandler -> UserRepo
+            if (response.ok) {
+                if (response.data && response.data.ok && Array.isArray(response.data.data)) {
+                    users = response.data.data;
+                } else if (response.data && Array.isArray(response.data.data)) {
+                    users = response.data.data;
+                } else if (Array.isArray(response.data)) {
+                    users = response.data;
+                }
+            } else {
+                console.error("Failed to fetch users", response);
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-red-500 py-8">Failed to load users: ${response.data}</td></tr>`;
+                return;
+            }
+
+            if (users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-slate-500 py-8">No users found</td></tr>`;
+                return;
+            }
+            this.addEventListener("refresh-users", async (event) => {
+                console.log("refresh-users event received:", event);
+                users.push({
+                    email: event.detail.email,
+                    firstName: event.detail.firstName,
+                    lastName: event.detail.lastName,
+                    department: event.detail.department,
+                    skills: event.detail.skills,
+                    profilePhoto: event.detail.profilePhoto,
+                    note: event.detail.note,
+                });
+                tbody.innerHTML = '';
+                RenderUsers(users, tbody);
+            });
+            RenderUsers.call(this, users, tbody);
+
+            
 
         } catch (error) {
             console.error("Error fetching users:", error);
