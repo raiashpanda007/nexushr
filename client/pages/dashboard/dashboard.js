@@ -14,8 +14,9 @@ import "../../scripts/Components/Cards/Modals/AddSalaryModal.js";
 import "../../scripts/Components/Cards/Modals/EditSalaryModal.js";
 import "../../scripts/Components/Cards/Modals/GeneratePayrollModal.js";
 
-import { permissions, userHandler, deptHandler, skillHandler, leaveTypeHandler, salaryHandler, payrollHandler } from "../../scripts/Core/startup.js";
+import { permissions, userHandler, deptHandler, skillHandler, leaveTypeHandler, salaryHandler, payrollHandler,authState } from "../../scripts/Core/startup.js";
 import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent, CreateUserErrorCustomEvent, CreateUserSuccessEvent, EditUserErrorCustomEvent, EditUserSuccessEvent, EditDepartmentErrorCustomEvent, EditDepartmentSuccessEvent, EditSkillErrorCustomEvent, EditSkillSuccessEvent, EditLeaveTypeErrorCustomEvent, EditLeaveTypeSuccessEvent, CreateSalaryErrorCustomEvent, CreateSalarySuccessEvent, EditSalaryErrorCustomEvent, EditSalarySuccessEvent, CreatePayrollErrorCustomEvent, CreatePayrollSuccessEvent } from "../../scripts/events.js"
+
 
 
 const views = {
@@ -47,7 +48,6 @@ document.addEventListener("sidebar-toggle", (e) => {
   }
 });
 
-const AppHeader = document.querySelector('app-header');
 
 
 document.addEventListener("create-dept", async (event) => {
@@ -146,6 +146,10 @@ document.addEventListener("create-payroll", async (event) => {
   const GeneratePayrollForm = document.querySelector("app-generate-payroll-modal");
   !ok ? GeneratePayrollForm.dispatchEvent(CreatePayrollErrorCustomEvent(data)) : GeneratePayrollForm.dispatchEvent(CreatePayrollSuccessEvent());
 })
+
+
+
+
 
 
 

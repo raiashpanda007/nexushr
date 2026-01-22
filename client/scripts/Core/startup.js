@@ -17,6 +17,7 @@ import PayrollRepo from "./db/PayrollRepo.js";
 import PayrollController from "./controllers/PayrollController.js";
 import LeaveApplicationRepo from "./db/LeaveApplicationRepo.js";
 import LeaveApplicationHandler from "./controllers/LeaveApplicationHandler.js";
+import SocketHandler from "../../scripts/Core/SocketHandler.js";
 
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
@@ -88,6 +89,7 @@ await dbManager.init();
 
 
 
+
 export const userRepo = new UserRepo(dbManager);
 export const deptRepo = new DepartmentRepo(dbManager);
 export const skillRepo = new SkillRepo(dbManager);
@@ -106,3 +108,10 @@ export const payrollHandler = new PayrollController(payrollRepo, authState.GetCu
 export const leaveApplicationRepo = new LeaveApplicationRepo(dbManager);
 export const leaveApplicationHandler = new LeaveApplicationHandler(dbManager, leaveApplicationRepo, authState.GetCurrUserState());
 export const permissions = new UserPermissions(authState.GetCurrUserState().data, userRepo, deptRepo, skillRepo, leaveTypeRepo);
+
+
+
+
+const useSocket = new SocketHandler(authState);
+useSocket.connect();
+export const socketHandler = useSocket;

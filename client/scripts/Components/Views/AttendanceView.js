@@ -1,4 +1,5 @@
-import { attendanceHandler } from "../../Core/startup.js";
+import { attendanceHandler, socketHandler } from "../../Core/startup.js";
+
 
 const AttendanceViewTemplate = document.createElement("template");
 AttendanceViewTemplate.innerHTML = `
@@ -67,10 +68,12 @@ class AttendanceView extends HTMLElement {
 
         this.querySelector("#check-in-btn").addEventListener("click", async () => {
             await this.markAttendance("ENTRY");
+            socketHandler.CheckIn();
         });
 
         this.querySelector("#check-out-btn").addEventListener("click", async () => {
             await this.markAttendance("EXIT");
+            socketHandler.CheckOut()
         });
 
         dateInput.addEventListener("change", () => {

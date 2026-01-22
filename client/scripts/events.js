@@ -416,3 +416,19 @@ export function SPS(state) {
     composed: true
   })
 }
+
+
+
+export function WSConnectedEvent() {
+  return new CustomEvent("ws-connected", {
+    bubbles: true,
+    composed: true
+  })
+}
+
+export function WSDisconnectedEvent() {
+  return new CustomEvent("ws-disconnected", {
+    bubbles: true,
+    composed: true
+  })
+}
