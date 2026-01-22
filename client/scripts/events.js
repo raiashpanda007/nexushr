@@ -402,3 +402,10 @@ export function CreatePayrollErrorCustomEvent(error) {
     composed: true
   });
 }
+export function SPS(state) {
+  return new CustomEvent("sps", {
+    detail: { state },
+    bubbles: true,
+    composed: true
+  })
+}

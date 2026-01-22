@@ -121,15 +121,28 @@ class EditLeaveType extends HTMLElement {
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-    backdrop.addEventListener("click", closeModal);
+
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+      const code = form.leaveCode.value.trim();
+      const name = form.leaveName.value.trim();
+      const length = form.leaveLength.value;
+
+      if (!code || !name) {
+        errLeaveType.classList.remove("hidden");
+        errLeaveType.textContent = "Please fill in all fields with valid values.";
+        return;
+      }
+
       this.dispatchEvent(EditLeaveTypeCustomEvent(
         form.leaveTypeId.value,
-        form.leaveCode.value,
-        form.leaveName.value,
-        form.leaveLength.value
+        code,
+        name,
+        length
       ));
     });
 

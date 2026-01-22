@@ -123,6 +123,53 @@ class AddUserForm extends HTMLElement {
     let selectedSkills = new Set();
     let allSkills = [];
 
+    // Session storage key
+    const STORAGE_KEY = "addUserForm";
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          if (data.firstName) this.querySelector("#firstName").value = data.firstName;
+          if (data.lastName) this.querySelector("#lastName").value = data.lastName;
+          if (data.email) this.querySelector("#email").value = data.email;
+          if (data.password) this.querySelector("#password").value = data.password;
+          if (data.note) this.querySelector("#note").value = data.note;
+          if (data.deptId) deptSelect.value = data.deptId;
+          if (data.selectedSkills) {
+            selectedSkills = new Set(data.selectedSkills);
+          }
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      const data = {
+        firstName: this.querySelector("#firstName").value,
+        lastName: this.querySelector("#lastName").value,
+        email: this.querySelector("#email").value,
+        password: this.querySelector("#password").value,
+        note: this.querySelector("#note").value,
+        deptId: deptSelect.value,
+        selectedSkills: Array.from(selectedSkills)
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    userCreationForm.addEventListener('input', saveFormData);
+    userCreationForm.addEventListener('change', saveFormData);
+
     const loadDepartments = async () => {
       const res = await deptHandler.GetAllDepartments();
       console.log("departments fetched :: ", res);
@@ -134,7 +181,13 @@ class AddUserForm extends HTMLElement {
           option.value = dept.id;
           option.textContent = dept.name;
           deptSelect.appendChild(option);
-        })
+        });
+        // Restore saved department selection
+        const savedData = sessionStorage.getItem(STORAGE_KEY);
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          if (data.deptId) deptSelect.value = data.deptId;
+        }
       } else {
         console.error("Failed to fetch departments:", res.data);
       }
@@ -198,6 +251,7 @@ class AddUserForm extends HTMLElement {
     const openModal = () => {
       loadDepartments();
       loadSkills();
+      restoreFormData(); // Restore saved form data
       modal.classList.remove("hidden");
       errUser.classList.add("hidden");
       requestAnimationFrame(() => {
@@ -227,17 +281,27 @@ class AddUserForm extends HTMLElement {
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-    backdrop.addEventListener("click", closeModal);
+
+    // Backdrop click
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
     userCreationForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const formData = new FormData(userCreationForm);
-      const firstName = formData.get("firstName");
-      const lastName = formData.get("lastName");
-      const email = formData.get("email");
-      const password = formData.get("password");
+      const firstName = formData.get("firstName").trim();
+      const lastName = formData.get("lastName").trim();
+      const email = formData.get("email").trim();
+      const password = formData.get("password").trim();
       const deptId = formData.get("dept");
-      const note = formData.get("note");
+      const note = formData.get("note").trim();
+
+      if (!firstName || !lastName || !email || !password || !deptId) {
+        errUser.classList.remove("hidden");
+        errUser.textContent = "Please fill in all required fields with valid values.";
+        return;
+      }
 
       const department = allDepartments.find(d => d.id === deptId);
       const skills = allSkills.filter(s => selectedSkills.has(s.id));
@@ -251,6 +315,7 @@ class AddUserForm extends HTMLElement {
     });
 
     this.addEventListener("create-user-success", () => {
+      clearFormData(); // Clear session storage on success
       closeModal();
     });
   }

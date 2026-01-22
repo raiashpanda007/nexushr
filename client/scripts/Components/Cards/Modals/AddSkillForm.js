@@ -77,12 +77,43 @@ class AddSkill extends HTMLElement {
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const skillCreationForm = this.querySelector('form');
 
-    skillCreationForm.skillName.value = sessionStorage.getItem("skillName");
-    skillCreationForm.skillCategory.value = sessionStorage.getItem("skillCategory");
+    // Session storage key
+    const STORAGE_KEY = "addSkillForm";
 
-    const errSkill = this.querySelector("#errorSkillForm");
+    // Save form data to session storage
+    const saveFormData = () => {
+      const data = {
+        skillName: skillCreationForm.skillName.value,
+        skillCategory: skillCreationForm.skillCategory.value
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          if (data.skillName) skillCreationForm.skillName.value = data.skillName;
+          if (data.skillCategory) skillCreationForm.skillCategory.value = data.skillCategory;
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    skillCreationForm.addEventListener('input', saveFormData);
+    skillCreationForm.addEventListener('change', saveFormData);
 
     const openModal = () => {
+      restoreFormData();
       modal.classList.remove("hidden");
       errSkill.classList.add("hidden");
       requestAnimationFrame(() => {
@@ -109,16 +140,23 @@ class AddSkill extends HTMLElement {
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
 
-    skillCreationForm.addEventListener('change', (e) => {
-      e.target.name === "skillName" ? sessionStorage.setItem("skillName", e.target.value) : sessionStorage.setItem("skillCategory", e.target.value);
-    })
-
-    backdrop.addEventListener("click", closeModal);
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
     skillCreationForm.addEventListener("submit", (e) => {
       e.preventDefault();
       console.log("Submit event triggered :: ", e);
-      this.dispatchEvent(CreateSkillCustomEvent(e.target[1].value, e.target[2].value));
+      const name = e.target[1].value.trim();
+      const category = e.target[2].value.trim();
+
+      if (!name || !category) {
+        errSkill.classList.remove("hidden");
+        errSkill.textContent = "Please fill in all fields with valid values.";
+        return;
+      }
+
+      this.dispatchEvent(CreateSkillCustomEvent(name, category));
     })
 
     this.addEventListener("create-skill-err", (event) => {
@@ -127,6 +165,7 @@ class AddSkill extends HTMLElement {
       errSkill.textContent = event.detail.error;
     })
     this.addEventListener("create-skill-success", () => {
+      clearFormData();
       closeModal();
     })
   }

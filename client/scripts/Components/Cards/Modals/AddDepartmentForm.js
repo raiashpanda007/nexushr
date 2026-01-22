@@ -82,13 +82,43 @@ class AddDepartment extends HTMLElement {
 
 
 
-    deptCreationForm.deptName.value = sessionStorage.getItem("deptName");
-    deptCreationForm.deptDesc.value = sessionStorage.getItem("deptDesc");
+    // Session storage key
+    const STORAGE_KEY = "addDepartmentForm";
 
+    // Save form data to session storage
+    const saveFormData = () => {
+      const data = {
+        deptName: deptCreationForm.deptName.value,
+        deptDesc: deptCreationForm.deptDesc.value
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
 
-    const errDept = this.querySelector("#errorDeptForm");
-    ;
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          if (data.deptName) deptCreationForm.deptName.value = data.deptName;
+          if (data.deptDesc) deptCreationForm.deptDesc.value = data.deptDesc;
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    deptCreationForm.addEventListener('input', saveFormData);
+    deptCreationForm.addEventListener('change', saveFormData);
+
     const openModal = () => {
+      restoreFormData();
       modal.classList.remove("hidden");
       errDept.classList.add("hidden")
       requestAnimationFrame(() => {
@@ -105,6 +135,7 @@ class AddDepartment extends HTMLElement {
 
       setTimeout(() => {
         modal.classList.add("hidden");
+        // We only clear on success, not on close/cancel
       }, 300);
     };
 
@@ -114,17 +145,26 @@ class AddDepartment extends HTMLElement {
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-    deptCreationForm.addEventListener('change', (e) => {
-      e.target.name === "deptName" ? sessionStorage.setItem("deptName", e.target.value) : sessionStorage.setItem("deptDescription", e.target.value);
-    })
+    // Removed old individual change listener
 
-    backdrop.addEventListener("click", closeModal);
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
 
     deptCreationForm.addEventListener("submit", (e) => {
       e.preventDefault();
       console.log("Submit event triggered :: ", e);
-      this.dispatchEvent(CreateDepartmentCustomEvent(e.target[1].value, e.target[2].value));
+      const name = e.target[1].value.trim();
+      const desc = e.target[2].value.trim();
+
+      if (!name || !desc) {
+        errDept.classList.remove("hidden");
+        errDept.textContent = "Please fill in all fields with valid values.";
+        return;
+      }
+
+      this.dispatchEvent(CreateDepartmentCustomEvent(name, desc));
     })
 
 
@@ -134,6 +174,7 @@ class AddDepartment extends HTMLElement {
       errDept.textContent = event.detail.error;
     })
     this.addEventListener("create-dept-success", () => {
+      clearFormData();
       closeModal();
     })
 

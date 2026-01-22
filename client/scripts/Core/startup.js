@@ -15,7 +15,7 @@ import SalaryRepo from "./db/SalaryRepo.js";
 import SalaryHandler from "./controllers/SalaryHandler.js";
 import PayrollRepo from "./db/PayrollRepo.js";
 import PayrollController from "./controllers/PayrollController.js";
-
+import { HealthChecker } from "../utils.js";
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
   1,
@@ -79,6 +79,17 @@ export const dbManager = new IndexedDBManager(
 await dbManager.init();
 
 
+async function pollHealth() {
+  try {
+    await HealthChecker();
+  } catch (err) {
+    console.error("Health check failed", err);
+  } finally {
+    setTimeout(pollHealth, 5000);
+  }
+}
+
+pollHealth();
 
 export const userRepo = new UserRepo(dbManager);
 export const deptRepo = new DepartmentRepo(dbManager);

@@ -1,3 +1,5 @@
+import { SPS } from "./events";
+
 async function* cursorGenrator(db, indexName = null, range = null) {
   const source = lastKey ? db.index(indexName) : db;
   let request = source.openCursor(range, "next");
@@ -51,5 +53,19 @@ export async function CreatePayrollPDF(payrollID, userFirstName, userLastName, m
       total: total
     });
   })();
+
+}
+
+
+export async function HealthChecker() {
+  try {
+    const response = await fetch("http://localhost:3000/healthz");
+    if (response.ok) {
+
+    }
+  } catch (error) {
+    console.log(error);
+  }
+
 
 }

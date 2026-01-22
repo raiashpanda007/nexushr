@@ -47,6 +47,7 @@ document.addEventListener("sidebar-toggle", (e) => {
   }
 });
 
+const AppHeader = document.querySelector('app-header');
 
 
 document.addEventListener("create-dept", async (event) => {

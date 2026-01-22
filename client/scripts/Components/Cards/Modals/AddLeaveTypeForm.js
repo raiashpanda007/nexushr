@@ -124,12 +124,24 @@ class AddLeaveType extends HTMLElement {
       else if (e.target.name === "leaveLength") sessionStorage.setItem("leaveLength", e.target.value);
     });
 
-    backdrop.addEventListener("click", closeModal);
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
     leaveTypeForm.addEventListener("submit", (e) => {
       e.preventDefault();
       console.log("Submit event triggered :: ", e);
-      this.dispatchEvent(CreateLeaveTypeCustomEvent(e.target[1].value, e.target[2].value, e.target[3].value));
+      const name = e.target[1].value.trim();
+      const code = e.target[2].value.trim();
+      const length = e.target[3].value;
+
+      if (!name || !code) {
+        errLeaveType.classList.remove("hidden");
+        errLeaveType.textContent = "Please fill in all fields with valid values.";
+        return;
+      }
+
+      this.dispatchEvent(CreateLeaveTypeCustomEvent(name, code, length));
     })
 
     this.addEventListener("create-leave-type-err", (event) => {
@@ -138,6 +150,9 @@ class AddLeaveType extends HTMLElement {
       errLeaveType.textContent = event.detail.error;
     })
     this.addEventListener("create-leave-type-success", () => {
+      sessionStorage.removeItem("leaveTypeName");
+      sessionStorage.removeItem("leaveTypeCode");
+      sessionStorage.removeItem("leaveLength");
       closeModal();
     })
   }

@@ -106,6 +106,12 @@ class EditSalaryModal extends HTMLElement {
 
     cancelBtn.addEventListener("click", closeModal);
 
+    // Backdrop click
+    const backdrop = this.querySelector(".fixed.inset-0.bg-slate-900\\/50");
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
+
     // Submit form
     submitBtn.addEventListener("click", () => {
       if (!form.checkValidity()) {

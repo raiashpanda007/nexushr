@@ -109,14 +109,26 @@ class EditSkill extends HTMLElement {
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-    backdrop.addEventListener("click", closeModal);
+
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+      const name = form.skillName.value.trim();
+      const category = form.skillCategory.value.trim();
+
+      if (!name || !category) {
+        errSkill.classList.remove("hidden");
+        errSkill.textContent = "Please fill in all fields with valid values.";
+        return;
+      }
+
       this.dispatchEvent(EditSkillCustomEvent(
         form.skillId.value,
-        form.skillName.value,
-        form.skillCategory.value
+        name,
+        category
       ));
     });
 

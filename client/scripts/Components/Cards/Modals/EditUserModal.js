@@ -124,6 +124,58 @@ class EditUserModal extends HTMLElement {
 
     let allDepartments = [];
 
+    // Session storage key
+    const STORAGE_KEY = "editUserForm";
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      if (!this.currentUser) return;
+      const data = {
+        userId: this.currentUser.id,
+        firstName: this.querySelector("#firstName").value,
+        lastName: this.querySelector("#lastName").value,
+        email: this.querySelector("#email").value,
+        password: this.querySelector("#password").value,
+        note: this.querySelector("#note").value,
+        deptId: deptSelect.value,
+        selectedSkills: Array.from(selectedSkills)
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData && this.currentUser) {
+        try {
+          const data = JSON.parse(savedData);
+          // Only restore if it's for the same user
+          if (data.userId === this.currentUser.id) {
+            if (data.firstName) this.querySelector("#firstName").value = data.firstName;
+            if (data.lastName) this.querySelector("#lastName").value = data.lastName;
+            if (data.email) this.querySelector("#email").value = data.email;
+            if (data.password) this.querySelector("#password").value = data.password;
+            if (data.note) this.querySelector("#note").value = data.note;
+            if (data.deptId) deptSelect.value = data.deptId;
+            if (data.selectedSkills) {
+              selectedSkills = new Set(data.selectedSkills);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    userEditForm.addEventListener('input', saveFormData);
+    userEditForm.addEventListener('change', saveFormData);
+
     const loadDepartments = async (selectedDeptId) => {
       const res = await deptHandler.GetAllDepartments();
       console.log("departments fetched :: ", res.data);
@@ -226,6 +278,9 @@ class EditUserModal extends HTMLElement {
       loadDepartments(deptId);
       loadSkills(user.skills);
 
+      // Restore form data after initial load
+      setTimeout(() => restoreFormData(), 100);
+
       modal.classList.remove("hidden");
       errUser.classList.add("hidden");
       requestAnimationFrame(() => {
@@ -245,6 +300,7 @@ class EditUserModal extends HTMLElement {
         userEditForm.reset();
         this.currentUser = null;
         selectedSkills.clear();
+        // Don't clear session storage on cancel - only on success
       }, 300);
     };
 
@@ -257,19 +313,28 @@ class EditUserModal extends HTMLElement {
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-    backdrop.addEventListener("click", closeModal);
+
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
     userEditForm.addEventListener("submit", (e) => {
       e.preventDefault();
       if (!this.currentUser) return;
       console.log("Form submitted in EditUserModal", e);
       const formData = new FormData(userEditForm);
-      const firstName = formData.get("firstName");
-      const lastName = formData.get("lastName");
-      const email = formData.get("email");
-      let password = formData.get("password");
+      const firstName = formData.get("firstName").trim();
+      const lastName = formData.get("lastName").trim();
+      const email = formData.get("email").trim();
+      let password = formData.get("password").trim();
       const deptId = formData.get("dept");
-      const note = formData.get("note");
+      const note = formData.get("note").trim();
+
+      if (!firstName || !lastName || !email || !deptId) {
+        errUser.classList.remove("hidden");
+        errUser.textContent = "Please fill in all required fields with valid values.";
+        return;
+      }
 
       if (!password) {
         password = this.currentUser.password;
@@ -300,6 +365,7 @@ class EditUserModal extends HTMLElement {
     });
 
     this.addEventListener("edit-user-success", () => {
+      clearFormData(); // Clear session storage on success
       closeModal();
     });
   }

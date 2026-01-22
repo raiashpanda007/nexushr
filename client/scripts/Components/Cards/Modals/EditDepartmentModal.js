@@ -109,14 +109,26 @@ class EditDepartment extends HTMLElement {
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-    backdrop.addEventListener("click", closeModal);
+
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+      const name = form.deptName.value.trim();
+      const desc = form.deptDesc.value.trim();
+
+      if (!name || !desc) {
+        errDept.classList.remove("hidden");
+        errDept.textContent = "Please fill in all fields with valid values.";
+        return;
+      }
+
       this.dispatchEvent(EditDepartmentCustomEvent(
         form.deptId.value,
-        form.deptName.value,
-        form.deptDesc.value
+        name,
+        desc
       ));
     });
 

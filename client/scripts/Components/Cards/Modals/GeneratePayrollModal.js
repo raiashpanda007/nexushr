@@ -144,6 +144,59 @@ class GeneratePayrollModal extends HTMLElement {
       yearSelect.appendChild(option);
     }
 
+    // Session storage key
+    const STORAGE_KEY = "generatePayrollForm";
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      if (!this.user) return;
+      const formData = new FormData(form);
+      const data = {
+        userId: this.user.id,
+        month: formData.get("month"),
+        year: formData.get("year"),
+        selectedSalaryIndex: salarySelect.value,
+        bonuses: this.bonuses,
+        deductions: this.deductions
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData && this.user) {
+        try {
+          const data = JSON.parse(savedData);
+          // Only restore if it's for the same user
+          if (data.userId === this.user.id) {
+            if (data.month) this.querySelector("#month").value = data.month;
+            if (data.year) yearSelect.value = data.year;
+            if (data.selectedSalaryIndex && this.salaries.length > 0) {
+              salarySelect.value = data.selectedSalaryIndex;
+              this.selectedSalary = this.salaries[data.selectedSalaryIndex];
+            }
+            if (data.bonuses) this.bonuses = data.bonuses;
+            if (data.deductions) this.deductions = data.deductions;
+            this.renderBonuses();
+            this.renderDeductions();
+            this.calculateFinalPay();
+          }
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    form.addEventListener('input', saveFormData);
+    form.addEventListener('change', saveFormData);
+
     // Listen for open event
     document.addEventListener("open-generate-payroll-modal", async (e) => {
       this.user = e.detail;
@@ -180,6 +233,9 @@ class GeneratePayrollModal extends HTMLElement {
         salarySelect.value = 0;
         this.selectedSalary = this.salaries[0];
         this.calculateFinalPay();
+
+        // Restore form data after salaries are loaded
+        setTimeout(() => restoreFormData(), 100);
       } else {
         const option = document.createElement("option");
         option.disabled = true;
@@ -194,6 +250,7 @@ class GeneratePayrollModal extends HTMLElement {
       const index = e.target.value;
       this.selectedSalary = this.salaries[index];
       this.calculateFinalPay();
+      saveFormData();
     });
 
     // Add Bonus
@@ -209,6 +266,7 @@ class GeneratePayrollModal extends HTMLElement {
         this.calculateFinalPay();
         reasonInput.value = "";
         amountInput.value = "";
+        saveFormData();
       }
     });
 
@@ -225,6 +283,7 @@ class GeneratePayrollModal extends HTMLElement {
         this.calculateFinalPay();
         reasonInput.value = "";
         amountInput.value = "";
+        saveFormData();
       }
     });
 
@@ -235,6 +294,12 @@ class GeneratePayrollModal extends HTMLElement {
     };
 
     cancelBtn.addEventListener("click", closeModal);
+
+    // Backdrop click
+    const backdrop = this.querySelector(".fixed.inset-0.bg-slate-900\\/50");
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
     // Submit form
     submitBtn.addEventListener("click", () => {
@@ -264,6 +329,7 @@ class GeneratePayrollModal extends HTMLElement {
     // Listen for success/error events
     this.addEventListener("create-payroll-success", () => {
       alert("Payroll generated successfully!");
+      clearFormData(); // Clear session storage on success
       closeModal();
     });
 
@@ -293,6 +359,7 @@ class GeneratePayrollModal extends HTMLElement {
         this.bonuses.splice(index, 1);
         this.renderBonuses();
         this.calculateFinalPay();
+        saveFormData();
       });
       list.appendChild(li);
     });
@@ -319,6 +386,7 @@ class GeneratePayrollModal extends HTMLElement {
         this.deductions.splice(index, 1);
         this.renderDeductions();
         this.calculateFinalPay();
+        saveFormData();
       });
       list.appendChild(li);
     });
