@@ -36,6 +36,12 @@ export function LogoutMessageCustomEvent() {
 export function LoginMessageCustoomEvent() {
   return new CustomEvent("login-message", { bubbles: true, composed: true })
 }
+export function LoginSuccess() {
+  return new CustomEvent("login-success", {
+    bubbles:true,
+    composed:true
+  })
+}
 
 
 export function AddDepartmentCustomEvent() {
@@ -142,13 +148,14 @@ export function AddUserCustomEvent() {
   return new CustomEvent("add-user-modal", { bubbles: true, composed: true });
 }
 
-export function CreateUserCustomEvent(email, firstName, lastName, password, note, skills, department) {
+export function CreateUserCustomEvent(email, firstName, lastName, password, profilePhoto, note, skills, department) {
   return new CustomEvent("create-user", {
     detail: {
       email,
       firstName,
       lastName,
       password,
+      profilePhoto,
       note,
       skills,
       department

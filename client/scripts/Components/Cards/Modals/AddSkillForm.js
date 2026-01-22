@@ -76,6 +76,7 @@ class AddSkill extends HTMLElement {
     const closeBtn = this.querySelector("#close-modal-btn");
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const skillCreationForm = this.querySelector('form');
+    const errSkill = this.querySelector("#errorSkillForm");
 
     // Session storage key
     const STORAGE_KEY = "addSkillForm";
@@ -105,7 +106,9 @@ class AddSkill extends HTMLElement {
 
     // Clear session storage
     const clearFormData = () => {
+      skillCreationForm.reset();
       sessionStorage.removeItem(STORAGE_KEY);
+
     };
 
     // Listen for input changes to save to session storage
@@ -144,6 +147,14 @@ class AddSkill extends HTMLElement {
       backdrop.addEventListener("click", closeModal);
     }
 
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
     skillCreationForm.addEventListener("submit", (e) => {
       e.preventDefault();
       console.log("Submit event triggered :: ", e);
@@ -165,6 +176,7 @@ class AddSkill extends HTMLElement {
       errSkill.textContent = event.detail.error;
     })
     this.addEventListener("create-skill-success", () => {
+      console.log("Create skill success event triggered ... ")
       clearFormData();
       closeModal();
     })

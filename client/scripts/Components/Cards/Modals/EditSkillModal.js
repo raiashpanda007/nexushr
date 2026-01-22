@@ -78,11 +78,56 @@ class EditSkill extends HTMLElement {
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const form = this.querySelector('form');
     const errSkill = this.querySelector("#errorSkillForm");
+    let currentSkillId = null;
+
+    // Session storage key
+    const STORAGE_KEY = "editSkillForm";
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      if (!currentSkillId) return;
+      const data = {
+        skillId: currentSkillId,
+        skillName: form.skillName.value,
+        skillCategory: form.skillCategory.value
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData && currentSkillId) {
+        try {
+          const data = JSON.parse(savedData);
+          // Only restore if it's for the same skill
+          if (data.skillId === currentSkillId) {
+            if (data.skillName) form.skillName.value = data.skillName;
+            if (data.skillCategory) form.skillCategory.value = data.skillCategory;
+          }
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    form.addEventListener('input', saveFormData);
+    form.addEventListener('change', saveFormData);
 
     const openModal = (skill) => {
+      currentSkillId = skill.id;
       form.skillId.value = skill.id;
       form.skillName.value = skill.name;
       form.skillCategory.value = skill.category || "";
+
+      // Restore saved form data after initial load
+      setTimeout(() => restoreFormData(), 100);
 
       modal.classList.remove("hidden");
       errSkill.classList.add("hidden");
@@ -100,6 +145,7 @@ class EditSkill extends HTMLElement {
 
       setTimeout(() => {
         modal.classList.add("hidden");
+        currentSkillId = null;
       }, 300);
     };
 
@@ -113,6 +159,14 @@ class EditSkill extends HTMLElement {
     if (backdrop) {
       backdrop.addEventListener("click", closeModal);
     }
+
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -138,6 +192,7 @@ class EditSkill extends HTMLElement {
     });
 
     this.addEventListener("edit-skill-success", () => {
+      clearFormData(); // Clear session storage on success
       closeModal();
     });
   }

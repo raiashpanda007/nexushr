@@ -17,6 +17,7 @@ class AttendanceHandler {
 
         try {
             const data = await this.repo.Create(userID, type);
+            
             return { ok: true, data }
         } catch (error) {
             console.error("Create Attendance Controller :: ", error);

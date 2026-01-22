@@ -89,12 +89,59 @@ class EditLeaveType extends HTMLElement {
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const form = this.querySelector('form');
     const errLeaveType = this.querySelector("#errorLeaveTypeForm");
+    let currentLeaveTypeId = null;
+
+    // Session storage key
+    const STORAGE_KEY = "editLeaveTypeForm";
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      if (!currentLeaveTypeId) return;
+      const data = {
+        leaveTypeId: currentLeaveTypeId,
+        leaveCode: form.leaveCode.value,
+        leaveName: form.leaveName.value,
+        leaveLength: form.leaveLength.value
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData && currentLeaveTypeId) {
+        try {
+          const data = JSON.parse(savedData);
+          // Only restore if it's for the same leave type
+          if (data.leaveTypeId === currentLeaveTypeId) {
+            if (data.leaveCode) form.leaveCode.value = data.leaveCode;
+            if (data.leaveName) form.leaveName.value = data.leaveName;
+            if (data.leaveLength) form.leaveLength.value = data.leaveLength;
+          }
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    form.addEventListener('input', saveFormData);
+    form.addEventListener('change', saveFormData);
 
     const openModal = (leaveType) => {
+      currentLeaveTypeId = leaveType.id;
       form.leaveTypeId.value = leaveType.id;
       form.leaveCode.value = leaveType.code;
       form.leaveName.value = leaveType.name;
       form.leaveLength.value = leaveType.length;
+
+      // Restore saved form data after initial load
+      setTimeout(() => restoreFormData(), 100);
 
       modal.classList.remove("hidden");
       errLeaveType.classList.add("hidden");
@@ -112,6 +159,7 @@ class EditLeaveType extends HTMLElement {
 
       setTimeout(() => {
         modal.classList.add("hidden");
+        currentLeaveTypeId = null;
       }, 300);
     };
 
@@ -125,6 +173,14 @@ class EditLeaveType extends HTMLElement {
     if (backdrop) {
       backdrop.addEventListener("click", closeModal);
     }
+
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -152,6 +208,7 @@ class EditLeaveType extends HTMLElement {
     });
 
     this.addEventListener("edit-leave-type-success", () => {
+      clearFormData(); // Clear session storage on success
       closeModal();
     });
   }

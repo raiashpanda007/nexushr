@@ -78,11 +78,56 @@ class EditDepartment extends HTMLElement {
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const form = this.querySelector('form');
     const errDept = this.querySelector("#errorDeptForm");
+    let currentDeptId = null;
+
+    // Session storage key
+    const STORAGE_KEY = "editDepartmentForm";
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      if (!currentDeptId) return;
+      const data = {
+        deptId: currentDeptId,
+        deptName: form.deptName.value,
+        deptDesc: form.deptDesc.value
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData && currentDeptId) {
+        try {
+          const data = JSON.parse(savedData);
+          // Only restore if it's for the same department
+          if (data.deptId === currentDeptId) {
+            if (data.deptName) form.deptName.value = data.deptName;
+            if (data.deptDesc) form.deptDesc.value = data.deptDesc;
+          }
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    form.addEventListener('input', saveFormData);
+    form.addEventListener('change', saveFormData);
 
     const openModal = (dept) => {
+      currentDeptId = dept.id;
       form.deptId.value = dept.id;
       form.deptName.value = dept.name;
       form.deptDesc.value = dept.description || "";
+
+      // Restore saved form data after initial load
+      setTimeout(() => restoreFormData(), 100);
 
       modal.classList.remove("hidden");
       errDept.classList.add("hidden");
@@ -100,6 +145,7 @@ class EditDepartment extends HTMLElement {
 
       setTimeout(() => {
         modal.classList.add("hidden");
+        currentDeptId = null;
       }, 300);
     };
 
@@ -113,6 +159,14 @@ class EditDepartment extends HTMLElement {
     if (backdrop) {
       backdrop.addEventListener("click", closeModal);
     }
+
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -138,6 +192,7 @@ class EditDepartment extends HTMLElement {
     });
 
     this.addEventListener("edit-dept-success", () => {
+      clearFormData(); // Clear session storage on success
       closeModal();
     });
   }

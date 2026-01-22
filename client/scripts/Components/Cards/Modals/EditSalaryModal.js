@@ -84,6 +84,49 @@ class EditSalaryModal extends HTMLElement {
     const form = this.querySelector("#edit-salary-form");
     const cancelBtn = this.querySelector("#cancel-btn");
     const submitBtn = this.querySelector("#submit-btn");
+    const backdrop = this.querySelector(".fixed.inset-0.bg-slate-900\\/50");
+
+    // Session storage key
+    const STORAGE_KEY = "editSalaryForm";
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      if (!this.salary) return;
+      const data = {
+        salaryId: this.salary.id,
+        base: form.querySelector("#base").value,
+        hra: form.querySelector("#hra").value,
+        lta: form.querySelector("#lta").value
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData && this.salary) {
+        try {
+          const data = JSON.parse(savedData);
+          // Only restore if it's for the same salary
+          if (data.salaryId === this.salary.id) {
+            if (data.base) form.querySelector("#base").value = data.base;
+            if (data.hra) form.querySelector("#hra").value = data.hra;
+            if (data.lta) form.querySelector("#lta").value = data.lta;
+          }
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    form.addEventListener('input', saveFormData);
+    form.addEventListener('change', saveFormData);
 
     // Listen for open event
     document.addEventListener("open-edit-salary-modal", (e) => {
@@ -94,6 +137,9 @@ class EditSalaryModal extends HTMLElement {
       form.querySelector("#base").value = this.salary.base;
       form.querySelector("#hra").value = this.salary.hra;
       form.querySelector("#lta").value = this.salary.lta;
+
+      // Restore saved form data after initial load
+      setTimeout(() => restoreFormData(), 100);
 
       modal.classList.remove("hidden");
     });
@@ -107,10 +153,17 @@ class EditSalaryModal extends HTMLElement {
     cancelBtn.addEventListener("click", closeModal);
 
     // Backdrop click
-    const backdrop = this.querySelector(".fixed.inset-0.bg-slate-900\\/50");
     if (backdrop) {
       backdrop.addEventListener("click", closeModal);
     }
+
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
 
     // Submit form
     submitBtn.addEventListener("click", () => {
@@ -135,6 +188,7 @@ class EditSalaryModal extends HTMLElement {
 
     // Listen for success/error events to close modal or show error
     this.addEventListener("edit-salary-success", () => {
+      clearFormData(); // Clear session storage on success
       closeModal();
     });
 

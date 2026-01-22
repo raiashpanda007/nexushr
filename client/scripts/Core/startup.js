@@ -15,7 +15,9 @@ import SalaryRepo from "./db/SalaryRepo.js";
 import SalaryHandler from "./controllers/SalaryHandler.js";
 import PayrollRepo from "./db/PayrollRepo.js";
 import PayrollController from "./controllers/PayrollController.js";
-import { HealthChecker } from "../utils.js";
+import LeaveApplicationRepo from "./db/LeaveApplicationRepo.js";
+import LeaveApplicationHandler from "./controllers/LeaveApplicationHandler.js";
+
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
   1,
@@ -73,23 +75,18 @@ export const dbManager = new IndexedDBManager(
       payrolls.createIndex("month_indx", "month", { unique: false });
       payrolls.createIndex("year_indx", "year", { unique: false });
     }
+    if (!db.objectStoreNames.contains("leaves_applications")) {
+      const leaves_applications = db.createObjectStore("leaves_applications", { keyPath: "id" });
+      leaves_applications.createIndex("userID_index", "userId", { unique: false })
+      leaves_applications.createIndex("status_index", "status", { unique: false })
+
+    }
   }
 );
 
 await dbManager.init();
 
 
-async function pollHealth() {
-  try {
-    await HealthChecker();
-  } catch (err) {
-    console.error("Health check failed", err);
-  } finally {
-    setTimeout(pollHealth, 5000);
-  }
-}
-
-pollHealth();
 
 export const userRepo = new UserRepo(dbManager);
 export const deptRepo = new DepartmentRepo(dbManager);
@@ -106,4 +103,6 @@ export const salaryRepo = new SalaryRepo(dbManager);
 export const salaryHandler = new SalaryHandler(salaryRepo, authState.GetCurrUserState());
 export const payrollRepo = new PayrollRepo(dbManager);
 export const payrollHandler = new PayrollController(payrollRepo, authState.GetCurrUserState());
+export const leaveApplicationRepo = new LeaveApplicationRepo(dbManager);
+export const leaveApplicationHandler = new LeaveApplicationHandler(dbManager, leaveApplicationRepo, authState.GetCurrUserState());
 export const permissions = new UserPermissions(authState.GetCurrUserState().data, userRepo, deptRepo, skillRepo, leaveTypeRepo);

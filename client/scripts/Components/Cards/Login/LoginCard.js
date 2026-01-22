@@ -16,7 +16,6 @@ loginFormTemplate.innerHTML = `
             <label class="text-sm font-medium text-slate-700">Email Address</label>
             <input type="email" name="loginEmail" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors" placeholder="you@example.com">
           </div>
-          
           <div class="space-y-2">
             <label class="text-sm font-medium text-slate-700">Password</label>
             <input type="password" name="loginPassword" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors" placeholder="••••••••">
@@ -32,6 +31,8 @@ loginFormTemplate.innerHTML = `
   </form>
 `
 
+const STORAGE_KEY_LOGIN = "loginForm";
+
 class LoginCard extends HTMLElement {
   constructor() {
     super();
@@ -40,22 +41,58 @@ class LoginCard extends HTMLElement {
   connectedCallback() {
     const form = this.querySelector('form');
     const errorForm = this.querySelector('#errorForm');
-    form.loginEmail.value = sessionStorage.getItem("userEmail");
-    form.addEventListener("change", (e) => {
-      if (e.target.name === "loginEmail") {
-        sessionStorage.setItem('userEmail', e.target.value)
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY_LOGIN);
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          if (data.email) form.loginEmail.value = data.email;
+          if (data.password) form.loginPassword.value = data.password;
+        } catch (e) {
+          console.error("Failed to restore login form data:", e);
+        }
       }
-    });
+    };
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      const data = {
+        email: form.loginEmail.value,
+        password: form.loginPassword.value
+      };
+      sessionStorage.setItem(STORAGE_KEY_LOGIN, JSON.stringify(data));
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY_LOGIN);
+    };
+
+    // Restore on load
+    restoreFormData();
+
+    // Listen for input changes to save to session storage
+    form.addEventListener('input', saveFormData);
+    form.addEventListener('change', saveFormData);
+
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      this.dispatchEvent(LoginCustomEvent(e.target[0].value, e.target[1].value));
-    })
+      this.dispatchEvent(LoginCustomEvent(form.loginEmail.value, form.loginPassword.value));
+    });
+
     this.addEventListener("login-error", (e) => {
       console.log("error caught", e);
-      console.log(errorForm);
       errorForm.classList.remove("hidden");
       errorForm.textContent = e.detail.error;
-    })
+    });
+    
+    // Clear form data on successful login (listen in index.js and dispatch event)
+    this.addEventListener("login-success", () => {
+      console.log("Login SuccessFully was caught ...  ");
+      clearFormData();
+    });
   }
 }
 

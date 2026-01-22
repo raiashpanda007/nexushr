@@ -84,14 +84,46 @@ class AddLeaveType extends HTMLElement {
     const closeBtn = this.querySelector("#close-modal-btn");
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const leaveTypeForm = this.querySelector('form');
-
-    leaveTypeForm.leaveTypeName.value = sessionStorage.getItem("leaveTypeName");
-    leaveTypeForm.leaveTypeCode.value = sessionStorage.getItem("leaveTypeCode");
-    leaveTypeForm.leaveLength.value = sessionStorage.getItem("leaveLength") || "full";
-
     const errLeaveType = this.querySelector("#errorLeaveTypeForm");
 
+    // Session storage key
+    const STORAGE_KEY = "addLeaveTypeForm";
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          if (data.leaveTypeName) leaveTypeForm.leaveTypeName.value = data.leaveTypeName;
+          if (data.leaveTypeCode) leaveTypeForm.leaveTypeCode.value = data.leaveTypeCode;
+          if (data.leaveLength) leaveTypeForm.leaveLength.value = data.leaveLength;
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      const data = {
+        leaveTypeName: leaveTypeForm.leaveTypeName.value,
+        leaveTypeCode: leaveTypeForm.leaveTypeCode.value,
+        leaveLength: leaveTypeForm.leaveLength.value
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Restore on load
+    restoreFormData();
+
     const openModal = () => {
+      restoreFormData(); // Restore saved form data
       modal.classList.remove("hidden");
       errLeaveType.classList.add("hidden");
       requestAnimationFrame(() => {
@@ -118,15 +150,21 @@ class AddLeaveType extends HTMLElement {
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
 
-    leaveTypeForm.addEventListener('change', (e) => {
-      if (e.target.name === "leaveTypeName") sessionStorage.setItem("leaveTypeName", e.target.value);
-      else if (e.target.name === "leaveTypeCode") sessionStorage.setItem("leaveTypeCode", e.target.value);
-      else if (e.target.name === "leaveLength") sessionStorage.setItem("leaveLength", e.target.value);
-    });
+    // Listen for input changes to save to session storage
+    leaveTypeForm.addEventListener('input', saveFormData);
+    leaveTypeForm.addEventListener('change', saveFormData);
 
     if (backdrop) {
       backdrop.addEventListener("click", closeModal);
     }
+
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
 
     leaveTypeForm.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -150,9 +188,7 @@ class AddLeaveType extends HTMLElement {
       errLeaveType.textContent = event.detail.error;
     })
     this.addEventListener("create-leave-type-success", () => {
-      sessionStorage.removeItem("leaveTypeName");
-      sessionStorage.removeItem("leaveTypeCode");
-      sessionStorage.removeItem("leaveLength");
+      clearFormData(); // Clear session storage on success
       closeModal();
     })
   }

@@ -1,4 +1,4 @@
-import { SPS } from "./events";
+import { SPS } from "./events.js";
 
 async function* cursorGenrator(db, indexName = null, range = null) {
   const source = lastKey ? db.index(indexName) : db;
@@ -58,13 +58,16 @@ export async function CreatePayrollPDF(payrollID, userFirstName, userLastName, m
 
 
 export async function HealthChecker() {
+  
+  
   try {
     const response = await fetch("http://localhost:3000/healthz");
     if (response.ok) {
-
+        return true;
     }
   } catch (error) {
     console.log(error);
+    return false
   }
 
 

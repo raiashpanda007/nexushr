@@ -2,7 +2,6 @@ import { CreateDepartmentCustomEvent } from "../../../events.js";
 
 const AddDepartmentTemplate = document.createElement("template");
 
-
 AddDepartmentTemplate.innerHTML = `
   <form id="add-department-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
@@ -23,7 +22,7 @@ AddDepartmentTemplate.innerHTML = `
               <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
                 <h3 class="text-xl font-semibold leading-6 text-slate-900" id="modal-title">Add New Department</h3>
                 <div class="mt-2">
-                  <p class="text-sm text-slate-500">Create a new department to organize your team structure.</p>
+                  <p class="text-sm text-slate-500">Create a new department for your organization.</p>
                 </div>
               </div>
               <button type="button" id="close-modal-btn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-500 transition-colors">
@@ -40,14 +39,14 @@ AddDepartmentTemplate.innerHTML = `
               <div>
                 <label for="deptName" class="block text-sm font-medium leading-6 text-slate-900">Department Name</label>
                 <div class="mt-2">
-                  <input type="text" name="deptName" id="dept-name" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="e.g. Engineering">
+                  <input type="text" name="deptName" id="deptName" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:p-2" placeholder="e.g. Engineering">
                 </div>
               </div>
-              
+
               <div>
                 <label for="deptDesc" class="block text-sm font-medium leading-6 text-slate-900">Description</label>
                 <div class="mt-2">
-                  <textarea id="deptDesc" name="dept-desc" rows="3" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:px-1" placeholder="Brief description of the department's role..."></textarea>
+                  <textarea id="deptDesc" name="deptDesc" rows="3" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all placeholder:px-1" placeholder="Brief description of the department..."></textarea>
                 </div>
               </div>
               <span class="text-red-500 font-semibold hidden" id="errorDeptForm"></span>
@@ -62,16 +61,16 @@ AddDepartmentTemplate.innerHTML = `
       </div>
     </div>
   </form>
-`
+`;
 
-
-
+const STORAGE_KEY = "addDepartmentForm";
 
 class AddDepartment extends HTMLElement {
   constructor() {
     super();
     this.appendChild(AddDepartmentTemplate.content.cloneNode(true));
   }
+
   connectedCallback() {
     const modal = this.querySelector("#add-department-modal");
     const backdrop = this.querySelector("#modal-backdrop");
@@ -79,20 +78,7 @@ class AddDepartment extends HTMLElement {
     const closeBtn = this.querySelector("#close-modal-btn");
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const deptCreationForm = this.querySelector('form');
-
-
-
-    // Session storage key
-    const STORAGE_KEY = "addDepartmentForm";
-
-    // Save form data to session storage
-    const saveFormData = () => {
-      const data = {
-        deptName: deptCreationForm.deptName.value,
-        deptDesc: deptCreationForm.deptDesc.value
-      };
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    };
+    const errDept = this.querySelector("#errorDeptForm");
 
     // Restore form data from session storage
     const restoreFormData = () => {
@@ -108,19 +94,24 @@ class AddDepartment extends HTMLElement {
       }
     };
 
+    // Save form data to session storage
+    const saveFormData = () => {
+      const data = {
+        deptName: deptCreationForm.deptName.value,
+        deptDesc: deptCreationForm.deptDesc.value
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
     // Clear session storage
     const clearFormData = () => {
       sessionStorage.removeItem(STORAGE_KEY);
     };
 
-    // Listen for input changes to save to session storage
-    deptCreationForm.addEventListener('input', saveFormData);
-    deptCreationForm.addEventListener('change', saveFormData);
-
     const openModal = () => {
       restoreFormData();
       modal.classList.remove("hidden");
-      errDept.classList.add("hidden")
+      errDept.classList.add("hidden");
       requestAnimationFrame(() => {
         backdrop.classList.remove("opacity-0");
         panel.classList.remove("opacity-0", "translate-y-4", "sm:translate-y-0", "sm:scale-95");
@@ -135,7 +126,6 @@ class AddDepartment extends HTMLElement {
 
       setTimeout(() => {
         modal.classList.add("hidden");
-        // We only clear on success, not on close/cancel
       }, 300);
     };
 
@@ -145,18 +135,27 @@ class AddDepartment extends HTMLElement {
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-    // Removed old individual change listener
 
-    if (backdrop) {
-      backdrop.addEventListener("click", closeModal);
-    }
+    // Listen for input changes to save to session storage
+    deptCreationForm.addEventListener('input', saveFormData);
+    deptCreationForm.addEventListener('change', saveFormData);
 
+    // Close on backdrop click
+    backdrop.addEventListener("click", closeModal);
+
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
 
     deptCreationForm.addEventListener("submit", (e) => {
       e.preventDefault();
       console.log("Submit event triggered :: ", e);
-      const name = e.target[1].value.trim();
-      const desc = e.target[2].value.trim();
+      const name = deptCreationForm.deptName.value.trim();
+      const desc = deptCreationForm.deptDesc.value.trim();
 
       if (!name || !desc) {
         errDept.classList.remove("hidden");
@@ -165,22 +164,20 @@ class AddDepartment extends HTMLElement {
       }
 
       this.dispatchEvent(CreateDepartmentCustomEvent(name, desc));
-    })
-
+    });
 
     this.addEventListener("create-dept-err", (event) => {
       console.log("Error caught :: ", event);
       errDept.classList.remove("hidden");
       errDept.textContent = event.detail.error;
-    })
+    });
+
     this.addEventListener("create-dept-success", () => {
       clearFormData();
+      deptCreationForm.reset();
       closeModal();
-    })
-
+    });
   }
-
-
-
 }
+
 customElements.define("app-add-dept-modal", AddDepartment);

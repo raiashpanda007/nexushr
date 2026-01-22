@@ -124,6 +124,7 @@ class GeneratePayrollModal extends HTMLElement {
     this.bonuses = [];
     this.deductions = [];
     this.selectedSalary = null;
+    this.saveFormData = null; // Will be set in connectedCallback
   }
 
   connectedCallback() {
@@ -148,7 +149,7 @@ class GeneratePayrollModal extends HTMLElement {
     const STORAGE_KEY = "generatePayrollForm";
 
     // Save form data to session storage
-    const saveFormData = () => {
+    this.saveFormData = () => {
       if (!this.user) return;
       const formData = new FormData(form);
       const data = {
@@ -194,8 +195,8 @@ class GeneratePayrollModal extends HTMLElement {
     };
 
     // Listen for input changes to save to session storage
-    form.addEventListener('input', saveFormData);
-    form.addEventListener('change', saveFormData);
+    form.addEventListener('input', this.saveFormData);
+    form.addEventListener('change', this.saveFormData);
 
     // Listen for open event
     document.addEventListener("open-generate-payroll-modal", async (e) => {
@@ -250,7 +251,7 @@ class GeneratePayrollModal extends HTMLElement {
       const index = e.target.value;
       this.selectedSalary = this.salaries[index];
       this.calculateFinalPay();
-      saveFormData();
+      this.saveFormData();
     });
 
     // Add Bonus
@@ -266,7 +267,7 @@ class GeneratePayrollModal extends HTMLElement {
         this.calculateFinalPay();
         reasonInput.value = "";
         amountInput.value = "";
-        saveFormData();
+        this.saveFormData();
       }
     });
 
@@ -283,7 +284,7 @@ class GeneratePayrollModal extends HTMLElement {
         this.calculateFinalPay();
         reasonInput.value = "";
         amountInput.value = "";
-        saveFormData();
+        this.saveFormData();
       }
     });
 
@@ -300,6 +301,14 @@ class GeneratePayrollModal extends HTMLElement {
     if (backdrop) {
       backdrop.addEventListener("click", closeModal);
     }
+
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
 
     // Submit form
     submitBtn.addEventListener("click", () => {
@@ -359,7 +368,7 @@ class GeneratePayrollModal extends HTMLElement {
         this.bonuses.splice(index, 1);
         this.renderBonuses();
         this.calculateFinalPay();
-        saveFormData();
+        this.saveFormData();
       });
       list.appendChild(li);
     });
@@ -386,7 +395,7 @@ class GeneratePayrollModal extends HTMLElement {
         this.deductions.splice(index, 1);
         this.renderDeductions();
         this.calculateFinalPay();
-        saveFormData();
+        this.saveFormData();
       });
       list.appendChild(li);
     });

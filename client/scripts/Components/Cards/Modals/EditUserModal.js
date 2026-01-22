@@ -318,6 +318,14 @@ class EditUserModal extends HTMLElement {
       backdrop.addEventListener("click", closeModal);
     }
 
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
     userEditForm.addEventListener("submit", (e) => {
       e.preventDefault();
       if (!this.currentUser) return;

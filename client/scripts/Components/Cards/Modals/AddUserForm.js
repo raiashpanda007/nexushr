@@ -67,6 +67,16 @@ AddUserTemplate.innerHTML = `
               </div>
 
               <div>
+                <label for="profilePhoto" class="block text-sm font-medium leading-6 text-slate-900">Profile Photo</label>
+                <div class="mt-2">
+                  <input type="file" name="profilePhoto" id="profilePhoto" accept="image/*" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all">
+                </div>
+                <div id="photo-preview-container" class="mt-2 hidden">
+                  <img id="photo-preview" src="" alt="Profile photo preview" class="h-24 w-24 rounded-full object-cover border-2 border-slate-300">
+                </div>
+              </div>
+
+              <div>
                 <label for="dept" class="block text-sm font-medium leading-6 text-slate-900">Department</label>
                 <div class="mt-2">
                   <select name="dept" id="dept" class="block p-2 w-full rounded-lg border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all" required>
@@ -119,9 +129,13 @@ class AddUserForm extends HTMLElement {
     const deptSelect = this.querySelector("#dept");
 
     const skillsContainer = this.querySelector("#skills-container");
+    const profilePhotoInput = this.querySelector("#profilePhoto");
+    const photoPreviewContainer = this.querySelector("#photo-preview-container");
+    const photoPreview = this.querySelector("#photo-preview");
     let allDepartments = [];
     let selectedSkills = new Set();
     let allSkills = [];
+    let profilePhotoBlob = null;
 
     // Session storage key
     const STORAGE_KEY = "addUserForm";
@@ -164,7 +178,47 @@ class AddUserForm extends HTMLElement {
     // Clear session storage
     const clearFormData = () => {
       sessionStorage.removeItem(STORAGE_KEY);
+      profilePhotoBlob = null;
+      profilePhotoInput.value = "";
+      photoPreviewContainer.classList.add("hidden");
     };
+
+    // Handle profile photo selection
+    profilePhotoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // Validate file type
+        if (!file.type.startsWith("image/")) {
+          errUser.classList.remove("hidden");
+          errUser.textContent = "Please select a valid image file.";
+          profilePhotoInput.value = "";
+          return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          errUser.classList.remove("hidden");
+          errUser.textContent = "Image size must be less than 5MB.";
+          profilePhotoInput.value = "";
+          return;
+        }
+
+        // Create blob from file
+        profilePhotoBlob = file;
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          photoPreview.src = event.target.result;
+          photoPreviewContainer.classList.remove("hidden");
+        };
+        reader.readAsDataURL(file);
+        errUser.classList.add("hidden");
+      } else {
+        profilePhotoBlob = null;
+        photoPreviewContainer.classList.add("hidden");
+      }
+    });
 
     // Listen for input changes to save to session storage
     userCreationForm.addEventListener('input', saveFormData);
@@ -270,6 +324,8 @@ class AddUserForm extends HTMLElement {
         modal.classList.add("hidden");
         userCreationForm.reset();
         selectedSkills.clear();
+        profilePhotoBlob = null;
+        photoPreviewContainer.classList.add("hidden");
         renderSkills();
       }, 300);
     };
@@ -286,6 +342,14 @@ class AddUserForm extends HTMLElement {
     if (backdrop) {
       backdrop.addEventListener("click", closeModal);
     }
+
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
 
     userCreationForm.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -306,7 +370,7 @@ class AddUserForm extends HTMLElement {
       const department = allDepartments.find(d => d.id === deptId);
       const skills = allSkills.filter(s => selectedSkills.has(s.id));
 
-      this.dispatchEvent(CreateUserCustomEvent(email, firstName, lastName, password, note, skills, department));
+      this.dispatchEvent(CreateUserCustomEvent(email, firstName, lastName, password, profilePhotoBlob, note, skills, department));
     });
 
     this.addEventListener("create-user-err", (event) => {

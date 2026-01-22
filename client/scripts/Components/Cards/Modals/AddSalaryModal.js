@@ -83,12 +83,57 @@ class AddSalaryModal extends HTMLElement {
     const form = this.querySelector("#add-salary-form");
     const cancelBtn = this.querySelector("#cancel-btn");
     const submitBtn = this.querySelector("#submit-btn");
+    const backdrop = this.querySelector(".fixed.inset-0.bg-slate-900\\/50");
+
+    // Session storage key
+    const STORAGE_KEY = "addSalaryForm";
+
+    // Save form data to session storage
+    const saveFormData = () => {
+      if (!this.user) return;
+      const formData = new FormData(form);
+      const data = {
+        userId: this.user.id,
+        base: formData.get("base"),
+        hra: formData.get("hra"),
+        lta: formData.get("lta")
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+
+    // Restore form data from session storage
+    const restoreFormData = () => {
+      const savedData = sessionStorage.getItem(STORAGE_KEY);
+      if (savedData && this.user) {
+        try {
+          const data = JSON.parse(savedData);
+          // Only restore if it's for the same user
+          if (data.userId === this.user.id) {
+            if (data.base) form.querySelector("#base").value = data.base;
+            if (data.hra) form.querySelector("#hra").value = data.hra;
+            if (data.lta) form.querySelector("#lta").value = data.lta;
+          }
+        } catch (e) {
+          console.error("Failed to restore form data:", e);
+        }
+      }
+    };
+
+    // Clear session storage
+    const clearFormData = () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
+
+    // Listen for input changes to save to session storage
+    form.addEventListener('input', saveFormData);
+    form.addEventListener('change', saveFormData);
 
     // Listen for open event
     document.addEventListener("open-add-salary-modal", (e) => {
       this.user = e.detail;
       this.querySelector("#user-name").textContent = `${this.user.firstName} ${this.user.lastName}`;
       form.reset();
+      restoreFormData(); // Restore saved form data
       modal.classList.remove("hidden");
     });
 
@@ -101,10 +146,17 @@ class AddSalaryModal extends HTMLElement {
     cancelBtn.addEventListener("click", closeModal);
 
     // Backdrop click
-    const backdrop = this.querySelector(".fixed.inset-0.bg-slate-900\\/50");
     if (backdrop) {
       backdrop.addEventListener("click", closeModal);
     }
+
+    // ESC key to close modal
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
 
     // Submit form
     submitBtn.addEventListener("click", () => {
@@ -131,7 +183,7 @@ class AddSalaryModal extends HTMLElement {
 
     // Listen for success/error events to close modal or show error
     this.addEventListener("create-salary-success", () => {
-
+      clearFormData(); // Clear session storage on success
       closeModal();
     });
 
