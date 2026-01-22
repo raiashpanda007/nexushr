@@ -40,6 +40,7 @@ class AuthState {
           user: req
         });
         localStorage.setItem('userDetails', JSON.stringify(this.userState));
+        this.repo.SetUserOnlineById(req.id);
         return { ok: true, data: this.userState }
       }
       return {
