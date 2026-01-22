@@ -6,14 +6,16 @@ import "../../scripts/Components/Views/SkillsView.js";
 import "../../scripts/Components/Views/LeavesView.js";
 import "../../scripts/Components/Views/AttendanceView.js";
 import "../../scripts/Components/Views/SalariesView.js";
+import "../../scripts/Components/Views/PayrollView.js";
 import "../../scripts/Components/Cards/Modals/EditDepartmentModal.js";
 import "../../scripts/Components/Cards/Modals/EditSkillModal.js";
 import "../../scripts/Components/Cards/Modals/EditLeaveTypeModal.js";
 import "../../scripts/Components/Cards/Modals/AddSalaryModal.js";
 import "../../scripts/Components/Cards/Modals/EditSalaryModal.js";
+import "../../scripts/Components/Cards/Modals/GeneratePayrollModal.js";
 
-import { permissions, userHandler, deptHandler, skillHandler, leaveTypeHandler, salaryHandler } from "../../scripts/Core/startup.js";
-import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent, CreateUserErrorCustomEvent, CreateUserSuccessEvent, EditUserErrorCustomEvent, EditUserSuccessEvent, EditDepartmentErrorCustomEvent, EditDepartmentSuccessEvent, EditSkillErrorCustomEvent, EditSkillSuccessEvent, EditLeaveTypeErrorCustomEvent, EditLeaveTypeSuccessEvent, CreateSalaryErrorCustomEvent, CreateSalarySuccessEvent, EditSalaryErrorCustomEvent, EditSalarySuccessEvent } from "../../scripts/events.js"
+import { permissions, userHandler, deptHandler, skillHandler, leaveTypeHandler, salaryHandler, payrollHandler } from "../../scripts/Core/startup.js";
+import { CreateDepartmentErrorCustomEvent, CreateDepartmentSuccessEvent, CreateSkillErrorCustomEvent, CreateSkillSuccessEvent, CreateLeaveTypeErrorCustomEvent, CreateLeaveTypeSuccessEvent, CreateUserErrorCustomEvent, CreateUserSuccessEvent, EditUserErrorCustomEvent, EditUserSuccessEvent, EditDepartmentErrorCustomEvent, EditDepartmentSuccessEvent, EditSkillErrorCustomEvent, EditSkillSuccessEvent, EditLeaveTypeErrorCustomEvent, EditLeaveTypeSuccessEvent, CreateSalaryErrorCustomEvent, CreateSalarySuccessEvent, EditSalaryErrorCustomEvent, EditSalarySuccessEvent, CreatePayrollErrorCustomEvent, CreatePayrollSuccessEvent } from "../../scripts/events.js"
 
 
 const views = {
@@ -22,7 +24,8 @@ const views = {
   "nav-skills": "app-skills-view",
   "nav-leaves": "app-leaves-view",
   "nav-attendance": "app-attendance-view",
-  "nav-salaries": "app-salaries-view"
+  "nav-salaries": "app-salaries-view",
+  "nav-payroll": "app-payroll-view"
 };
 
 Object.keys(views).forEach(event => {
@@ -132,6 +135,15 @@ document.addEventListener("edit-salary", async (event) => {
   console.log({ ok, data });
   const EditSalaryForm = document.querySelector("app-edit-salary-modal");
   !ok ? EditSalaryForm.dispatchEvent(EditSalaryErrorCustomEvent(data)) : EditSalaryForm.dispatchEvent(EditSalarySuccessEvent());
+})
+
+document.addEventListener("create-payroll", async (event) => {
+  console.log("create-payroll triggered:: ", event);
+  const { userId, userFirstName, userLastName, month, year, salary, bonuses, deductions, total } = event.detail;
+  const { ok, data } = await payrollHandler.CreatePayroll(userId, userFirstName, userLastName, month, year, salary, bonuses, deductions, total);
+  console.log({ ok, data });
+  const GeneratePayrollForm = document.querySelector("app-generate-payroll-modal");
+  !ok ? GeneratePayrollForm.dispatchEvent(CreatePayrollErrorCustomEvent(data)) : GeneratePayrollForm.dispatchEvent(CreatePayrollSuccessEvent());
 })
 
 

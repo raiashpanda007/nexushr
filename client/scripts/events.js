@@ -371,3 +371,34 @@ export function EditSalaryErrorCustomEvent(error) {
     composed: true
   });
 }
+
+export function OpenGeneratePayrollModalEvent(user) {
+  return new CustomEvent("open-generate-payroll-modal", {
+    detail: user,
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function CreatePayrollCustomEvent(data) {
+  return new CustomEvent("create-payroll", {
+    detail: data,
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function CreatePayrollSuccessEvent() {
+  return new CustomEvent("create-payroll-success", {
+    bubbles: true,
+    composed: true
+  });
+}
+
+export function CreatePayrollErrorCustomEvent(error) {
+  return new CustomEvent("create-payroll-error", {
+    detail: { error },
+    bubbles: true,
+    composed: true
+  });
+}

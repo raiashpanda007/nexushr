@@ -15,3 +15,41 @@ async function* cursorGenrator(db, indexName = null, range = null) {
     });
   }
 }
+
+
+export async function CreatePayrollPDF(payrollID, userFirstName, userLastName, month, year, salary, bonuses, deductions, total) {
+
+  const worker = new Worker(new URL("./Core/controllers/workers/pdf.worker.js", import.meta.url));
+
+  worker.onmessage = (e) => {
+    const buffer = e.data.buffer;
+
+    const blob = new Blob([buffer], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${userFirstName}_${userLastName}_${month}_${year}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+  };
+
+
+  (function () {
+    worker.postMessage({
+      payrollID: payrollID,
+      userFirstName: userFirstName,
+      userLastName: userLastName,
+      month: month,
+      year: year,
+      salary: salary,
+      bonuses: bonuses,
+      deductions: deductions,
+      total: total
+    });
+  })();
+
+}
