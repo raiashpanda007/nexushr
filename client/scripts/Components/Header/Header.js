@@ -13,7 +13,7 @@ headerTemplate.innerHTML = `
         </div>
 
         <nav class="hidden md:flex space-x-8 bg-slate-800 px-6 py-2 rounded-full border border-slate-700">
-          <span class="text-slate-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer  text-sm font-medium">LPS</span>
+          <span id="app-lps-header" class="text-red-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer  text-sm font-medium">LPS</span>
           <span class="text-slate-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">SSE</span>
           <span id=app-sps-header class="text-red-300  hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">SPS</span>
           <span id="app-ws-header" class="text-red-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">WS</span>
@@ -48,20 +48,40 @@ class AppHeader extends HTMLElement {
       this.spsEl.title = "Service is DOWN";
     }
   }
+  async updateLPSStatus(isPollingUp) {
+    if (!this.lpsEl) return;
+
+    this.lpsEl.classList.remove("text-green-400", "text-red-300");
+
+    if (isPollingUp) {
+      this.lpsEl.classList.add("text-green-400");
+      this.lpsEl.title = "Long Polling is UP";
+    } else {
+      this.lpsEl.classList.add("text-red-300");
+      this.lpsEl.title = "Long Polling is DOWN";
+    }
+  }
 
   connectedCallback() {
     this.spsEl = this.querySelector("#app-sps-header");
     this.wsEl = this.querySelector("#app-ws-header");
+    this.lpsEl = this.querySelector("#app-lps-header");
     this.toastContainer = this.querySelector("#toast-container");
 
     // Set WS to red by default
     this.updateWSStatus(false);
-    
+
     this.updateSPSStatus();
+    this.updateLPSStatus(false);
 
     // Listen for WebSocket connection events
     this.addEventListener("ws-connected", () => {
       this.updateWSStatus(true);
+    });
+
+    this.addEventListener("long-polling-event", (event) => {
+      const state = event.detail?.state;
+      this.updateLPSStatus(state);
     });
 
     this.addEventListener("ws-disconnected", () => {
@@ -70,7 +90,8 @@ class AppHeader extends HTMLElement {
 
     // Listen for WebSocket notification events
     this.addEventListener("ws-notification", (event) => {
-      const message = event.detail?.message || event.detail || "New notification";
+      const message =
+        event.detail?.message || event.detail || "New notification";
       this.showToast(message);
     });
     this.addEventListener("queue-flushed", () => {
@@ -85,7 +106,8 @@ class AppHeader extends HTMLElement {
   showToast(message) {
     // Create toast element
     const toast = document.createElement("div");
-    toast.className = "bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg mb-2 flex items-center gap-2";
+    toast.className =
+      "bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg mb-2 flex items-center gap-2";
     toast.style.transform = "translateX(120%)";
     toast.style.opacity = "0";
     toast.style.transition = "opacity 0.3s ease-out, transform 0.3s ease-out";
@@ -132,7 +154,6 @@ class AppHeader extends HTMLElement {
   }
 
   disconnectedCallback() {
-    
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }

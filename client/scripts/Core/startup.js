@@ -21,7 +21,7 @@ import SocketHandler from "../../scripts/Core/SocketHandler.js";
 import SyncQueueRepo from "./db/SyncRepo.js";
 import SyncQueueHandler from "./controllers/SyncHandler.js";
 import NetworkStateHandler from "./controllers/NetworkStateHandler.js";
-
+import { LongPolling } from "../utils.js";
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
   1,
@@ -128,3 +128,5 @@ export const permissions = new UserPermissions(authState.GetCurrUserState().data
 const useSocket = new SocketHandler(authState);
 useSocket.connect();
 export const socketHandler = useSocket;
+LongPolling();
+

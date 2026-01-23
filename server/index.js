@@ -12,6 +12,8 @@ app.use(
 );
 app.use(express.json());
 
+let waitingClients = [];
+let messageId = 0;
 const server = http.createServer(app);
 
 const wss = new WebSocketServer({ server, path: "/ws" });
@@ -20,11 +22,56 @@ app.get("/healthz", (req, res) => {
   res.status(200).send("ok");
 });
 
+
+
 app.post("/sync", (req, res) => {
   console.log("Received sync data:", req.body);
   res.status(200).send("Sync data received");
 });
 
+
+app.get("/poll", (req, res) => {
+  console.log("Client connected to poll");
+
+  const timeout = setTimeout(() => {
+    res.json({
+      ok: true,
+      data: null,
+      timeout: true,
+    });
+  }, 15000); 
+
+
+  waitingClients.push({ res, timeout });
+
+
+  req.on("close", () => {
+    clearTimeout(timeout);
+    waitingClients = waitingClients.filter(c => c.res !== res);
+  });
+});
+
+
+setInterval(() => {
+  if (waitingClients.length === 0) return;
+
+  const payload = {
+    id: ++messageId,
+    message: "New update from server",
+    time: Date.now(),
+  };
+
+  
+  waitingClients.forEach(({ res, timeout }) => {
+    clearTimeout(timeout);
+    res.json({
+      ok: true,
+      data: payload,
+    });
+  });
+
+  waitingClients = [];
+}, 5000);
 
 server.listen(3000, () => {
   console.log("Server started on port 3000");

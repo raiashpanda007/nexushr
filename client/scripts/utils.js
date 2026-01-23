@@ -17,8 +17,9 @@
 //     });
 //   }
 // }
-import {syncQueueHandler} from "./Core/startup.js"
-import { QueueFlushedEvent } from "./events.js";
+import { syncQueueHandler } from "./Core/startup.js";
+import { QueueFlushedEvent, LongPollingEvent } from "./events.js";
+
 export async function CreatePayrollPDF(
   payrollID,
   userFirstName,
@@ -84,3 +85,45 @@ export async function Syncdata() {
   header.dispatchEvent(QueueFlushedEvent());
   console.log("Flush Queue Response: ", flushQueue);
 }
+
+const HEALTH_CHECK_INTERVAL = 30000;
+let isPollingUp = false;
+let lastResponseAt = Date.now();
+
+export async function LongPolling() {
+  const header = document.querySelector("app-header");
+  try {
+    const res = await fetch("http://localhost:3000/poll", {
+      cache: "no-store",
+    });
+
+    const data = await res.json();
+    lastResponseAt = Date.now();
+
+    if (!isPollingUp) {
+      isPollingUp = true;
+      header.dispatchEvent(LongPollingEvent(true));
+    }
+
+    if (data.data) {
+      window.dispatchEvent(
+        new CustomEvent("poll:message", { detail: data.data }),
+      );
+    }
+  } catch (err) {
+    console.warn("poll error:", err);
+    await new Promise((r) => setTimeout(r, 2000));
+  } finally {
+    LongPolling();
+  }
+}
+
+setInterval(() => {
+  if (Date.now() - lastResponseAt > HEALTH_CHECK_INTERVAL) {
+    if (isPollingUp) {
+      isPollingUp = false;
+      const header = document.querySelector("app-header");
+      header.dispatchEvent(LongPollingEvent(false));
+    }
+  }
+}, 25000);
