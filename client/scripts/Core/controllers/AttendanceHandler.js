@@ -1,3 +1,4 @@
+import { syncQueueHandler } from "../startup.js";
 class AttendanceHandler {
     constructor(repo, authState) {
         this.repo = repo;
@@ -16,6 +17,17 @@ class AttendanceHandler {
         }
 
         try {
+            const startSync = await syncQueueHandler.AddItemToQueue("attendance", "create", {
+                userID,
+                type
+            });
+            console.log("Start Sync Response: ", startSync);
+            if (!startSync.ok) {
+                return {
+                    ok: false,
+                    data: "Unable to store in sync queue try to get online cause offline sync queue to gayi: " + startSync.data
+                }
+            }
             const data = await this.repo.Create(userID, type);
             
             return { ok: true, data }

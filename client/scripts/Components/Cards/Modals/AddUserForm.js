@@ -187,7 +187,7 @@ class AddUserForm extends HTMLElement {
     profilePhotoInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (file) {
-        // Validate file type
+        
         if (!file.type.startsWith("image/")) {
           errUser.classList.remove("hidden");
           errUser.textContent = "Please select a valid image file.";
@@ -195,7 +195,7 @@ class AddUserForm extends HTMLElement {
           return;
         }
 
-        // Validate file size (max 5MB)
+        
         if (file.size > 5 * 1024 * 1024) {
           errUser.classList.remove("hidden");
           errUser.textContent = "Image size must be less than 5MB.";

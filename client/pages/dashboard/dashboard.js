@@ -22,7 +22,7 @@ import {
   leaveTypeHandler,
   salaryHandler,
   payrollHandler,
-  authState,
+  networkState,
 } from "../../scripts/Core/startup.js";
 import {
   CreateDepartmentErrorCustomEvent,
@@ -137,7 +137,7 @@ document.addEventListener("create-user", async (event) => {
         bubbles: true,
         composed: true,
       }),
-      UserForm.dispatchEvent(CreateUserSuccessEvent())
+      UserForm.dispatchEvent(CreateUserSuccessEvent()),
     );
   }
   const { ok, data } = await permissions.CreateUser(
@@ -151,7 +151,7 @@ document.addEventListener("create-user", async (event) => {
     event.detail.department,
   );
   console.log({ ok, data });
-  
+
   !ok
     ? UserForm.dispatchEvent(CreateUserErrorCustomEvent(data))
     : UserCreatedEvent();
@@ -295,4 +295,9 @@ document.addEventListener("create-payroll", async (event) => {
   !ok
     ? GeneratePayrollForm.dispatchEvent(CreatePayrollErrorCustomEvent(data))
     : GeneratePayrollForm.dispatchEvent(CreatePayrollSuccessEvent());
+});
+
+document.addEventListener("network-status-changed",  (event) => {
+  console.log("Network status changed: ", event.detail.isOnline);
+  event.detail.isOnline ? networkState.SetOnline() : networkState.SetOffline();
 });

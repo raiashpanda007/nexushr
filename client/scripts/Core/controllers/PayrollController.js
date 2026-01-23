@@ -1,3 +1,4 @@
+import { syncQueueHandler } from "../startup.js";
 class PayrollController {
     constructor(repo, userState) {
         this.payrollRepo = repo;
@@ -17,6 +18,24 @@ class PayrollController {
             }
         }
         try {
+            const startSync = await syncQueueHandler.AddItemToQueue("payrolls", "create", {
+                userId,
+                userFirstName,
+                userLastName,
+                month,
+                year,
+                salary,
+                bonuses,
+                deductions,
+                total
+            });
+            console.log("Start Sync Response: ", startSync);
+            if (!startSync.ok) {
+                return {
+                    ok: false,
+                    data: "Unable to store in sync queue try to get online cause offline sync queue to gayi: " + startSync.data
+                }
+            }
             const { ok, data } = await this.payrollRepo.CreatePayroll(userId, userFirstName, userLastName, month, year, salary, bonuses, deductions, total);
             return {
                 ok,

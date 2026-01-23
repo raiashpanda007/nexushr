@@ -17,11 +17,21 @@
 //     });
 //   }
 // }
-
-
-export async function CreatePayrollPDF(payrollID, userFirstName, userLastName, month, year, salary, bonuses, deductions, total) {
-
-  const worker = new Worker(new URL("./Core/controllers/workers/pdf.worker.js", import.meta.url));
+import {syncQueueHandler} from "./Core/startup.js"
+export async function CreatePayrollPDF(
+  payrollID,
+  userFirstName,
+  userLastName,
+  month,
+  year,
+  salary,
+  bonuses,
+  deductions,
+  total,
+) {
+  const worker = new Worker(
+    new URL("./Core/controllers/workers/pdf.worker.js", import.meta.url),
+  );
 
   worker.onmessage = (e) => {
     const buffer = e.data.buffer;
@@ -39,7 +49,6 @@ export async function CreatePayrollPDF(payrollID, userFirstName, userLastName, m
     URL.revokeObjectURL(url);
   };
 
-
   (function () {
     worker.postMessage({
       payrollID: payrollID,
@@ -50,25 +59,25 @@ export async function CreatePayrollPDF(payrollID, userFirstName, userLastName, m
       salary: salary,
       bonuses: bonuses,
       deductions: deductions,
-      total: total
+      total: total,
     });
   })();
-
 }
 
-
 export async function HealthChecker() {
-  
-  
   try {
     const response = await fetch("http://localhost:3000/healthz");
     if (response.ok) {
-        return true;
+      return true;
     }
   } catch (error) {
     console.log(error);
-    return false
+    return false;
   }
+}
 
-
+export async function Syncdata() {
+  console.log("Syncdata called");
+  const flushQueue = await syncQueueHandler.FlushQueue();
+  console.log("Flush Queue Response: ", flushQueue);
 }

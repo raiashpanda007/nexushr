@@ -18,6 +18,9 @@ import PayrollController from "./controllers/PayrollController.js";
 import LeaveApplicationRepo from "./db/LeaveApplicationRepo.js";
 import LeaveApplicationHandler from "./controllers/LeaveApplicationHandler.js";
 import SocketHandler from "../../scripts/Core/SocketHandler.js";
+import SyncQueueRepo from "./db/SyncRepo.js";
+import SyncQueueHandler from "./controllers/SyncHandler.js";
+import NetworkStateHandler from "./controllers/NetworkStateHandler.js";
 
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
@@ -82,12 +85,23 @@ export const dbManager = new IndexedDBManager(
       leaves_applications.createIndex("status_index", "status", { unique: false })
 
     }
+
+
+    if (!db.objectStoreNames.contains("sync_queue")) {
+      const sync_queue = db.createObjectStore("sync_queue", { keyPath: "id", autoIncrement: true });
+      sync_queue.createIndex("table_indx", "table", { unique: false });
+      sync_queue.createIndex("operation_indx", "operation", { unique: false });
+    }
   }
 );
 
 await dbManager.init();
 
 
+
+export const syncQueueRepo = new SyncQueueRepo(dbManager);
+export const networkState = new NetworkStateHandler();
+export const syncQueueHandler = new SyncQueueHandler(syncQueueRepo, networkState);
 
 
 export const userRepo = new UserRepo(dbManager);
@@ -108,7 +122,6 @@ export const payrollHandler = new PayrollController(payrollRepo, authState.GetCu
 export const leaveApplicationRepo = new LeaveApplicationRepo(dbManager);
 export const leaveApplicationHandler = new LeaveApplicationHandler(dbManager, leaveApplicationRepo, authState.GetCurrUserState());
 export const permissions = new UserPermissions(authState.GetCurrUserState().data, userRepo, deptRepo, skillRepo, leaveTypeRepo);
-
 
 
 

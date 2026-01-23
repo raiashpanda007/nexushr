@@ -432,3 +432,12 @@ export function WSDisconnectedEvent() {
     composed: true
   })
 }
+
+
+export function NetworkStatusChange(isOnline) {
+  return new CustomEvent("network-status-changed", {
+    detail: { isOnline },
+    bubbles: true,
+    composed: true
+  })
+}

@@ -1,3 +1,4 @@
+import {syncQueueHandler} from "../startup.js";
 class Permissions {
   constructor(userState, userRepo, deptRepo, skillRepo, leaveTypeRepo) {
     this.user = userState;
@@ -16,6 +17,17 @@ class Permissions {
       }
     }
     try {
+      const sync = await syncQueueHandler.AddItemToQueue("departments", "create", {
+        name,
+        description
+      }); 
+      console.log("Sync Queue Response Create department : ", sync);
+      if (!sync.ok) {
+        return {
+          ok: false,
+          data: "Unable to store in sync queue try to get online cause offline sync queue to gayi: " + sync.data
+        }
+      }
       const { ok, data } = await this.deptRepo.Create(name, description);
 
       return {
@@ -63,6 +75,17 @@ class Permissions {
           data: "Please provide every field"
         }
       }
+      const sync = await syncQueueHandler.AddItemToQueue("skills", "create", {
+        name,
+        category
+      });
+      console.log("Sync Queue Response Create skill : ", sync);
+      if (!sync.ok) {
+        return {
+          ok: false,
+          data: "Unable to store in sync queue try to get online cause offline sync queue to gayi: " + sync.data
+        }
+      }
       const { ok, data } = await this.skillRepo.Create(name, category);
       return {
         ok, data
@@ -88,6 +111,18 @@ class Permissions {
     console.log(name, code, length);
     if (length === "full" || length === "half") {
       try {
+        const sync = await syncQueueHandler.AddItemToQueue("leaveTypes", "create", {
+          code,
+          name,
+          length
+        });
+        console.log("Sync Queue Response Create leave type : ", sync);
+        if (!sync.ok) {
+          return {
+            ok: false,
+            data: "Unable to store in sync queue try to get online cause offline sync queue to gayi: " + sync.data
+          }
+        }
         const { ok, data } = await this.leaveTypeRepo.Create(code, name, length);
         return {
           ok,
@@ -119,8 +154,24 @@ class Permissions {
         data: "Please provide all required fields"
       }
     }
-
     try {
+      const sync = await syncQueueHandler.AddItemToQueue("users", "create", {
+        email,
+        firstName,
+        lastName,
+        password,
+        profilePhoto,
+        note,
+        skillId,
+        department
+      });
+      console.log("Sync Queue Response Create user : ", sync);
+      if (!sync.ok) {
+        return {
+          ok: false,
+          data: "Unable to store in sync queue try to get online cause offline sync queue to gayi: " + sync.data
+        }
+      }
       // Create(email, firstName, lastName, password, profilePhoto, noteComment, skills, department)
       const userId = await this.userRepo.Create(email, firstName, lastName, password, profilePhoto, note, skillId, department);
 

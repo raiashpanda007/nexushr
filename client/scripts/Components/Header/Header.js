@@ -1,3 +1,4 @@
+import { NetworkStatusChange } from "../../events.js";
 import { HealthChecker } from "../../utils.js";
 const headerTemplate = document.createElement("template");
 
@@ -36,6 +37,7 @@ class AppHeader extends HTMLElement {
 
     const isHealthy = await HealthChecker();
 
+    document.dispatchEvent(NetworkStatusChange(isHealthy));
     this.spsEl.classList.remove("text-green-400", "text-red-300");
 
     if (isHealthy) {
