@@ -14,11 +14,12 @@ headerTemplate.innerHTML = `
 
         <nav class="hidden md:flex space-x-8 bg-slate-800 px-6 py-2 rounded-full border border-slate-700">
           <span id="app-lps-header" class="text-red-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer  text-sm font-medium">LPS</span>
-          <span class="text-slate-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">SSE</span>
+          <span id="app-sse-header" class="text-red-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">SSE</span>
           <span id=app-sps-header class="text-red-300  hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">SPS</span>
           <span id="app-ws-header" class="text-red-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">WS</span>
+          <span id="app-sse-message" class=" text-white cursor-pointer"></span>    
         </nav>
-
+        
       </div>
     </div>
     <div id="toast-container" class="absolute top-24 right-4 z-50"></div>
@@ -62,21 +63,50 @@ class AppHeader extends HTMLElement {
     }
   }
 
+  async updateSSEStatus(isConnected) {
+    if (!this.sseEl) return;
+
+    this.sseEl.classList.remove("text-green-400", "text-red-300");
+    if (isConnected) {
+      this.sseEl.classList.add("text-green-400");
+      this.sseEl.title = "SSE is Connected";
+    } else {
+      this.sseEl.classList.add("text-red-300");
+      this.sseEl.title = "SSE is Disconnected";
+    }
+  }
+  async updateSSEMessage(message = null) {
+    if (!this.sseMessageEl) return;
+
+    message
+      ? (this.sseMessageEl.textContent = message)
+      : (this.sseMessageEl.textContent = "");
+  }
   connectedCallback() {
     this.spsEl = this.querySelector("#app-sps-header");
     this.wsEl = this.querySelector("#app-ws-header");
     this.lpsEl = this.querySelector("#app-lps-header");
+    this.sseEl = this.querySelector("#app-sse-header");
+    this.sseMessageEl = this.querySelector("#app-sse-message");
     this.toastContainer = this.querySelector("#toast-container");
 
-    // Set WS to red by default
     this.updateWSStatus(false);
 
     this.updateSPSStatus();
     this.updateLPSStatus(false);
 
-    // Listen for WebSocket connection events
     this.addEventListener("ws-connected", () => {
       this.updateWSStatus(true);
+    });
+    this.addEventListener("sse-connected-event", (event) => {
+      const state = event.detail.state;
+      if (!state) console.log("SSE disconnected event received in header");
+      this.updateSSEStatus(state);
+    });
+    this.addEventListener("sse-message-event", (event) => {
+      console.log("SSE message event received in header", event);
+      const message = event.detail.message || event.detail || "New SSE message";
+      this.updateSSEMessage(message);
     });
 
     this.addEventListener("long-polling-event", (event) => {
@@ -121,13 +151,12 @@ class AppHeader extends HTMLElement {
     // Add toast to container
     this.toastContainer.appendChild(toast);
 
-    // Trigger slide-in animation
+
     setTimeout(() => {
       toast.style.transform = "translateX(0)";
       toast.style.opacity = "1";
     }, 10);
 
-    // Remove toast after 2 seconds
     setTimeout(() => {
       toast.style.opacity = "0";
       toast.style.transform = "translateX(120%)";

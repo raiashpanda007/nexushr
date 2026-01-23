@@ -474,3 +474,25 @@ export function LongPollingEvent(state) {
     composed: true,
   });
 }
+
+
+export function SSEConnectedEvent(state) {
+  return new CustomEvent("sse-connected-event", {
+    detail:{
+      state
+    },
+    bubbles: true,
+    composed: true,
+  });
+} 
+
+
+export  function SSEMessageEvent(message) {
+  return new CustomEvent("sse-message-event", {
+    detail:{
+      message
+    },
+    bubbles: true,
+    composed: true,
+  });
+}

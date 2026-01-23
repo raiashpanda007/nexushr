@@ -52,6 +52,7 @@ app.get("/poll", (req, res) => {
 });
 
 
+
 setInterval(() => {
   if (waitingClients.length === 0) return;
 
@@ -72,6 +73,36 @@ setInterval(() => {
 
   waitingClients = [];
 }, 5000);
+
+
+
+
+app.get("/events", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  res.flushHeaders(); 
+  res.write(`data: Connected to SSE\n\n`);
+
+  const interval = setInterval(() => {
+    const payload = {
+      time: new Date().toISOString(),
+      random: Math.floor(10 * Math.random()),
+    };
+
+    // Each SSE message must be prefixed with "data:" and end with a blank line
+    res.write(`data: time :: ${payload.time} random :: ${payload.random}\n\n`);
+    console.log("Sent SSE message:", payload);
+  }, 2000);
+
+  req.on("close", () => {
+    clearInterval(interval);
+    res.end();
+    console.log("Client disconnected");
+  });
+});
+
 
 server.listen(3000, () => {
   console.log("Server started on port 3000");
