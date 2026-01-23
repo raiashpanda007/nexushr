@@ -73,6 +73,9 @@ class AppHeader extends HTMLElement {
       const message = event.detail?.message || event.detail || "New notification";
       this.showToast(message);
     });
+    this.addEventListener("queue-flushed", () => {
+      this.showToast("Offline changes synced successfully");
+    });
 
     this.intervalId = setInterval(() => {
       this.updateSPSStatus();

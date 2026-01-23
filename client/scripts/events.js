@@ -441,3 +441,13 @@ export function NetworkStatusChange(isOnline) {
     composed: true
   })
 }
+
+
+
+
+export function QueueFlushedEvent() {
+  return new CustomEvent("queue-flushed", {
+    bubbles: true,
+    composed: true
+  })
+}

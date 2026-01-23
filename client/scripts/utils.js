@@ -18,6 +18,7 @@
 //   }
 // }
 import {syncQueueHandler} from "./Core/startup.js"
+import { QueueFlushedEvent } from "./events.js";
 export async function CreatePayrollPDF(
   payrollID,
   userFirstName,
@@ -79,5 +80,7 @@ export async function HealthChecker() {
 export async function Syncdata() {
   console.log("Syncdata called");
   const flushQueue = await syncQueueHandler.FlushQueue();
+  const header = document.querySelector("app-header");
+  header.dispatchEvent(QueueFlushedEvent());
   console.log("Flush Queue Response: ", flushQueue);
 }
