@@ -39,7 +39,7 @@ app.get("/poll", (req, res) => {
       data: null,
       timeout: true,
     });
-  }, 15000); 
+  }, 15000);
 
 
   waitingClients.push({ res, timeout });
@@ -62,7 +62,7 @@ setInterval(() => {
     time: Date.now(),
   };
 
-  
+
   waitingClients.forEach(({ res, timeout }) => {
     clearTimeout(timeout);
     res.json({
@@ -82,7 +82,7 @@ app.get("/events", (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  res.flushHeaders(); 
+  res.flushHeaders();
   res.write(`data: Connected to SSE\n\n`);
 
   const interval = setInterval(() => {
@@ -91,7 +91,6 @@ app.get("/events", (req, res) => {
       random: Math.floor(10 * Math.random()),
     };
 
-    // Each SSE message must be prefixed with "data:" and end with a blank line
     res.write(`data: time :: ${payload.time} random :: ${payload.random}\n\n`);
     console.log("Sent SSE message:", payload);
   }, 2000);

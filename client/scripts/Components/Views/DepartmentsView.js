@@ -48,6 +48,7 @@ class DepartmentsView extends HTMLElement {
         this.querySelector("#add-dept-btn").addEventListener("click", () => {
             this.dispatchEvent(AddDepartmentCustomEvent());
         });
+        
 
         await this.renderDepartments();
 

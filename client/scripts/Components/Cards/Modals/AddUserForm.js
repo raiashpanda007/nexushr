@@ -8,7 +8,7 @@ AddUserTemplate.innerHTML = `
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
 
     <div class="fixed inset-0 z-10 overflow-y-auto">
-      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div id="cancel-backdrop" class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         <!-- Modal Panel -->
         <div class="relative transform overflow-hidden rounded-2xl bg-white text-left transition-all sm:my-8 sm:w-full sm:max-w-lg opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" id="modal-panel">
           
@@ -127,6 +127,7 @@ class AddUserForm extends HTMLElement {
     const userCreationForm = this.querySelector('form');
     const errUser = this.querySelector("#errorUserForm");
     const deptSelect = this.querySelector("#dept");
+    const cancelBackdrop = this.querySelector("#cancel-backdrop");
 
     const skillsContainer = this.querySelector("#skills-container");
     const profilePhotoInput = this.querySelector("#profilePhoto");
@@ -137,10 +138,24 @@ class AddUserForm extends HTMLElement {
     let allSkills = [];
     let profilePhotoBlob = null;
 
-    // Session storage key
     const STORAGE_KEY = "addUserForm";
+    modal.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+    panel.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
 
-    // Restore form data from session storage
+    cancelBackdrop.addEventListener("click", () => {
+      closeModal();
+
+    });
+
+    backdrop.addEventListener("click", () => {
+      closeModal();
+    });
+
+
     const restoreFormData = () => {
       const savedData = sessionStorage.getItem(STORAGE_KEY);
       if (savedData) {
@@ -161,7 +176,6 @@ class AddUserForm extends HTMLElement {
       }
     };
 
-    // Save form data to session storage
     const saveFormData = () => {
       const data = {
         firstName: this.querySelector("#firstName").value,
@@ -175,7 +189,6 @@ class AddUserForm extends HTMLElement {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     };
 
-    // Clear session storage
     const clearFormData = () => {
       sessionStorage.removeItem(STORAGE_KEY);
       profilePhotoBlob = null;
@@ -183,11 +196,10 @@ class AddUserForm extends HTMLElement {
       photoPreviewContainer.classList.add("hidden");
     };
 
-    // Handle profile photo selection
     profilePhotoInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (file) {
-        
+
         if (!file.type.startsWith("image/")) {
           errUser.classList.remove("hidden");
           errUser.textContent = "Please select a valid image file.";
@@ -195,7 +207,7 @@ class AddUserForm extends HTMLElement {
           return;
         }
 
-        
+
         if (file.size > 5 * 1024 * 1024) {
           errUser.classList.remove("hidden");
           errUser.textContent = "Image size must be less than 5MB.";
@@ -203,10 +215,8 @@ class AddUserForm extends HTMLElement {
           return;
         }
 
-        // Create blob from file
         profilePhotoBlob = file;
 
-        // Show preview
         const reader = new FileReader();
         reader.onload = (event) => {
           photoPreview.src = event.target.result;
@@ -220,7 +230,6 @@ class AddUserForm extends HTMLElement {
       }
     });
 
-    // Listen for input changes to save to session storage
     userCreationForm.addEventListener('input', saveFormData);
     userCreationForm.addEventListener('change', saveFormData);
 
@@ -338,12 +347,9 @@ class AddUserForm extends HTMLElement {
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
 
-    // Backdrop click
     if (backdrop) {
       backdrop.addEventListener("click", closeModal);
     }
-
-    // ESC key to close modal
     const handleKeyDown = (e) => {
       if (e.key === "Escape" && !modal.classList.contains("hidden")) {
         closeModal();
@@ -379,7 +385,7 @@ class AddUserForm extends HTMLElement {
     });
 
     this.addEventListener("create-user-success", () => {
-      clearFormData(); // Clear session storage on success
+      clearFormData();
       closeModal();
     });
   }

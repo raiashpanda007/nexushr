@@ -5,94 +5,105 @@ export default class SocketHandler {
     this.socket = null;
     this.authState = authState;
 
-    this.retryCount = 0;
-    this.maxRetries = 10;
-    this.baseRetryDelay = 1000;
+    this.retryInterval = null;
+    this.retryDelay = 3000;
+    this.isConnecting = false;
   }
 
   connect() {
+    if (this.isConnecting || this.socket?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    this.isConnecting = true;
+    console.log("Attempting WebSocket connection...");
+
     this.socket = new WebSocket("ws://localhost:3000/ws");
 
     this.socket.addEventListener("open", () => {
-      console.log("WebSocket connection established");
-      this.retryCount = 0;
+      console.log("WebSocket connected");
+      this.isConnecting = false;
+      this.stopRetrying();
 
       const header = document.querySelector("app-header");
       header.dispatchEvent(WSConnectedEvent());
     });
 
     this.socket.addEventListener("close", () => {
-      console.log("ws disconnected ");
+      console.log("WebSocket disconnected");
+      this.isConnecting = false;
+
       const header = document.querySelector("app-header");
       header.dispatchEvent(WSDisconnectedEvent());
 
-      this.retry();
+      this.startRetrying();
     });
 
     this.socket.addEventListener("error", () => {
-      console.log("ws disconnected ");
-      const header = document.querySelector("app-header");
-      header.dispatchEvent(WSDisconnectedEvent());
-
-      if (this.socket?.readyState !== WebSocket.OPEN) {
-        this.retry();
-      }
+      console.log("WebSocket error");
+      this.isConnecting = false;
+      this.startRetrying();
     });
 
     this.socket.addEventListener("message", (event) => {
       try {
         const { type, payload } = JSON.parse(event.data);
+
         if (type === "notification") {
           const notificationEvent = new CustomEvent("ws-notification", {
             detail: payload,
           });
-          const header = document.querySelector("app-header");
-          header.dispatchEvent(notificationEvent);
+          document
+            .querySelector("app-header")
+            .dispatchEvent(notificationEvent);
         }
-        console.log("Received message:", event.data);
-      } catch (error) {
-        console.error("Error processing message:", error);
+      } catch (err) {
+        console.error("WS message error:", err);
       }
     });
   }
 
-  retry() {
-    if (this.retryCount >= this.maxRetries) {
-      console.warn("Max WebSocket retry attempts reached");
-      return;
+  startRetrying() {
+    if (this.retryInterval) return;
+
+
+
+    this.retryInterval = setInterval(() => {
+      if (
+        !this.socket ||
+        this.socket.readyState === WebSocket.CLOSED
+      ) {
+        this.connect();
+      }
+    }, this.retryDelay);
+  }
+
+  stopRetrying() {
+    if (this.retryInterval) {
+      clearInterval(this.retryInterval);
+      this.retryInterval = null;
     }
-
-    const delay = this.baseRetryDelay * (10 * Math.random());
-
-    console.log(`Retrying WebSocket connection in ${delay}ms...`);
-
-    this.retryCount++;
-
-    setTimeout(() => {
-      this.connect();
-    }, delay);
   }
 
   CheckIn() {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
       const user = this.authState.GetCurrUserState().data.user;
-      console.log("user info in socket handler:", user);
       this.socket.send(
         JSON.stringify({
           type: "CheckIn",
-          payload: { username: user.firstName + " " + user.lastName },
+          payload: { username: `${user.firstName} ${user.lastName}` },
         }),
       );
     }
   }
 
   CheckOut() {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
       const user = this.authState.GetCurrUserState().data.user;
       this.socket.send(
         JSON.stringify({
           type: "CheckOut",
-          payload: { username: user.firstName + " " + user.lastName },
+          payload: { username: `${user.firstName} ${user.lastName}` },
         }),
       );
     }

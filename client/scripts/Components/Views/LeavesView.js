@@ -467,19 +467,24 @@ class LeavesView extends HTMLElement {
             return;
         }
 
-        const { ok, data } = await leaveApplicationHandler.applyLeave(leaveType, startDate, endDate, reason, userId);
-        
-        if (ok) {
-            alert("Leave application submitted successfully!");
-            this.querySelector("#apply-leave-form").classList.add("hidden");
-            this.querySelector("#leave-application-form").reset();
-            
-            const { ok: userOk, data: userData } = authState.GetCurrUserState();
-            if (userOk && userData && userData.user) {
-                await this.renderEMPLeaveApplications(userData.user.id);
+        try {
+            const { ok, data } = await leaveApplicationHandler.applyLeave(leaveType, startDate, endDate, reason, userId);
+            console.log(ok, data);
+            if (ok) {
+                alert("Leave application submitted successfully!");
+                this.querySelector("#apply-leave-form").classList.add("hidden");
+                this.querySelector("#leave-application-form").reset();
+                
+                const { ok: userOk, data: userData } = authState.GetCurrUserState();
+                if (userOk && userData && userData.user) {
+                    await this.renderEMPLeaveApplications(userData.user.id);
+                }
+            } else {
+                alert("Failed to submit leave application: " + data);
             }
-        } else {
-            alert("Failed to submit leave application: " + data);
+        } catch (error) {
+            alert("An error occurred while submitting the leave application.");
+            console.error("Error submitting leave application:", error);
         }
     }
 

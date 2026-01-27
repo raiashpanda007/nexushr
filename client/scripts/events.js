@@ -467,7 +467,7 @@ export function QueueFlushedEvent() {
 
 export function LongPollingEvent(state) {
   return new CustomEvent("long-polling-event", {
-    detail:{
+    detail: {
       state
     },
     bubbles: true,
@@ -478,18 +478,18 @@ export function LongPollingEvent(state) {
 
 export function SSEConnectedEvent(state) {
   return new CustomEvent("sse-connected-event", {
-    detail:{
+    detail: {
       state
     },
     bubbles: true,
     composed: true,
   });
-} 
+}
 
 
-export  function SSEMessageEvent(message) {
+export function SSEMessageEvent(message) {
   return new CustomEvent("sse-message-event", {
-    detail:{
+    detail: {
       message
     },
     bubbles: true,

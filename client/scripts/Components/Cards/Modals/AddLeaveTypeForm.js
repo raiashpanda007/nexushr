@@ -7,7 +7,7 @@ AddLeaveTypeTemplate.innerHTML = `
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
 
     <div class="fixed inset-0 z-10 overflow-y-auto">
-      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div id="cancel-backdrop" class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         <!-- Modal Panel -->
         <div class="relative transform overflow-hidden rounded-2xl bg-white text-left transition-all sm:my-8 sm:w-full sm:max-w-lg opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" id="modal-panel">
           
@@ -85,7 +85,7 @@ class AddLeaveType extends HTMLElement {
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const leaveTypeForm = this.querySelector('form');
     const errLeaveType = this.querySelector("#errorLeaveTypeForm");
-
+    const cancelBackdrop = this.querySelector("#cancel-backdrop");
     // Session storage key
     const STORAGE_KEY = "addLeaveTypeForm";
 
@@ -114,12 +114,12 @@ class AddLeaveType extends HTMLElement {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     };
 
-    // Clear session storage
+    
+
     const clearFormData = () => {
       sessionStorage.removeItem(STORAGE_KEY);
     };
 
-    // Restore on load
     restoreFormData();
 
     const openModal = () => {
@@ -142,6 +142,17 @@ class AddLeaveType extends HTMLElement {
         modal.classList.add("hidden");
       }, 300);
     };
+
+
+    panel.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+    
+    cancelBackdrop.addEventListener("click", closeModal);
+
+    if(backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
 
     document.addEventListener("add-leave-type-modal", () => {
       openModal();
@@ -189,6 +200,7 @@ class AddLeaveType extends HTMLElement {
     })
     this.addEventListener("create-leave-type-success", () => {
       clearFormData(); // Clear session storage on success
+      leaveTypeForm.reset();
       closeModal();
     })
   }

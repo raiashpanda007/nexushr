@@ -5,6 +5,7 @@ class LeaveApplicationRepo {
     
     AddLeaveApplication(leaveType, startDate, endDate, reason, userId) {
         const id = crypto.randomUUID();
+       
         return new Promise((resolve, reject) => {
             const store = this.db.tx("leaves_applications","readwrite")
             const request = store.add({

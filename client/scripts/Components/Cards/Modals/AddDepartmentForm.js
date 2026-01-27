@@ -7,7 +7,7 @@ AddDepartmentTemplate.innerHTML = `
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
 
     <div class="fixed inset-0 z-10 overflow-y-auto">
-      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div id="cancel-backdrop" class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         <!-- Modal Panel -->
         <div class="relative transform overflow-hidden rounded-2xl bg-white text-left transition-all sm:my-8 sm:w-full sm:max-w-lg opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" id="modal-panel">
           
@@ -79,7 +79,7 @@ class AddDepartment extends HTMLElement {
     const cancelBtn = this.querySelector("#cancel-modal-btn");
     const deptCreationForm = this.querySelector('form');
     const errDept = this.querySelector("#errorDeptForm");
-
+    const cancelBackdrop = this.querySelector("#cancel-backdrop");
     // Restore form data from session storage
     const restoreFormData = () => {
       const savedData = sessionStorage.getItem(STORAGE_KEY);
@@ -139,10 +139,14 @@ class AddDepartment extends HTMLElement {
     // Listen for input changes to save to session storage
     deptCreationForm.addEventListener('input', saveFormData);
     deptCreationForm.addEventListener('change', saveFormData);
-
+    panel.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
     // Close on backdrop click
-    backdrop.addEventListener("click", closeModal);
-
+    cancelBackdrop.addEventListener("click", closeModal);
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
     // ESC key to close modal
     const handleKeyDown = (e) => {
       if (e.key === "Escape" && !modal.classList.contains("hidden")) {

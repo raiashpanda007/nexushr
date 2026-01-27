@@ -8,7 +8,7 @@ EditUserTemplate.innerHTML = `
     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="modal-backdrop"></div>
 
     <div class="fixed inset-0 z-10 overflow-y-auto">
-      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div id="cancel-backdrop" class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         <!-- Modal Panel -->
         <div class="relative transform overflow-hidden rounded-2xl bg-white text-left transition-all sm:my-8 sm:w-full sm:max-w-lg opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" id="modal-panel">
           
@@ -119,6 +119,7 @@ class EditUserModal extends HTMLElement {
     const errUser = this.querySelector("#errorUserForm");
     const skillsContainer = this.querySelector("#skills-container");
     const deptSelect = this.querySelector("#dept");
+    const cancelBackdrop = this.querySelector("#cancel-backdrop");
     let selectedSkills = new Set();
     let allSkills = [];
 
@@ -313,9 +314,11 @@ class EditUserModal extends HTMLElement {
 
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-
-    if (backdrop) {
-      backdrop.addEventListener("click", closeModal);
+    panel.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+    if (cancelBackdrop) {
+      cancelBackdrop.addEventListener("click", closeModal);
     }
 
     // ESC key to close modal

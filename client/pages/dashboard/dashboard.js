@@ -7,6 +7,7 @@ import "../../scripts/Components/Views/LeavesView.js";
 import "../../scripts/Components/Views/AttendanceView.js";
 import "../../scripts/Components/Views/SalariesView.js";
 import "../../scripts/Components/Views/PayrollView.js";
+import "../../scripts/Components/Views/AnalysisView.js";
 import "../../scripts/Components/Cards/Modals/EditDepartmentModal.js";
 import "../../scripts/Components/Cards/Modals/EditSkillModal.js";
 import "../../scripts/Components/Cards/Modals/EditLeaveTypeModal.js";
@@ -57,6 +58,7 @@ const views = {
   "nav-attendance": "app-attendance-view",
   "nav-salaries": "app-salaries-view",
   "nav-payroll": "app-payroll-view",
+  "nav-analysis": "app-analysis-view",
 };
 
 Object.keys(views).forEach((event) => {
@@ -297,7 +299,7 @@ document.addEventListener("create-payroll", async (event) => {
     : GeneratePayrollForm.dispatchEvent(CreatePayrollSuccessEvent());
 });
 
-document.addEventListener("network-status-changed",  (event) => {
+document.addEventListener("network-status-changed", (event) => {
   console.log("Network status changed: ", event.detail.isOnline);
   event.detail.isOnline ? networkState.SetOnline() : networkState.SetOffline();
 });

@@ -1,4 +1,4 @@
-import {syncQueueHandler} from "../startup.js";
+import { syncQueueHandler } from "../startup.js";
 class Permissions {
   constructor(userState, userRepo, deptRepo, skillRepo, leaveTypeRepo) {
     this.user = userState;
@@ -20,7 +20,7 @@ class Permissions {
       const sync = await syncQueueHandler.AddItemToQueue("departments", "create", {
         name,
         description
-      }); 
+      });
       console.log("Sync Queue Response Create department : ", sync);
       if (!sync.ok) {
         return {
@@ -172,7 +172,6 @@ class Permissions {
           data: "Unable to store in sync queue try to get online cause offline sync queue to gayi: " + sync.data
         }
       }
-      // Create(email, firstName, lastName, password, profilePhoto, noteComment, skills, department)
       const userId = await this.userRepo.Create(email, firstName, lastName, password, profilePhoto, note, skillId, department);
 
       return {
@@ -189,6 +188,5 @@ class Permissions {
   }
 
 };
-
 
 export default Permissions;
