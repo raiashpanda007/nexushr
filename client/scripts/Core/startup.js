@@ -23,6 +23,7 @@ import SyncQueueHandler from "./controllers/SyncHandler.js";
 import NetworkStateHandler from "./controllers/NetworkStateHandler.js";
 import { LongPolling } from "../utils.js";
 import SSEHandler from "./SSEhandler.js";
+import AnalysisHandler from "./controllers/AnalysisHandler.js";
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
   1,
@@ -125,6 +126,7 @@ export const leaveApplicationHandler = new LeaveApplicationHandler(dbManager, le
 export const permissions = new UserPermissions(authState.GetCurrUserState().data, userRepo, deptRepo, skillRepo, leaveTypeRepo);
 export const sseHandler = new SSEHandler('http://localhost:3000/events');
 
+export const analysisHandler = new AnalysisHandler(leaveApplicationHandler, attendanceHandler, salaryHandler, userHandler, skillHandler, deptHandler, authState.GetCurrUserState());
 
 sseHandler.connect();
 
