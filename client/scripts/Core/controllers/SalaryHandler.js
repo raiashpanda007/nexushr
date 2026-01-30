@@ -1,4 +1,4 @@
-import {syncQueueHandler} from "../startup.js";
+import { syncQueueHandler } from "../startup.js";
 class SalaryHandler {
     constructor(salaryRepo, authState) {
         this.salaryRepo = salaryRepo;

@@ -78,7 +78,7 @@ class AnalysisHandler {
         if (!salariesResponse.ok) return { ok: false, data: salariesResponse.data };
 
         const result = this._processSalariesAnalysis(
-            salariesResponse.data,
+            salariesResponse.data.data,
             getAllUsers.data ? (getAllUsers.data.data || getAllUsers.data) : [],
             getAllSkills.data,
             getAllDepartments.data,
@@ -115,8 +115,10 @@ class AnalysisHandler {
 
         return data.filter(item => {
             if (type === 'department') return item.departmentName === filterTarget;
-            if (type === 'employee') return item.userId === filterTarget; // Assuming filterTarget is UserID for employee
-            if (type === 'skill') return (item.userSkills || []).includes(filterTarget); // Assuming filterTarget is SkillID
+            if (type === 'employee') return item.userId === filterTarget;
+            if (type === 'skill') {
+                return (item.userSkills || []).some(s => (s.id === filterTarget) || (s === filterTarget));
+            }
             return true;
         });
     }
@@ -142,7 +144,6 @@ class AnalysisHandler {
             };
         });
 
-        // Apply Generic Filter
         if (filterTarget) {
             enrichedLeaves = this._filterData(enrichedLeaves, type, filterTarget);
         }
@@ -221,8 +222,6 @@ class AnalysisHandler {
                 highlights['employeeWithMostLeaves'] = topLeaverInTargetDept;
                 highlights['employeeWithLeastLeaves'] = leastLeaverInTargetDept;
             } else {
-                // Global highlights
-                // Find global most common type
                 const globalTypes = {};
                 acceptedLeaves.forEach(l => {
                     const t = l.leaveType || 'Other';
@@ -269,7 +268,9 @@ class AnalysisHandler {
         if (type === 'skill') {
             const skillStats = {};
             acceptedLeaves.forEach(l => {
-                l.userSkills.forEach(sId => {
+                l.userSkills.forEach(s => {
+                    const sId = s.id || s;
+                    if (filterTarget && sId != filterTarget) return;
                     const sName = skillMap.get(sId) || 'Unknown Skill';
                     if (!skillStats[sName]) skillStats[sName] = { totalDays: 0, name: sName };
                     skillStats[sName].totalDays += l.days;
@@ -349,11 +350,112 @@ class AnalysisHandler {
                     deptWithMostOvertime: [...deptArray].sort((a, b) => b.overtime - a.overtime)[0] || null
                 },
                 details: deptArray
+            };
+        }
+
+        if (type === 'employee') {
+            const userStats = {};
+
+            // Helper to get minutes from midnight
+            const getMins = (d) => {
+                const date = new Date(d);
+                return date.getHours() * 60 + date.getMinutes();
+            };
+
+            enrichedAttendance.forEach(a => {
+                const uName = a.userName;
+                if (!userStats[uName]) userStats[uName] = {
+                    totalHours: 0,
+                    shifts: 0,
+                    overtime: 0,
+                    name: uName,
+                    dept: a.departmentName,
+                    totalEntryMins: 0,
+                    totalExitMins: 0,
+                    exitCount: 0,
+                    lastEntry: null,
+                    lastExit: null
+                };
+                userStats[uName].totalHours += a.hours;
+                userStats[uName].shifts += 1;
+                if (a.hours > 9) userStats[uName].overtime += 1;
+
+                if (a.entryDate) {
+                    userStats[uName].totalEntryMins += getMins(a.entryDate);
+                }
+                if (a.exitDate) {
+                    userStats[uName].totalExitMins += getMins(a.exitDate);
+                    userStats[uName].exitCount += 1;
+                }
+
+                if (a.entryDate && (!userStats[uName].lastEntry || new Date(a.entryDate) > new Date(userStats[uName].lastEntry))) {
+                    userStats[uName].lastEntry = a.entryDate;
+                }
+                if (a.exitDate && (!userStats[uName].lastExit || new Date(a.exitDate) > new Date(userStats[uName].lastExit))) {
+                    userStats[uName].lastExit = a.exitDate;
+                }
+            });
+
+            const formatDate = (d) => {
+                if (!d) return 'N/A';
+                const date = new Date(d);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}-${month}-${year}`;
             }
+
+            const userArray = Object.values(userStats).map(u => ({
+                ...u,
+                avgHours: u.shifts ? (u.totalHours / u.shifts).toFixed(2) : 0,
+                avgDuration: u.shifts ? formatDuration(u.totalHours / u.shifts) : '0h 0m',
+                avgEntryTime: u.shifts ? formatTime(u.totalEntryMins / u.shifts) : 'N/A',
+                avgExitTime: u.exitCount ? formatTime(u.totalExitMins / u.exitCount) : 'N/A',
+                lastEntry: formatDate(u.lastEntry),
+                lastExit: formatDate(u.lastExit)
+            })).sort((a, b) => b.totalHours - a.totalHours);
+
+            userArray.forEach(u => {
+                delete u.totalEntryMins;
+                delete u.totalExitMins;
+                delete u.exitCount;
+                delete u.lastAttendance;
+            });
+
+            return {
+                summary: mainSummary,
+                highlights: {
+                    mostHardworking: userArray[0] ? { name: userArray[0].name, hours: userArray[0].totalHours.toFixed(2) } : null,
+                },
+                details: userArray
+            };
+        }
+
+        if (type === 'skill') {
+            const skillStats = {};
+            enrichedAttendance.forEach(a => {
+                a.userSkills.forEach(s => {
+                    const sId = s.id || s;
+                    if (filterTarget && sId != filterTarget) return;
+
+                    const sName = skillMap.get(sId) || 'Unknown Skill';
+                    if (!skillStats[sName]) skillStats[sName] = { totalHours: 0, shifts: 0, name: sName };
+                    skillStats[sName].totalHours += a.hours;
+                    skillStats[sName].shifts += 1;
+                });
+            });
+            const skillArray = Object.values(skillStats).map(s => ({
+                ...s,
+                avgHours: s.shifts ? (s.totalHours / s.shifts).toFixed(2) : 0
+            })).sort((a, b) => b.totalHours - a.totalHours);
+
+            return { summary: mainSummary, details: skillArray };
         }
 
         return { summary: mainSummary, details: enrichedAttendance };
     }
+
+
 
     _processSalariesAnalysis(salaries, users, skills, departments, type, startDate, endDate, filterTarget) {
 
@@ -362,7 +464,10 @@ class AnalysisHandler {
         const userMap = new Map((users || []).map(u => [u.id, u]));
         const deptMap = new Map((departments || []).map(d => [d.id, d.name]));
         const skillMap = new Map((skills || []).map(s => [s.id, s.name]));
-
+        console.log("Users :: ", users);
+        console.log("Departments :: ", departments);
+        console.log("Skills :: ", skills);
+        console.log("Salaries :: ", salaries);
         let enrichedSalaries = filteredSalaries.map(s => {
             const user = userMap.get(s.userId);
             const total = parseFloat(s.base || 0) + parseFloat(s.hra || 0) + parseFloat(s.lta || 0);
@@ -409,8 +514,56 @@ class AnalysisHandler {
             }
         }
 
+        if (type === 'employee') {
+            const userStats = {};
+            enrichedSalaries.forEach(s => {
+                const uName = s.userName;
+                if (!userStats[uName]) userStats[uName] = {
+                    totalCost: 0,
+                    count: 0,
+                    name: uName,
+                    dept: s.departmentName,
+                    components: { Base: 0, HRA: 0, LTA: 0 }
+                };
+                userStats[uName].totalCost += s.total;
+                userStats[uName].count += 1;
+
+                userStats[uName].components.Base += parseFloat(s.base || 0);
+                userStats[uName].components.HRA += parseFloat(s.hra || 0);
+                userStats[uName].components.LTA += parseFloat(s.lta || 0);
+            });
+
+            const userArray = Object.values(userStats).sort((a, b) => b.totalCost - a.totalCost);
+
+            return {
+                summary: mainSummary,
+                highlights: {
+                    highestEarner: userArray[0] ? { name: userArray[0].name, cost: userArray[0].totalCost.toLocaleString() } : null
+                },
+                details: userArray
+            };
+        }
+
+        if (type === 'skill') {
+            const skillStats = {};
+            enrichedSalaries.forEach(s => {
+                s.userSkills.forEach(skill => {
+                    const sId = skill.id || skill;
+                    if (filterTarget && sId != filterTarget) return;
+
+                    const sName = skillMap.get(sId) || 'Unknown Skill';
+                    if (!skillStats[sName]) skillStats[sName] = { totalCost: 0, count: 0, name: sName };
+                    skillStats[sName].totalCost += s.total;
+                    skillStats[sName].count += 1;
+                });
+            });
+            const skillArray = Object.values(skillStats).sort((a, b) => b.totalCost - a.totalCost);
+            return { summary: mainSummary, details: skillArray };
+        }
+
         return { summary: mainSummary, details: enrichedSalaries };
     }
 }
+
 
 export default AnalysisHandler;

@@ -495,14 +495,14 @@ class AnalysisView extends HTMLElement {
         const highlightsHtml = Object.entries(data.highlights || {}).map(([key, value]) => {
             if (!value) return '';
 
-            // Format Key: "departmentWithMostLeaves" -> "Department With Most Leaves"
+
             const label = key.replace(/([A-Z])/g, ' $1')
                 .replace(/^./, str => str.toUpperCase())
                 .trim();
 
             let contentHtml = '';
             if (typeof value === 'object' && value !== null) {
-                // If value is object, show as list of key-values but formatted nice
+
                 contentHtml = `<div class="space-y-1">` +
                     Object.entries(value).map(([k, v]) => `
                         <div class="flex justify-between items-center text-sm">
@@ -548,20 +548,31 @@ class AnalysisView extends HTMLElement {
             let extra = '';
             if (item.leaveTypes) {
                 extra += `<div class="mt-3 pt-2 border-t border-slate-100">
-                                            <p class="text-xs font-semibold text-slate-500 mb-2">Leave Breakdown</p>
-                                            <div class="flex flex-wrap gap-2">` +
+                                <p class="text-xs font-semibold text-slate-500 mb-2">Leave Breakdown</p>
+                                <div class="flex flex-wrap gap-2">` +
                     Object.entries(item.leaveTypes).map(([k, v]) => `<span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-100">${k}: ${v} Leaves</span>`).join('') +
+                    `</div></div>`;
+            }
+
+            if (item.components) {
+                extra += `<div class="mt-3 pt-2 border-t border-slate-100">
+                                <p class="text-xs font-semibold text-slate-500 mb-2">Salary Breakdown</p>
+                                <div class="flex flex-wrap gap-2">` +
+                    Object.entries(item.components).map(([k, v]) => `<span class="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium border border-emerald-100">${k}: ₹${v.toLocaleString()}</span>`).join('') +
                     `</div></div>`;
             }
 
             // Filter tech keys to show relevant stats
             const kv = Object.entries(item)
-                .filter(([k]) => !['leaveTypes', 'employees', 'userSkills', 'name', 'userId', 'departmentName', 'userName', 'id', 'entryDate', 'exitDate'].includes(k))
+                .filter(([k]) => !['components', 'leaveTypes', 'employees', 'userSkills', 'name', 'userId', 'departmentName', 'userName', 'id', 'entryDate', 'exitDate'].includes(k))
                 .map(([k, v]) => {
                     const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
                     let val = v;
                     if (k.toLowerCase().includes('date')) {
-                        val = new Date(v).toLocaleDateString();
+                        const d = new Date(v);
+                        if (!isNaN(d.getTime())) {
+                            val = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+                        }
                     }
                     return `<div class="flex justify-between items-center py-1"><span class="text-slate-500">${label}</span><span class="font-medium text-slate-800">${val}</span></div>`;
                 }).join('');

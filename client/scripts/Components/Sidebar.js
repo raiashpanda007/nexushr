@@ -85,6 +85,7 @@ class Sidebar extends HTMLElement {
         const navTexts = this.querySelectorAll(".nav-text");
         const logoutBtn = this.querySelector("#logout-btn");
         const userProfile = this.querySelector("#user-profile");
+        const header = document.querySelector("app-header");
 
         if (this.collapsed) {
             sidebar.classList.replace("w-64", "w-20");
@@ -94,6 +95,9 @@ class Sidebar extends HTMLElement {
             userInfo.classList.add("hidden");
             logoutText.classList.add("hidden");
             navTexts.forEach(t => t.classList.add("hidden"));
+
+            console.log("::::debug header :::::", header);
+            header.querySelector("#header-logo").classList.remove("hidden");
 
             // Center items
             this.querySelectorAll("nav button").forEach(btn => {
@@ -113,7 +117,7 @@ class Sidebar extends HTMLElement {
             sidebar.classList.replace("w-20", "w-64");
             logo.classList.remove("opacity-0", "w-0", "hidden");
             toggleIcon.classList.remove("rotate-180");
-
+            header.querySelector("#header-logo").classList.add("hidden");
             userInfo.classList.remove("hidden");
             logoutText.classList.remove("hidden");
             navTexts.forEach(t => t.classList.remove("hidden"));

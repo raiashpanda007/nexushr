@@ -73,6 +73,26 @@ class AttendanceRepo {
         })
     }
 
+    GetAllAttendance() {
+        return new Promise((resolve, reject) => {
+            const attendanceStore = this.db.tx("attendance");
+            const request = attendanceStore.getAll();
+
+            request.onsuccess = () => {
+                resolve({
+                    ok: true,
+                    data: request.result
+                })
+            }
+            request.onerror = () => {
+                reject({
+                    ok: false,
+                    data: request.error
+                })
+            }
+        })
+    }
+
 
 
 
