@@ -7,7 +7,7 @@ headerTemplate.innerHTML = `
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-20">
         <div class="flex-shrink-0 flex items-center cursor-pointer group">
-          <h1 id="header-logo" class="text-3xl font-bold text-white group-hover:opacity-80 transition-opacity">
+          <h1 id="header-logo" class="text-3xl font-bold text-white group-hover:opacity-80 transition-opacity hidden">
             NexusHR
           </h1>
         </div>
