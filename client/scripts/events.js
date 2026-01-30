@@ -405,6 +405,14 @@ export function OpenGeneratePayrollModalEvent(user) {
   });
 }
 
+export function OpenViewUserModalEvent(user) {
+  return new CustomEvent("open-view-user-modal", {
+    detail: { user },
+    bubbles: true,
+    composed: true,
+  });
+}
+
 export function CreatePayrollCustomEvent(data) {
   return new CustomEvent("create-payroll", {
     detail: data,
