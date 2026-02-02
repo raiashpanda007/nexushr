@@ -70,7 +70,7 @@ GeneratePayrollModalTemplate.innerHTML = `
                 <h4 class="text-sm font-medium text-slate-900 mb-3">Bonuses</h4>
                 <div class="flex gap-2 mb-3">
                   <input type="text" id="bonus-reason" placeholder="Reason" class="block w-full rounded-lg border-slate-300 py-2 px-3 text-sm focus:border-purple-500 focus:ring-purple-500">
-                  <input type="number" id="bonus-amount" placeholder="Amount" min="0" class="block w-32 rounded-lg border-slate-300 py-2 px-3 text-sm focus:border-purple-500 focus:ring-purple-500">
+                  <input type="number" id="bonus-amount" placeholder="Amount" min="0" max="1000000" class="block w-32 rounded-lg border-slate-300 py-2 px-3 text-sm focus:border-purple-500 focus:ring-purple-500">
                   <button type="button" id="add-bonus-btn" class="inline-flex justify-center rounded-lg border border-transparent bg-purple-100 px-4 py-2 text-sm font-medium text-purple-900 hover:bg-purple-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2">Add</button>
                 </div>
                 <div class="max-h-32 overflow-y-auto border-t border-slate-100 pt-2">
@@ -85,7 +85,7 @@ GeneratePayrollModalTemplate.innerHTML = `
                 <h4 class="text-sm font-medium text-slate-900 mb-3">Deductions</h4>
                 <div class="flex gap-2 mb-3">
                   <input type="text" id="deduction-reason" placeholder="Reason" class="block w-full rounded-lg border-slate-300 py-2 px-3 text-sm focus:border-purple-500 focus:ring-purple-500">
-                  <input type="number" id="deduction-amount" placeholder="Amount" min="0" class="block w-32 rounded-lg border-slate-300 py-2 px-3 text-sm focus:border-purple-500 focus:ring-purple-500">
+                  <input type="number" id="deduction-amount" placeholder="Amount" min="0" max="1000000" class="block w-32 rounded-lg border-slate-300 py-2 px-3 text-sm focus:border-purple-500 focus:ring-purple-500">
                   <button type="button" id="add-deduction-btn" class="inline-flex justify-center rounded-lg border border-transparent bg-rose-100 px-4 py-2 text-sm font-medium text-rose-900 hover:bg-rose-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2">Add</button>
                 </div>
                 <div class="max-h-32 overflow-y-auto border-t border-slate-100 pt-2">
@@ -262,6 +262,10 @@ class GeneratePayrollModal extends HTMLElement {
       const amount = parseFloat(amountInput.value);
 
       if (reason && !isNaN(amount) && amount > 0) {
+        if (amount > 1000000) {
+          alert("Bonus amount cannot exceed $1,000,000");
+          return;
+        }
         this.bonuses.push({ reason, amount });
         this.renderBonuses();
         this.calculateFinalPay();
@@ -279,6 +283,10 @@ class GeneratePayrollModal extends HTMLElement {
       const amount = parseFloat(amountInput.value);
 
       if (reason && !isNaN(amount) && amount > 0) {
+        if (amount > 1000000) {
+          alert("Deduction amount cannot exceed $1,000,000");
+          return;
+        }
         this.deductions.push({ reason, amount });
         this.renderDeductions();
         this.calculateFinalPay();

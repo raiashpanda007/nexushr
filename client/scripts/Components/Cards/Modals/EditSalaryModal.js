@@ -35,7 +35,7 @@ EditSalaryModalTemplate.innerHTML = `
                   <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                     <span class="text-slate-500 sm:text-sm">$</span>
                   </div>
-                  <input type="number" name="base" id="base" required min="0" class="block w-full rounded-lg border-slate-300 pl-7 py-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="0.00">
+                  <input type="number" name="base" id="base" required min="0" max="1000000" class="block w-full rounded-lg border-slate-300 pl-7 py-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="0.00">
                 </div>
               </div>
 
@@ -45,7 +45,7 @@ EditSalaryModalTemplate.innerHTML = `
                   <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                     <span class="text-slate-500 sm:text-sm">$</span>
                   </div>
-                  <input type="number" name="hra" id="hra" required min="0" class="block w-full rounded-lg border-slate-300 pl-7 py-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="0.00">
+                  <input type="number" name="hra" id="hra" required min="0" max="1000000" class="block w-full rounded-lg border-slate-300 pl-7 py-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="0.00">
                 </div>
               </div>
 
@@ -55,7 +55,7 @@ EditSalaryModalTemplate.innerHTML = `
                   <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                     <span class="text-slate-500 sm:text-sm">$</span>
                   </div>
-                  <input type="number" name="lta" id="lta" required min="0" class="block w-full rounded-lg border-slate-300 pl-7 py-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="0.00">
+                  <input type="number" name="lta" id="lta" required min="0" max="1000000" class="block w-full rounded-lg border-slate-300 pl-7 py-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="0.00">
                 </div>
               </div>
             </div>
@@ -177,6 +177,11 @@ class EditSalaryModal extends HTMLElement {
       const base = parseFloat(formData.get("base"));
       const hra = parseFloat(formData.get("hra"));
       const lta = parseFloat(formData.get("lta"));
+
+      if (base > 1000000 || hra > 1000000 || lta > 1000000) {
+        alert("Salary components cannot exceed $1,000,000");
+        return;
+      }
 
       this.dispatchEvent(EditSalaryCustomEvent({
         id,
