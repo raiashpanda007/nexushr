@@ -4,12 +4,12 @@ const HRCreateUserOptionTemplate = document.createElement("template");
 
 
 HRCreateUserOptionTemplate.innerHTML = `
-  <div id="hr-create-user-div" class="w-full max-w-7xl mx-auto p-6">
+  <div id="hr-create-user-div" class="w-full max-w-7xl mx-auto p-6 flex justify-between items-center">
     <h1 class="font-bold text-4xl">
       Create a new employee  
     </h1> 
-  <button class="font-bold text-2xl border p-2 rounded">
-    Add new User
+  <button class="font-bold text-xl border p-2 rounded-lg bg-blue-500 text-white cursor-pointer">
+    Add Employee +
   </button>
   </div>
 
