@@ -77,7 +77,7 @@ class AppHeader extends HTMLElement {
   }
   async updateSSEMessage(message = null) {
     if (!this.sseMessageEl) return;
-
+    console.log("SSE message", message);
     message
       ? (this.sseMessageEl.textContent = message)
       : (this.sseMessageEl.textContent = "");

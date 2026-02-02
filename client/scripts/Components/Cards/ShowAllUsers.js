@@ -5,6 +5,47 @@ import "./Modals/GeneratePayrollModal.js";
 import "./Modals/ViewUserModal.js";
 
 
+
+
+
+
+
+function SortUsers(users, sortBy, direction = 'asc') {
+    const modifier = direction === 'asc' ? 1 : -1;
+
+    users.sort((a, b) => {
+        let valueA, valueB;
+
+        switch (sortBy) {
+            case "name":
+                valueA = (a.firstName || '').toLowerCase();
+                valueB = (b.firstName || '').toLowerCase();
+                break;
+            case "email":
+                valueA = (a.email || '').toLowerCase();
+                valueB = (b.email || '').toLowerCase();
+                break;
+            case "department":
+                valueA = (a.department?.name || '').toLowerCase();
+                valueB = (b.department?.name || '').toLowerCase();
+                break;
+            default:
+                return 0;
+        }
+
+        if (valueA < valueB) return -1 * modifier;
+        if (valueA > valueB) return 1 * modifier;
+        return 0;
+    });
+
+    return users;
+}
+
+// ... existing RenderUsers ...
+
+
+
+
 function RenderUsers(users, tbody) {
     users.forEach(user => {
         const tr = document.createElement("tr");
@@ -143,19 +184,28 @@ ShowAllUsersTemplate.innerHTML = `
     <div class="bg-white rounded-2xl overflow-hidden border border-slate-200">
         <div class="px-6 py-5 border-b border-slate-100 bg-white flex justify-between items-center">
             <h5 class="text-xl font-bold text-slate-800">All Employees</h5>
-            <div class="text-sm text-slate-500">Manage your team members</div>
+            
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-100">
                 <thead class="bg-slate-50/50">
                     <tr>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Profile Photo</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email ID</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Department</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">All Skills</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Note</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Online</th>
+                        <th scope="col"  class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Profile Photo</th>
+                        <th scope="col"  id="th-name" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 select-none group">
+                            Name 
+                            <span class="inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity">⇅</span>
+                        </th>
+                        <th scope="col" id="th-email" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 select-none group">
+                            Email ID
+                             <span class="inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity">⇅</span>
+                        </th>
+                        <th scope="col" id="th-department" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 select-none group">
+                            Department
+                             <span class="inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity">⇅</span>
+                        </th>
+                        <th scope="col" id="th-skills" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">All Skills</th>
+                        <th scope="col" id="th-note" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Note</th>
+                        <th scope="col" id="th-online" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Online</th>
                         <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
@@ -178,21 +228,68 @@ class ShowAllUsers extends HTMLElement {
     async connectedCallback() {
         this.innerHTML = '';
         this.appendChild(ShowAllUsersTemplate.content.cloneNode(true));
+        this.users = [];
+        this.sortState = { key: null, direction: 'asc' };
 
         const tbody = this.querySelector("#users-table-body");
+
+        const thName = this.querySelector("#th-name");
+        const thEmail = this.querySelector("#th-email");
+        const thDepartment = this.querySelector("#th-department");
+        const thSkills = this.querySelector("#th-skills");
+        const thNote = this.querySelector("#th-note");
+        const thOnline = this.querySelector("#th-online");
+
+
+
+        const handleSort = (key) => {
+            if (!this.users || this.users.length === 0) return;
+
+            if (this.sortState.key === key) {
+                this.sortState.direction = this.sortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortState.key = key;
+                this.sortState.direction = 'asc';
+            }
+
+            this.users = SortUsers(this.users, this.sortState.key, this.sortState.direction);
+            tbody.innerHTML = '';
+            RenderUsers(this.users, tbody);
+
+            // Update visual indicators
+            [thName, thEmail, thDepartment].forEach(th => {
+                const span = th.querySelector('span');
+                if (span) span.textContent = '⇅';
+                if (span) span.className = "inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity";
+                th.classList.remove('bg-slate-100');
+            });
+
+            const activeTh = key === 'name' ? thName : key === 'email' ? thEmail : thDepartment;
+            if (activeTh) {
+                // activeTh.classList.add('bg-slate-100'); // Optional background highlight
+                const span = activeTh.querySelector('span');
+                if (span) {
+                    span.textContent = this.sortState.direction === 'asc' ? '↑' : '↓';
+                    span.className = "inline-block ml-1 opacity-100 text-slate-800";
+                }
+            }
+        };
+
+        thName.addEventListener("click", () => handleSort("name"));
+        thEmail.addEventListener("click", () => handleSort("email"));
+        thDepartment.addEventListener("click", () => handleSort("department"));
 
         try {
             const response = await userHandler.GetAllUser();
 
-            let users = [];
             // Handle nested response structure from UserHandler -> UserRepo
             if (response.ok) {
                 if (response.data && response.data.ok && Array.isArray(response.data.data)) {
-                    users = response.data.data;
+                    this.users = response.data.data;
                 } else if (response.data && Array.isArray(response.data.data)) {
-                    users = response.data.data;
+                    this.users = response.data.data;
                 } else if (Array.isArray(response.data)) {
-                    users = response.data;
+                    this.users = response.data;
                 }
             } else {
                 console.error("Failed to fetch users", response);
@@ -200,13 +297,13 @@ class ShowAllUsers extends HTMLElement {
                 return;
             }
 
-            if (users.length === 0) {
+            if (!this.users || this.users.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="8" class="text-center text-slate-500 py-8">No users found</td></tr>`;
                 return;
             }
             this.addEventListener("refresh-users", async (event) => {
                 console.log("refresh-users event received:", event);
-                users.push({
+                const newUser = {
                     email: event.detail.email,
                     firstName: event.detail.firstName,
                     lastName: event.detail.lastName,
@@ -214,11 +311,16 @@ class ShowAllUsers extends HTMLElement {
                     skills: event.detail.skills,
                     profilePhoto: event.detail.profilePhoto,
                     note: event.detail.note,
-                });
+                };
+                this.users.push(newUser);
+                // Re-sort if sort is active
+                if (this.sortState.key) {
+                    this.users = SortUsers(this.users, this.sortState.key, this.sortState.direction);
+                }
                 tbody.innerHTML = '';
-                RenderUsers.call(this, users, tbody);
+                RenderUsers.call(this, this.users, tbody);
             });
-            RenderUsers.call(this, users, tbody);
+            RenderUsers.call(this, this.users, tbody);
 
 
 

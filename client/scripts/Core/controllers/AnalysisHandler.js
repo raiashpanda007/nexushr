@@ -405,6 +405,22 @@ class AnalysisHandler {
                 return `${day}-${month}-${year}`;
             }
 
+            const formatDuration = (hours) => {
+                if (typeof hours !== 'number') return '0h 0m';
+                const h = Math.floor(hours);
+                const m = Math.round((hours - h) * 60);
+                return `${h}h ${m}m`;
+            };
+
+            const formatTime = (minutes) => {
+                if (typeof minutes !== 'number') return 'N/A';
+                const h = Math.floor(minutes / 60);
+                const m = Math.floor(minutes % 60);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const hour12 = h % 12 || 12;
+                return `${hour12}:${String(m).padStart(2, '0')} ${ampm}`;
+            };
+
             const userArray = Object.values(userStats).map(u => ({
                 ...u,
                 avgHours: u.shifts ? (u.totalHours / u.shifts).toFixed(2) : 0,

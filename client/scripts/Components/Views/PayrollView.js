@@ -1,6 +1,56 @@
 import { payrollHandler, authState, userHandler } from "../../Core/startup.js";
 import { CreatePayrollPDF } from "../../utils.js";
 
+const monthMap = {
+    "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
+    "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
+};
+
+function SortPayrolls(payrolls, sortBy, direction = 'asc') {
+    const modifier = direction === 'asc' ? 1 : -1;
+
+    payrolls.sort((a, b) => {
+        let valueA, valueB;
+
+        switch (sortBy) {
+            case "employee":
+                valueA = ((a.userFirstName || '') + ' ' + (a.userLastName || '')).toLowerCase();
+                valueB = ((b.userFirstName || '') + ' ' + (b.userLastName || '')).toLowerCase();
+                break;
+            case "period":
+                // Create comparable value: Year * 100 + MonthNum
+                const monthA = monthMap[a.month] || 0;
+                const monthB = monthMap[b.month] || 0;
+                valueA = (a.year || 0) * 100 + monthA;
+                valueB = (b.year || 0) * 100 + monthB;
+                break;
+            case "base":
+                valueA = (a.salary?.base || 0) + (a.salary?.hra || 0) + (a.salary?.lta || 0);
+                valueB = (b.salary?.base || 0) + (b.salary?.hra || 0) + (b.salary?.lta || 0);
+                break;
+            case "bonuses":
+                valueA = a.bonuses ? a.bonuses.reduce((sum, item) => sum + item.amount, 0) : 0;
+                valueB = b.bonuses ? b.bonuses.reduce((sum, item) => sum + item.amount, 0) : 0;
+                break;
+            case "deductions":
+                valueA = a.deductions ? a.deductions.reduce((sum, item) => sum + item.amount, 0) : 0;
+                valueB = b.deductions ? b.deductions.reduce((sum, item) => sum + item.amount, 0) : 0;
+                break;
+            case "net":
+                valueA = a.total || 0;
+                valueB = b.total || 0;
+                break;
+            default:
+                return 0;
+        }
+
+        if (valueA < valueB) return -1 * modifier;
+        if (valueA > valueB) return 1 * modifier;
+        return 0;
+    });
+
+    return payrolls;
+}
 const PayrollViewTemplate = document.createElement("template");
 PayrollViewTemplate.innerHTML = `
 <div class="w-full max-w-7xl mx-auto mt-8 mb-8">
@@ -49,13 +99,31 @@ PayrollViewTemplate.innerHTML = `
             <table class="min-w-full divide-y divide-slate-100">
                 <thead class="bg-slate-50/50">
                     <tr>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Payroll ID</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Employee</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Period</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Base Salary</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Bonuses</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Deductions</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Net Pay</th>
+                
+                        <th scope="col" id="th-employee" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 select-none group">
+                            Employee
+                            <span class="inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity">⇅</span>
+                        </th>
+                        <th scope="col" id="th-period" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 select-none group">
+                            Period
+                            <span class="inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity">⇅</span>
+                        </th>
+                        <th scope="col" id="th-base" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 select-none group">
+                            Base Salary
+                            <span class="inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity">⇅</span>
+                        </th>
+                        <th scope="col" id="th-bonuses" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 select-none group">
+                            Bonuses
+                            <span class="inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity">⇅</span>
+                        </th>
+                        <th scope="col" id="th-deductions" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 select-none group">
+                            Deductions
+                            <span class="inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity">⇅</span>
+                        </th>
+                        <th scope="col" id="th-net" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 select-none group">
+                            Net Pay
+                            <span class="inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity">⇅</span>
+                        </th>
                         <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
@@ -76,6 +144,65 @@ class PayrollView extends HTMLElement {
     }
 
     async connectedCallback() {
+        this.sortState = { key: null, direction: 'asc' };
+
+        const thEmployee = this.querySelector("#th-employee");
+        const thPeriod = this.querySelector("#th-period");
+        const thBase = this.querySelector("#th-base");
+        const thBonuses = this.querySelector("#th-bonuses");
+        const thDeductions = this.querySelector("#th-deductions");
+        const thNet = this.querySelector("#th-net");
+
+        const handleSort = (key) => {
+            if (!this.filteredPayrolls || this.filteredPayrolls.length === 0) return;
+
+            if (this.sortState.key === key) {
+                this.sortState.direction = this.sortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortState.key = key;
+                this.sortState.direction = 'asc';
+            }
+
+            this.filteredPayrolls = SortPayrolls(this.filteredPayrolls, this.sortState.key, this.sortState.direction);
+            this.renderTable();
+
+            // Update visual indicators
+            const headers = {
+                'employee': thEmployee,
+                'period': thPeriod,
+                'base': thBase,
+                'bonuses': thBonuses,
+                'deductions': thDeductions,
+                'net': thNet
+            };
+
+            Object.values(headers).forEach(th => {
+                if (!th) return;
+                const span = th.querySelector('span');
+                if (span) {
+                    span.textContent = '⇅';
+                    span.className = "inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity";
+                }
+                th.classList.remove('bg-slate-100');
+            });
+
+            const activeTh = headers[key];
+            if (activeTh) {
+                const span = activeTh.querySelector('span');
+                if (span) {
+                    span.textContent = this.sortState.direction === 'asc' ? '↑' : '↓';
+                    span.className = "inline-block ml-1 opacity-100 text-slate-800";
+                }
+            }
+        };
+
+        if (thEmployee) thEmployee.addEventListener("click", () => handleSort("employee"));
+        if (thPeriod) thPeriod.addEventListener("click", () => handleSort("period"));
+        if (thBase) thBase.addEventListener("click", () => handleSort("base"));
+        if (thBonuses) thBonuses.addEventListener("click", () => handleSort("bonuses"));
+        if (thDeductions) thDeductions.addEventListener("click", () => handleSort("deductions"));
+        if (thNet) thNet.addEventListener("click", () => handleSort("net"));
+
         const yearSelect = this.querySelector("#year-filter");
         const currentYear = new Date().getFullYear();
         for (let i = 0; i < 10; i++) {
@@ -107,6 +234,11 @@ class PayrollView extends HTMLElement {
                 const matchEmployee = !employeeId || p.userId === employeeId;
                 return matchMonth && matchYear && matchEmployee;
             });
+
+            // Re-apply current sort if active
+            if (this.sortState.key) {
+                this.filteredPayrolls = SortPayrolls(this.filteredPayrolls, this.sortState.key, this.sortState.direction);
+            }
 
             this.renderTable();
         };
@@ -205,11 +337,7 @@ class PayrollView extends HTMLElement {
             const tr = document.createElement("tr");
             tr.className = "hover:bg-slate-50/80 transition-colors duration-150";
 
-            // ID
-            const idTd = document.createElement("td");
-            idTd.className = "px-6 py-4 whitespace-nowrap text-xs text-slate-500 font-mono";
-            idTd.textContent = payroll.id.substring(0, 8) + '...';
-            tr.appendChild(idTd);
+
 
             // Employee
             const nameTd = document.createElement("td");

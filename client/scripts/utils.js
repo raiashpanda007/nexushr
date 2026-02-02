@@ -93,9 +93,7 @@ let lastResponseAt = Date.now();
 export async function LongPolling() {
   const header = document.querySelector("app-header");
   try {
-    const res = await fetch("http://localhost:3000/poll", {
-      cache: "no-store",
-    });
+    const res = await fetch("http://localhost:3000/poll");
 
     const data = await res.json();
     lastResponseAt = Date.now();
@@ -118,12 +116,14 @@ export async function LongPolling() {
   }
 }
 
-setInterval(() => {
+const intervalId = setInterval(() => {
   if (Date.now() - lastResponseAt > HEALTH_CHECK_INTERVAL) {
     if (isPollingUp) {
       isPollingUp = false;
       const header = document.querySelector("app-header");
       header.dispatchEvent(LongPollingEvent(false));
+    } else {
+      clearInterval(intervalId);
     }
   }
 }, 25000);
