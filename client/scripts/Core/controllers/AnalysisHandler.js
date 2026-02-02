@@ -91,7 +91,6 @@ class AnalysisHandler {
         return { ok: true, data: result }
     }
 
-    // --- Helper Methods ---
 
     _getDays(start, end) {
         const s = new Date(start);
@@ -173,7 +172,7 @@ class AnalysisHandler {
                 if (!deptStats[dName]) deptStats[dName] = { totalDays: 0, leaveTypes: {}, name: dName, employees: new Set() };
                 deptStats[dName].totalDays += l.days;
 
-                // Track employees in this dept who took leave
+
                 deptStats[dName].employees.add(l.userName);
 
                 const lType = l.leaveType || 'Other';
@@ -183,7 +182,7 @@ class AnalysisHandler {
                 deptStats[dName].leaveTypeDays[lType] = (deptStats[dName].leaveTypeDays[lType] || 0) + l.days;
             });
 
-            // Format for chart: { name, days, employeesCount }
+
             const deptArray = Object.values(deptStats).map(d => ({
                 ...d,
                 employeeCount: d.employees.size
@@ -292,24 +291,68 @@ class AnalysisHandler {
     }
 
     _processAttendanceAnalysis(attendance, users, skills, departments, type, startDate, endDate, filterTarget) {
-        let filteredAttendance = attendance;
+        // Group by User and Date (YYYY-MM-DD) to calculate First Entry & Last Exit
+        const dailyGroups = {};
+        attendance.forEach(record => {
+            const dateStr = record.createdAt ? record.createdAt : (record.entryDate || record.exitDate);
+            if (!dateStr) return;
+            const dateKey = new Date(dateStr).toISOString().split('T')[0];
+            const key = `${record.userId}_${dateKey}`;
+
+            if (!dailyGroups[key]) dailyGroups[key] = { userId: record.userId, date: dateKey, entries: [], exits: [], raw: record };
+
+            const rType = (record.type || '').toUpperCase();
+            if (rType === 'ENTRY' || rType === 'ENTER') {
+                if (record.entryDate) dailyGroups[key].entries.push(new Date(record.entryDate));
+            } else {
+                if (record.exitDate) dailyGroups[key].exits.push(new Date(record.exitDate));
+            }
+        });
+
+        let processedData = Object.values(dailyGroups).map(group => {
+            // Sort timestamps
+            group.entries.sort((a, b) => a - b);
+            group.exits.sort((a, b) => a - b);
+
+            const firstEntry = group.entries.length > 0 ? group.entries[0] : null;
+            const lastExit = group.exits.length > 0 ? group.exits[group.exits.length - 1] : null;
+
+            let hours = 0;
+            if (firstEntry && lastExit) {
+                hours = (lastExit - firstEntry) / (1000 * 60 * 60);
+            }
+            if (hours < 0) hours = 0;
+
+            return {
+                ...group.raw, // Keep stricture
+                id: group.raw.id || crypto.randomUUID(),
+                entryDate: firstEntry ? firstEntry.toISOString() : null,
+                exitDate: lastExit ? lastExit.toISOString() : null,
+                hours: hours,
+                // Ensure we have a valid date for filtering
+                createdAt: group.date
+            };
+        });
+
+        // Date Filter
         if (startDate && endDate) {
-            filteredAttendance = this._filterByDate(attendance, 'entryDate', startDate, endDate);
+            const s = new Date(startDate).setHours(0, 0, 0, 0);
+            const e = new Date(endDate).setHours(23, 59, 59, 999);
+            processedData = processedData.filter(item => {
+                const check = item.entryDate ? new Date(item.entryDate).getTime() : (item.exitDate ? new Date(item.exitDate).getTime() : null);
+                if (!check) return false;
+                return check >= s && check <= e;
+            });
         }
 
         const userMap = new Map((users || []).map(u => [u.id, u]));
         const deptMap = new Map((departments || []).map(d => [d.id, d.name]));
         const skillMap = new Map((skills || []).map(s => [s.id, s.name]));
 
-        let enrichedAttendance = filteredAttendance.map(a => {
+        let enrichedAttendance = processedData.map(a => {
             const user = userMap.get(a.userId);
-            let hours = 0;
-            if (a.entryDate && a.exitDate) {
-                hours = (new Date(a.exitDate) - new Date(a.entryDate)) / (1000 * 60 * 60);
-            }
             return {
                 ...a,
-                hours,
                 departmentName: user?.department?.name || deptMap.get(user?.department) || 'Unknown',
                 userSkills: user?.skills || [],
                 userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown'
@@ -323,10 +366,9 @@ class AnalysisHandler {
         const totalHours = enrichedAttendance.reduce((acc, curr) => acc + curr.hours, 0);
         const totalRecords = enrichedAttendance.length;
 
-        // Advanced metrics
         const avgHours = totalRecords ? (totalHours / totalRecords).toFixed(2) : 0;
         const overtimeRecords = enrichedAttendance.filter(a => a.hours > 9).length;
-        const shortDays = enrichedAttendance.filter(a => a.hours < 4).length; // Half day assumption
+        const shortDays = enrichedAttendance.filter(a => a.hours < 4).length;
 
         const mainSummary = {
             totalAttendanceRecords: totalRecords,
