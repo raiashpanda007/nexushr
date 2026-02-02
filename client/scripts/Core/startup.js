@@ -24,6 +24,7 @@ import NetworkStateHandler from "./controllers/NetworkStateHandler.js";
 import { LongPolling } from "../utils.js";
 import SSEHandler from "./SSEhandler.js";
 import AnalysisHandler from "./controllers/AnalysisHandler.js";
+import { seedOnUpgrade } from "./seed.js";
 export const dbManager = new IndexedDBManager(
   "nexus_hr",
   1,
@@ -60,6 +61,10 @@ export const dbManager = new IndexedDBManager(
       skills.createIndex("category_indx", "category", { unique: false });
     }
 
+    if (!db.objectStoreNames.contains("skills_users")) {
+      const skills_users = db.createObjectStore("skills_users", { keyPath: "id" });
+    }
+
     if (!db.objectStoreNames.contains("leave_types")) {
       const leave_types = db.createObjectStore("leave_types", { keyPath: "id" });
       leave_types.createIndex("code_indx", "code", { unique: false });
@@ -93,6 +98,10 @@ export const dbManager = new IndexedDBManager(
       const sync_queue = db.createObjectStore("sync_queue", { keyPath: "id", autoIncrement: true });
       sync_queue.createIndex("table_indx", "table", { unique: false });
       sync_queue.createIndex("operation_indx", "operation", { unique: false });
+    }
+
+    if (event.oldVersion < 1) {
+      seedOnUpgrade(event.target.transaction);
     }
   }
 );
@@ -138,4 +147,7 @@ useSocket.connect();
 
 export const socketHandler = useSocket;
 LongPolling();
+
+
+
 

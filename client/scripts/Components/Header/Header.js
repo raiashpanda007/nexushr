@@ -75,13 +75,52 @@ class AppHeader extends HTMLElement {
       this.sseEl.title = "SSE is Disconnected";
     }
   }
+
+  formatSSEMessage(raw) {
+    if (!raw) return "";
+
+    const timeMatch = raw.match(/time\s*::\s*([^\s]+)/);
+    const randomMatch = raw.match(/random\s*::\s*(\d+)/);
+
+    let time = "--:--:--";
+    if (timeMatch) {
+      const date = new Date(timeMatch[1]);
+      time = date.toISOString().substring(11, 19);
+    }
+
+    const random = randomMatch ? randomMatch[1] : "?";
+
+    return { time, random };
+  }
+
   async updateSSEMessage(message = null) {
     if (!this.sseMessageEl) return;
-    console.log("SSE message", message);
-    message
-      ? (this.sseMessageEl.textContent = message)
-      : (this.sseMessageEl.textContent = "");
+
+    if (!message) {
+      this.sseMessageEl.innerHTML = "";
+      return;
+    }
+
+    const { time, random } = this.formatSSEMessage(message);
+
+    this.sseMessageEl.innerHTML = `
+    <div class="flex items-center gap-4 rounded-xl px-4 py-2
+                text-zinc-200 
+                font-mono text-sm">
+      <span class="flex items-center gap-2 text-emerald-400">
+        ${time}
+      </span>
+
+      <span class="text-zinc-500">|</span>
+
+      <span class="text-white">
+        random:
+        <span class="text-white font-semibold">${random}</span>
+      </span>
+    </div>
+  `;
   }
+
   connectedCallback() {
     this.spsEl = this.querySelector("#app-sps-header");
     this.wsEl = this.querySelector("#app-ws-header");
@@ -148,7 +187,7 @@ class AppHeader extends HTMLElement {
       <span>${message}</span>
     `;
 
-    // Add toast to container
+
     this.toastContainer.appendChild(toast);
 
 

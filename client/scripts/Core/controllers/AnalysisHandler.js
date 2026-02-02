@@ -178,6 +178,9 @@ class AnalysisHandler {
 
                 const lType = l.leaveType || 'Other';
                 deptStats[dName].leaveTypes[lType] = (deptStats[dName].leaveTypes[lType] || 0) + 1;
+
+                if (!deptStats[dName].leaveTypeDays) deptStats[dName].leaveTypeDays = {};
+                deptStats[dName].leaveTypeDays[lType] = (deptStats[dName].leaveTypeDays[lType] || 0) + l.days;
             });
 
             // Format for chart: { name, days, employeesCount }
@@ -272,8 +275,11 @@ class AnalysisHandler {
                     const sId = s.id || s;
                     if (filterTarget && sId != filterTarget) return;
                     const sName = skillMap.get(sId) || 'Unknown Skill';
-                    if (!skillStats[sName]) skillStats[sName] = { totalDays: 0, name: sName };
+                    if (!skillStats[sName]) skillStats[sName] = { totalDays: 0, name: sName, leaveTypes: {} };
                     skillStats[sName].totalDays += l.days;
+
+                    const lType = l.leaveType || 'Other';
+                    skillStats[sName].leaveTypes[lType] = (skillStats[sName].leaveTypes[lType] || 0) + l.days;
                 });
             });
             const skillArray = Object.values(skillStats).sort((a, b) => b.totalDays - a.totalDays);
@@ -334,10 +340,18 @@ class AnalysisHandler {
             const deptStats = {};
             enrichedAttendance.forEach(a => {
                 const dName = a.departmentName;
-                if (!deptStats[dName]) deptStats[dName] = { totalHours: 0, count: 0, overtime: 0, name: dName };
+                if (!deptStats[dName]) deptStats[dName] = { totalHours: 0, regularHours: 0, overtimeHours: 0, count: 0, overtime: 0, name: dName };
+
                 deptStats[dName].totalHours += a.hours;
                 deptStats[dName].count += 1;
-                if (a.hours > 9) deptStats[dName].overtime += 1;
+
+                if (a.hours > 9) {
+                    deptStats[dName].overtime += 1;
+                    deptStats[dName].overtimeHours += (a.hours - 9);
+                    deptStats[dName].regularHours += 9;
+                } else {
+                    deptStats[dName].regularHours += a.hours;
+                }
             });
             const deptArray = Object.values(deptStats).map(d => ({
                 ...d, avgHours: d.count ? (d.totalHours / d.count).toFixed(2) : 0
@@ -366,6 +380,8 @@ class AnalysisHandler {
                 const uName = a.userName;
                 if (!userStats[uName]) userStats[uName] = {
                     totalHours: 0,
+                    regularHours: 0,
+                    overtimeHours: 0,
                     shifts: 0,
                     overtime: 0,
                     name: uName,
@@ -378,7 +394,14 @@ class AnalysisHandler {
                 };
                 userStats[uName].totalHours += a.hours;
                 userStats[uName].shifts += 1;
-                if (a.hours > 9) userStats[uName].overtime += 1;
+
+                if (a.hours > 9) {
+                    userStats[uName].overtime += 1;
+                    userStats[uName].overtimeHours += (a.hours - 9);
+                    userStats[uName].regularHours += 9;
+                } else {
+                    userStats[uName].regularHours += a.hours;
+                }
 
                 if (a.entryDate) {
                     userStats[uName].totalEntryMins += getMins(a.entryDate);
@@ -455,9 +478,16 @@ class AnalysisHandler {
                     if (filterTarget && sId != filterTarget) return;
 
                     const sName = skillMap.get(sId) || 'Unknown Skill';
-                    if (!skillStats[sName]) skillStats[sName] = { totalHours: 0, shifts: 0, name: sName };
+                    if (!skillStats[sName]) skillStats[sName] = { totalHours: 0, regularHours: 0, overtimeHours: 0, shifts: 0, name: sName };
                     skillStats[sName].totalHours += a.hours;
                     skillStats[sName].shifts += 1;
+
+                    if (a.hours > 9) {
+                        skillStats[sName].overtimeHours += (a.hours - 9);
+                        skillStats[sName].regularHours += 9;
+                    } else {
+                        skillStats[sName].regularHours += a.hours;
+                    }
                 });
             });
             const skillArray = Object.values(skillStats).map(s => ({
@@ -513,9 +543,18 @@ class AnalysisHandler {
             const deptStats = {};
             enrichedSalaries.forEach(s => {
                 const dName = s.departmentName;
-                if (!deptStats[dName]) deptStats[dName] = { totalCost: 0, count: 0, name: dName };
+                if (!deptStats[dName]) deptStats[dName] = {
+                    totalCost: 0,
+                    count: 0,
+                    name: dName,
+                    components: { Base: 0, HRA: 0, LTA: 0 }
+                };
                 deptStats[dName].totalCost += s.total;
                 deptStats[dName].count += 1;
+
+                deptStats[dName].components.Base += parseFloat(s.base || 0);
+                deptStats[dName].components.HRA += parseFloat(s.hra || 0);
+                deptStats[dName].components.LTA += parseFloat(s.lta || 0);
             });
             const deptArray = Object.values(deptStats).map(d => ({
                 ...d, avgCost: d.count ? (d.totalCost / d.count).toFixed(0) : 0
@@ -568,9 +607,18 @@ class AnalysisHandler {
                     if (filterTarget && sId != filterTarget) return;
 
                     const sName = skillMap.get(sId) || 'Unknown Skill';
-                    if (!skillStats[sName]) skillStats[sName] = { totalCost: 0, count: 0, name: sName };
+                    if (!skillStats[sName]) skillStats[sName] = {
+                        totalCost: 0,
+                        count: 0,
+                        name: sName,
+                        components: { Base: 0, HRA: 0, LTA: 0 }
+                    };
                     skillStats[sName].totalCost += s.total;
                     skillStats[sName].count += 1;
+
+                    skillStats[sName].components.Base += parseFloat(s.base || 0);
+                    skillStats[sName].components.HRA += parseFloat(s.hra || 0);
+                    skillStats[sName].components.LTA += parseFloat(s.lta || 0);
                 });
             });
             const skillArray = Object.values(skillStats).sort((a, b) => b.totalCost - a.totalCost);

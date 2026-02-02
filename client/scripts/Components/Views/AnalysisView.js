@@ -1,4 +1,8 @@
 import { analysisHandler } from "../../Core/startup.js";
+import { LeaveCharts } from "../Charts/LeaveCharts.js";
+import { AttendanceCharts } from "../Charts/AttendanceCharts.js";
+import { SalaryCharts } from "../Charts/SalaryCharts.js";
+
 const AnalysisViewTemplate = document.createElement("template");
 AnalysisViewTemplate.innerHTML = `
     <div class="w-full max-w-7xl mx-auto p-6">
@@ -455,6 +459,88 @@ class AnalysisView extends HTMLElement {
             let content = '';
             if (result && result.ok) {
                 content = this._formatData(result.data, title);
+
+                // Add Chart Container for Leaves By Department
+                if (this.activeCategory === 'Leaves' && type === 'department') {
+                    content = `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 animate-fade-in">
+                             <canvas id="leaveDeptChart" style="max-height: 400px;"></canvas>
+                        </div>
+                    ` + content;
+                }
+
+                // Add Chart Container for Leaves By Employee
+                if (this.activeCategory === 'Leaves' && type === 'employee') {
+                    content = `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 animate-fade-in relative h-[400px]">
+                             <canvas id="leaveEmpChart"></canvas>
+                        </div>
+                    ` + content;
+                }
+
+                // Add Chart Container for Leaves By Skill
+                if (this.activeCategory === 'Leaves' && type === 'skill') {
+                    content = `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 animate-fade-in relative h-[400px]">
+                             <canvas id="leaveSkillChart"></canvas>
+                        </div>
+                    ` + content;
+                }
+
+                // Add Chart Container for Attendance By Department
+                if (this.activeCategory === 'Attendance' && type === 'department') {
+                    content = `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 animate-fade-in relative h-[400px]">
+                             <canvas id="attendanceDeptChart"></canvas>
+                        </div>
+                    ` + content;
+                }
+
+                // Add Chart Container for Attendance By Employee
+                if (this.activeCategory === 'Attendance' && type === 'employee') {
+                    content = `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 animate-fade-in relative h-[400px]">
+                             <canvas id="attendanceEmpChart"></canvas>
+                        </div>
+                    ` + content;
+                }
+
+                // Add Chart Container for Attendance By Skill
+                if (this.activeCategory === 'Attendance' && type === 'skill') {
+                    content = `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 animate-fade-in relative h-[400px]">
+                             <canvas id="attendanceSkillChart"></canvas>
+                        </div>
+                    ` + content;
+                }
+
+                // Add Chart Container for Salaries By Department
+                if (this.activeCategory === 'Salaries' && type === 'department') {
+                    content = `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 animate-fade-in relative h-[400px]">
+                             <canvas id="salaryDeptChart"></canvas>
+                        </div>
+                    ` + content;
+                }
+
+                // Add Chart Container for Salaries By Employee
+                if (this.activeCategory === 'Salaries' && type === 'employee') {
+                    content = `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 animate-fade-in relative h-[400px]">
+                             <canvas id="salaryEmpChart"></canvas>
+                        </div>
+                    ` + content;
+                }
+
+                // Add Chart Container for Salaries By Skill
+                if (this.activeCategory === 'Salaries' && type === 'skill') {
+                    content = `
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 animate-fade-in relative h-[400px]">
+                             <canvas id="salarySkillChart"></canvas>
+                        </div>
+                    ` + content;
+                }
+
             } else {
                 content = `
                     <div class="bg-red-50 p-6 rounded-xl border border-red-200">
@@ -463,6 +549,42 @@ class AnalysisView extends HTMLElement {
                 `;
             }
             contentDiv.innerHTML = content;
+
+            // Render Charts
+            if (result && result.ok && result.data.details) {
+                // Leaves
+                if (this.activeCategory === 'Leaves') {
+                    if (type === 'department') {
+                        setTimeout(() => LeaveCharts.renderDepartmentChart('leaveDeptChart', result.data.details), 100);
+                    } else if (type === 'employee') {
+                        setTimeout(() => LeaveCharts.renderEmployeeChart('leaveEmpChart', result.data.details), 100);
+                    } else if (type === 'skill') {
+                        setTimeout(() => LeaveCharts.renderSkillChart('leaveSkillChart', result.data.details), 100);
+                    }
+                }
+                // Attendance
+                else if (this.activeCategory === 'Attendance') {
+                    if (type === 'department') {
+                        setTimeout(() => AttendanceCharts.renderDepartmentChart('attendanceDeptChart', result.data.details), 100);
+                    } else if (type === 'employee') {
+                        setTimeout(() => AttendanceCharts.renderEmployeeChart('attendanceEmpChart', result.data.details), 100);
+                    } else if (type === 'skill') {
+                        setTimeout(() => AttendanceCharts.renderSkillChart('attendanceSkillChart', result.data.details), 100);
+                    }
+                }
+                // Salaries
+                else if (this.activeCategory === 'Salaries') {
+                    if (type === 'department') {
+                        setTimeout(() => SalaryCharts.renderDepartmentChart('salaryDeptChart', result.data.details), 100);
+                    } else if (type === 'employee') {
+                        setTimeout(() => SalaryCharts.renderEmployeeChart('salaryEmpChart', result.data.details), 100);
+                    } else if (type === 'skill') {
+                        setTimeout(() => SalaryCharts.renderSkillChart('salarySkillChart', result.data.details), 100);
+                    }
+                }
+            }
+
+
         } catch (error) {
             console.error("Analysis Error:", error);
             contentDiv.innerHTML = `
