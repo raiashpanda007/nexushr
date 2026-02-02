@@ -13,7 +13,6 @@ SidebarTemplate.innerHTML = `
     </div>
     
     <nav class="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden" id="sidebar-nav">
-        <!-- Links will be injected here -->
     </nav>
 
     <div class="p-3 border-t border-slate-100 shrink-0">
@@ -122,7 +121,6 @@ class Sidebar extends HTMLElement {
             logoutText.classList.remove("hidden");
             navTexts.forEach(t => t.classList.remove("hidden"));
 
-            // Restore items
             this.querySelectorAll("nav button").forEach(btn => {
                 btn.classList.remove("justify-center", "px-2");
                 btn.classList.add("px-4");
@@ -178,14 +176,14 @@ class Sidebar extends HTMLElement {
             btn.dataset.event = link.event;
 
             btn.addEventListener("click", () => {
-                // Remove active class from all
+
                 nav.querySelectorAll("button").forEach(b => {
                     b.classList.remove("bg-blue-50", "text-blue-600");
                     b.classList.add("text-slate-600");
                     b.querySelector("span").classList.remove("text-blue-600");
                     b.querySelector("span").classList.add("text-slate-400");
                 });
-                // Add active class to clicked
+
                 btn.classList.remove("text-slate-600");
                 btn.classList.add("bg-blue-50", "text-blue-600");
                 btn.querySelector("span").classList.remove("text-slate-400");
@@ -195,8 +193,7 @@ class Sidebar extends HTMLElement {
             });
             nav.appendChild(btn);
         });
-
-        // Activate first link by default
+        // yaha pr macrotask queue ka use kiya gya dekhlena jb sir maangenge
         if (nav.firstElementChild) {
             setTimeout(() => {
                 nav.firstElementChild.click();
