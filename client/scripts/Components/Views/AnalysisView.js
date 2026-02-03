@@ -607,10 +607,20 @@ class AnalysisView extends HTMLElement {
              `;
         }
 
+        const formatValue = (key, value) => {
+            if (this.activeCategory === 'Attendance') {
+                const lowerKey = key.toLowerCase();
+                if ((lowerKey.includes('avg') || lowerKey.includes('points') || lowerKey.includes('hours')) && typeof value === 'number') {
+                    return value.toFixed(2);
+                }
+            }
+            return value;
+        };
+
         const summaryHtml = Object.entries(data.summary || {}).map(([key, value]) => `
             <div class="bg-slate-50 p-4 rounded-lg">
                 <p class="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">${key.replace(/([A-Z])/g, ' $1').trim()}</p>
-                <p class="text-2xl font-bold text-slate-800">${value}</p>
+                <p class="text-2xl font-bold text-slate-800">${formatValue(key, value)}</p>
             </div>
         `).join('');
         console.log("debug :: highlightsHtml", data.highlights);
@@ -629,12 +639,12 @@ class AnalysisView extends HTMLElement {
                     Object.entries(value).map(([k, v]) => `
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-slate-500 capitalize">${k}:</span>
-                            <span class="font-semibold text-slate-800">${v}</span>
+                            <span class="font-semibold text-slate-800">${formatValue(k, v)}</span>
                         </div>
                     `).join('') +
                     `</div>`;
             } else {
-                contentHtml = `<p class="text-xl font-bold text-slate-800 mt-1">${value}</p>`;
+                contentHtml = `<p class="text-xl font-bold text-slate-800 mt-1">${formatValue(key, value)}</p>`;
             }
 
             return `
@@ -689,7 +699,7 @@ class AnalysisView extends HTMLElement {
                 .filter(([k]) => !['components', 'leaveTypes', 'employees', 'userSkills', 'name', 'userId', 'departmentName', 'userName', 'id', 'entryDate', 'exitDate'].includes(k))
                 .map(([k, v]) => {
                     const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
-                    let val = v;
+                    let val = formatValue(k, v);
                     if (k.toLowerCase().includes('date')) {
                         const d = new Date(v);
                         if (!isNaN(d.getTime())) {
