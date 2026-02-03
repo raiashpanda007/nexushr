@@ -49,6 +49,7 @@ export async function CreatePayrollPDF(
     a.remove();
 
     URL.revokeObjectURL(url);
+    worker.terminate();
   };
 
   (function () {
@@ -64,6 +65,7 @@ export async function CreatePayrollPDF(
       total: total,
     });
   })();
+
 }
 
 export async function HealthChecker() {
