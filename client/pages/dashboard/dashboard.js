@@ -1,7 +1,5 @@
 import "../../scripts/Components/Header/Header.js";
 import "../../scripts/Components/Sidebar.js";
-
-// Views are now dynamically imported
 import "../../scripts/Components/Cards/Modals/EditDepartmentModal.js";
 import "../../scripts/Components/Cards/Modals/EditSkillModal.js";
 import "../../scripts/Components/Cards/Modals/EditLeaveTypeModal.js";
@@ -55,12 +53,6 @@ const views = {
   "nav-analysis": { tag: "app-analysis-view", path: "../../scripts/Components/Views/AnalysisView.js" },
 };
 
-
-// Use a static version for production caching.
-// Change this value (e.g., "1.0.1") to force all users to redownload the views.
-// For development: Use the "Disable Cache" option in browser DevTools to see changes immediately.
-const APP_VERSION = "1.0.0";
-
 async function loadView(event) {
 
   document.querySelectorAll(".view-section").forEach((el) => el.classList.add("hidden"));
@@ -71,8 +63,7 @@ async function loadView(event) {
 
   let loader = document.querySelector("app-loader");
   if (!loader) {
-    // Also cache-bust the loader
-    await import("../../scripts/Components/Loader.js?v=" + APP_VERSION);
+    await import("../../scripts/Components/Loader.js");
     loader = document.createElement("app-loader");
     document.body.appendChild(loader);
   }
@@ -80,8 +71,7 @@ async function loadView(event) {
 
   try {
 
-    // cache-bust the view module
-    await import(viewConfig.path + "?v=" + APP_VERSION);
+    await import(viewConfig.path);
 
     const target = document.querySelector(viewConfig.tag);
     if (target) {

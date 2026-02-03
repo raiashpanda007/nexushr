@@ -3,12 +3,7 @@ import { OpenEditUserModalEvent, OpenAddSalaryModalEvent, OpenGeneratePayrollMod
 import "./Modals/AddSalaryModal.js";
 import "./Modals/GeneratePayrollModal.js";
 import "./Modals/ViewUserModal.js";
-
-
-
-
-
-
+import StressTest from "../StressTest.js";
 
 function SortUsers(users, sortBy, direction = 'asc') {
     const modifier = direction === 'asc' ? 1 : -1;
@@ -41,17 +36,11 @@ function SortUsers(users, sortBy, direction = 'asc') {
     return users;
 }
 
-// ... existing RenderUsers ...
-
-
-
 
 function RenderUsers(users, tbody) {
     users.forEach(user => {
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50/80 transition-colors duration-150 group";
-
-        // Profile Photo
         const photoTd = document.createElement("td");
         photoTd.className = "px-6 py-4 whitespace-nowrap";
         const imgContainer = document.createElement("div");
@@ -82,19 +71,16 @@ function RenderUsers(users, tbody) {
         nameTd.textContent = `${user.firstName || ''} ${user.lastName || ''}`;
         tr.appendChild(nameTd);
 
-        // Email
         const emailTd = document.createElement("td");
         emailTd.className = "px-6 py-4 whitespace-nowrap text-sm text-slate-500";
         emailTd.textContent = user.email || '';
         tr.appendChild(emailTd);
 
-        // Department
         const deptTd = document.createElement("td");
         deptTd.className = "px-6 py-4 whitespace-nowrap text-sm text-slate-500";
         deptTd.textContent = user.department ? user.department.name : (user.deptId || '-');
         tr.appendChild(deptTd);
 
-        // Skills
         const skillsTd = document.createElement("td");
         skillsTd.className = "px-6 py-4 whitespace-nowrap text-sm text-slate-500";
         if (Array.isArray(user.skills)) {
@@ -106,7 +92,6 @@ function RenderUsers(users, tbody) {
         }
         tr.appendChild(skillsTd);
 
-        // Note
         const noteTd = document.createElement("td");
         noteTd.className = "px-6 py-4 whitespace-nowrap text-sm text-slate-500 max-w-xs truncate";
         noteTd.textContent = user.note || '-';
@@ -184,7 +169,7 @@ ShowAllUsersTemplate.innerHTML = `
     <div class="bg-white rounded-2xl overflow-hidden border border-slate-200">
         <div class="px-6 py-5 border-b border-slate-100 bg-white flex justify-between items-center">
             <h5 class="text-xl font-bold text-slate-800">All Employees</h5>
-            
+            <button class="bg-red-600 text-white hover:bg-red-700 cursor-pointer px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow">Stress Test</button>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-100">
@@ -225,64 +210,11 @@ class ShowAllUsers extends HTMLElement {
         super();
     }
 
-    async connectedCallback() {
-        this.innerHTML = '';
-        this.appendChild(ShowAllUsersTemplate.content.cloneNode(true));
-        this.users = [];
-        this.sortState = { key: null, direction: 'asc' };
-
-        const tbody = this.querySelector("#users-table-body");
-
-        const thName = this.querySelector("#th-name");
-        const thEmail = this.querySelector("#th-email");
-        const thDepartment = this.querySelector("#th-department");
-        const thSkills = this.querySelector("#th-skills");
-        const thNote = this.querySelector("#th-note");
-        const thOnline = this.querySelector("#th-online");
-
-
-
-        const handleSort = (key) => {
-            if (!this.users || this.users.length === 0) return;
-
-            if (this.sortState.key === key) {
-                this.sortState.direction = this.sortState.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                this.sortState.key = key;
-                this.sortState.direction = 'asc';
-            }
-
-            this.users = SortUsers(this.users, this.sortState.key, this.sortState.direction);
-            tbody.innerHTML = '';
-            RenderUsers(this.users, tbody);
-
-            // Update visual indicators
-            [thName, thEmail, thDepartment].forEach(th => {
-                const span = th.querySelector('span');
-                if (span) span.textContent = '⇅';
-                if (span) span.className = "inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity";
-                th.classList.remove('bg-slate-100');
-            });
-
-            const activeTh = key === 'name' ? thName : key === 'email' ? thEmail : thDepartment;
-            if (activeTh) {
-                // activeTh.classList.add('bg-slate-100'); // Optional background highlight
-                const span = activeTh.querySelector('span');
-                if (span) {
-                    span.textContent = this.sortState.direction === 'asc' ? '↑' : '↓';
-                    span.className = "inline-block ml-1 opacity-100 text-slate-800";
-                }
-            }
-        };
-
-        thName.addEventListener("click", () => handleSort("name"));
-        thEmail.addEventListener("click", () => handleSort("email"));
-        thDepartment.addEventListener("click", () => handleSort("department"));
-
+    async fetchUsers(tbody) {
         try {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-slate-500 py-8">Loading...</td></tr>';
             const response = await userHandler.GetAllUser();
 
-            // Handle nested response structure from UserHandler -> UserRepo
             if (response.ok) {
                 if (response.data && response.data.ok && Array.isArray(response.data.data)) {
                     this.users = response.data.data;
@@ -301,33 +233,102 @@ class ShowAllUsers extends HTMLElement {
                 tbody.innerHTML = `<tr><td colspan="8" class="text-center text-slate-500 py-8">No users found</td></tr>`;
                 return;
             }
-            this.addEventListener("refresh-users", async (event) => {
-                console.log("refresh-users event received:", event);
-                const newUser = {
-                    email: event.detail.email,
-                    firstName: event.detail.firstName,
-                    lastName: event.detail.lastName,
-                    department: event.detail.department,
-                    skills: event.detail.skills,
-                    profilePhoto: event.detail.profilePhoto,
-                    note: event.detail.note,
-                };
-                this.users.push(newUser);
-                // Re-sort if sort is active
-                if (this.sortState.key) {
-                    this.users = SortUsers(this.users, this.sortState.key, this.sortState.direction);
-                }
-                tbody.innerHTML = '';
-                RenderUsers.call(this, this.users, tbody);
-            });
+            tbody.innerHTML = '';
             RenderUsers.call(this, this.users, tbody);
-
-
 
         } catch (error) {
             console.error("Error fetching users:", error);
             tbody.innerHTML = `<tr><td colspan="8" class="text-center text-rose-500 py-8">Error loading users</td></tr>`;
         }
+    }
+
+    async connectedCallback() {
+        this.innerHTML = '';
+        this.appendChild(ShowAllUsersTemplate.content.cloneNode(true));
+        this.users = [];
+        this.sortState = { key: null, direction: 'asc' };
+
+        const tbody = this.querySelector("#users-table-body");
+        const stressBtn = this.querySelector("button.bg-red-600");
+
+        const thName = this.querySelector("#th-name");
+        const thEmail = this.querySelector("#th-email");
+        const thDepartment = this.querySelector("#th-department");
+        const thSkills = this.querySelector("#th-skills");
+        const thNote = this.querySelector("#th-note");
+        const thOnline = this.querySelector("#th-online");
+
+        const handleSort = (key) => {
+            if (!this.users || this.users.length === 0) return;
+
+            if (this.sortState.key === key) {
+                this.sortState.direction = this.sortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortState.key = key;
+                this.sortState.direction = 'asc';
+            }
+
+            this.users = SortUsers(this.users, this.sortState.key, this.sortState.direction);
+            tbody.innerHTML = '';
+            RenderUsers.call(this, this.users, tbody);
+
+            // Update visual indicators
+            [thName, thEmail, thDepartment].forEach(th => {
+                const span = th.querySelector('span');
+                if (span) span.textContent = '⇅';
+                if (span) span.className = "inline-block ml-1 opacity-0 group-hover:opacity-50 transition-opacity";
+                th.classList.remove('bg-slate-100');
+            });
+
+            const activeTh = key === 'name' ? thName : key === 'email' ? thEmail : thDepartment;
+            if (activeTh) {
+                const span = activeTh.querySelector('span');
+                if (span) {
+                    span.textContent = this.sortState.direction === 'asc' ? '↑' : '↓';
+                    span.className = "inline-block ml-1 opacity-100 text-slate-800";
+                }
+            }
+        };
+
+        thName.addEventListener("click", () => handleSort("name"));
+        thEmail.addEventListener("click", () => handleSort("email"));
+        thDepartment.addEventListener("click", () => handleSort("department"));
+
+        if (stressBtn) {
+            stressBtn.addEventListener("click", async () => {
+                if (stressBtn.textContent.trim() === "Stress Test") {
+                    stressBtn.textContent = "Clear Test";
+                    const stressTest = new StressTest();
+                    this.users = stressTest.StartStressTest();
+                    tbody.innerHTML = '';
+                    RenderUsers.call(this, this.users, tbody);
+                } else {
+                    stressBtn.textContent = "Stress Test";
+                    await this.fetchUsers(tbody);
+                }
+            });
+        }
+
+        this.addEventListener("refresh-users", async (event) => {
+            console.log("refresh-users event received:", event);
+            const newUser = {
+                email: event.detail.email,
+                firstName: event.detail.firstName,
+                lastName: event.detail.lastName,
+                department: event.detail.department,
+                skills: event.detail.skills,
+                profilePhoto: event.detail.profilePhoto,
+                note: event.detail.note,
+            };
+            this.users.push(newUser);
+            if (this.sortState.key) {
+                this.users = SortUsers(this.users, this.sortState.key, this.sortState.direction);
+            }
+            tbody.innerHTML = '';
+            RenderUsers.call(this, this.users, tbody);
+        });
+
+        await this.fetchUsers(tbody);
     }
 }
 
