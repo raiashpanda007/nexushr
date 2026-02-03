@@ -11,7 +11,6 @@ headerTemplate.innerHTML = `
             NexusHR
           </h1>
         </div>
-
         <nav class="hidden md:flex space-x-8 bg-slate-800 px-6 py-2 rounded-full border border-slate-700">
           <span id="app-lps-header" class="text-red-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer  text-sm font-medium">LPS</span>
           <span id="app-sse-header" class="text-red-300 hover:text-white hover:bg-white/10 hover:rounded-full px-3 py-1 cursor-pointer text-sm font-medium">SSE</span>

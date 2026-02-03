@@ -1,13 +1,7 @@
 import "../../scripts/Components/Header/Header.js";
 import "../../scripts/Components/Sidebar.js";
-import "../../scripts/Components/Views/EmployeesView.js";
-import "../../scripts/Components/Views/DepartmentsView.js";
-import "../../scripts/Components/Views/SkillsView.js";
-import "../../scripts/Components/Views/LeavesView.js";
-import "../../scripts/Components/Views/AttendanceView.js";
-import "../../scripts/Components/Views/SalariesView.js";
-import "../../scripts/Components/Views/PayrollView.js";
-import "../../scripts/Components/Views/AnalysisView.js";
+
+// Views are now dynamically imported
 import "../../scripts/Components/Cards/Modals/EditDepartmentModal.js";
 import "../../scripts/Components/Cards/Modals/EditSkillModal.js";
 import "../../scripts/Components/Cards/Modals/EditLeaveTypeModal.js";
@@ -51,24 +45,57 @@ import {
 } from "../../scripts/events.js";
 
 const views = {
-  "nav-employees": "app-employees-view",
-  "nav-departments": "app-departments-view",
-  "nav-skills": "app-skills-view",
-  "nav-leaves": "app-leaves-view",
-  "nav-attendance": "app-attendance-view",
-  "nav-salaries": "app-salaries-view",
-  "nav-payroll": "app-payroll-view",
-  "nav-analysis": "app-analysis-view",
+  "nav-employees": { tag: "app-employees-view", path: "../../scripts/Components/Views/EmployeesView.js" },
+  "nav-departments": { tag: "app-departments-view", path: "../../scripts/Components/Views/DepartmentsView.js" },
+  "nav-skills": { tag: "app-skills-view", path: "../../scripts/Components/Views/SkillsView.js" },
+  "nav-leaves": { tag: "app-leaves-view", path: "../../scripts/Components/Views/LeavesView.js" },
+  "nav-attendance": { tag: "app-attendance-view", path: "../../scripts/Components/Views/AttendanceView.js" },
+  "nav-salaries": { tag: "app-salaries-view", path: "../../scripts/Components/Views/SalariesView.js" },
+  "nav-payroll": { tag: "app-payroll-view", path: "../../scripts/Components/Views/PayrollView.js" },
+  "nav-analysis": { tag: "app-analysis-view", path: "../../scripts/Components/Views/AnalysisView.js" },
 };
 
+
+// Use a static version for production caching.
+// Change this value (e.g., "1.0.1") to force all users to redownload the views.
+// For development: Use the "Disable Cache" option in browser DevTools to see changes immediately.
+const APP_VERSION = "1.0.0";
+
+async function loadView(event) {
+
+  document.querySelectorAll(".view-section").forEach((el) => el.classList.add("hidden"));
+
+  const viewConfig = views[event];
+  if (!viewConfig) return;
+
+
+  let loader = document.querySelector("app-loader");
+  if (!loader) {
+    // Also cache-bust the loader
+    await import("../../scripts/Components/Loader.js?v=" + APP_VERSION);
+    loader = document.createElement("app-loader");
+    document.body.appendChild(loader);
+  }
+  loader.style.display = "flex";
+
+  try {
+
+    // cache-bust the view module
+    await import(viewConfig.path + "?v=" + APP_VERSION);
+
+    const target = document.querySelector(viewConfig.tag);
+    if (target) {
+      target.classList.remove("hidden");
+    }
+  } catch (error) {
+    console.error("Error loading view:", error);
+  } finally {
+    if (loader) loader.style.display = "none";
+  }
+}
+
 Object.keys(views).forEach((event) => {
-  document.addEventListener(event, () => {
-    document
-      .querySelectorAll(".view-section")
-      .forEach((el) => el.classList.add("hidden"));
-    const target = document.querySelector(views[event]);
-    if (target) target.classList.remove("hidden");
-  });
+  document.addEventListener(event, () => loadView(event));
 });
 
 document.addEventListener("sidebar-toggle", (e) => {
