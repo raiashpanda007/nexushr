@@ -202,7 +202,6 @@ class AnalysisView extends HTMLElement {
         this._loadSkills();
         this._loadEmployees();
 
-        // Employee Dropdown Toggle
         const empBtn = this.querySelector("#emp-dropdown-btn");
         const empBody = this.querySelector("#emp-dropdown-body");
         const empSearch = this.querySelector("#emp-search");
@@ -213,7 +212,6 @@ class AnalysisView extends HTMLElement {
                 empBody.classList.toggle("hidden");
             });
 
-            // Close dropdown when clicking outside
             document.addEventListener("click", (e) => {
                 if (!this.contains(e.target)) {
                     empBody.classList.add("hidden");
@@ -678,11 +676,12 @@ class AnalysisView extends HTMLElement {
                      <div class="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar p-1">
                         ${(data.details || []).map(item => {
             let extra = '';
-            if (item.leaveTypes) {
+            const leavesData = item.leaveTypes || item.leaveTypeDays;
+            if (leavesData && typeof leavesData === 'object') {
                 extra += `<div class="mt-3 pt-2 border-t border-slate-100">
                                 <p class="text-xs font-semibold text-slate-500 mb-2">Leave Breakdown</p>
                                 <div class="flex flex-wrap gap-2">` +
-                    Object.entries(item.leaveTypes).map(([k, v]) => `<span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-100">${k}: ${v} Leaves</span>`).join('') +
+                    Object.entries(leavesData).map(([k, v]) => `<span class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-100">${k}: ${v} Leaves</span>`).join('') +
                     `</div></div>`;
             }
 
@@ -696,7 +695,7 @@ class AnalysisView extends HTMLElement {
 
             // Filter tech keys to show relevant stats
             const kv = Object.entries(item)
-                .filter(([k]) => !['components', 'leaveTypes', 'employees', 'userSkills', 'name', 'userId', 'departmentName', 'userName', 'id', 'entryDate', 'exitDate'].includes(k))
+                .filter(([k]) => !['components', 'leaveTypes', 'leaveTypeDays', 'employees', 'userSkills', 'name', 'userId', 'departmentName', 'userName', 'id', 'entryDate', 'exitDate'].includes(k))
                 .map(([k, v]) => {
                     const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
                     let val = formatValue(k, v);
