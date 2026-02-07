@@ -145,6 +145,7 @@ class Permissions {
 
   }
 
+
   async CreateUser(email, firstName, lastName, password, skillId, profilePhoto, note, department) {
     if ((!this.user) || (this.user.user.role != "HR")) return { ok: false, data: "Only HR/Admin can Create user" };
 

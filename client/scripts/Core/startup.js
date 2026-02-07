@@ -30,6 +30,15 @@ export const dbManager = new IndexedDBManager(
   1,
   (db, event) => {
 
+
+    if (!db.objectStoreNames.contains("tenants")) {
+      const tenants = db.createObjectStore("tenants", { keyPath: "id" });
+    }
+
+
+
+
+
     if (!db.objectStoreNames.contains("users")) {
       const users = db.createObjectStore("users", { keyPath: "id" });
 
@@ -41,11 +50,11 @@ export const dbManager = new IndexedDBManager(
       const store = event.target.transaction.objectStore("users");
       store.add({
         id: "1",
-        email: "admin@restroworks.com",
+        email: "admin@nexushr.com",
         firstName: "admin",
         lastName: "chacha",
         password: "12345678",
-        role: "HR",
+        role: "ADMIN",
         online: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

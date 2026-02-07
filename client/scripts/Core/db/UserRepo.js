@@ -21,10 +21,54 @@ class UserRepo {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
+      //Yaha pr response type change karna nahi hai
       req.onsuccess = () => resolve(id);
       req.onerror = () => reject(req.error);
     });
   }
+
+  CreateHR(email, firstName, lastName, password, profilePhoto, noteComment) {
+    return new Promise((resolve, reject) => {
+      const id = crypto.randomUUID();
+      const req = this.db.tx("users", "readwrite").add({
+        id,
+        email,
+        firstName,
+        lastName,
+        password,
+        role: "HR",
+        profilePhoto,
+        note: noteComment,
+        online: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      req.onsuccess = () => resolve({ ok: true, data: id });
+      req.onerror = () => reject({ ok: false, data: req.error });
+    });
+  }
+
+  UpdateHR(id, email, firstName, lastName, password, profilePhoto, noteComment) {
+    return new Promise((resolve, reject) => {
+      const userStore = this.db.tx("users", "readwrite");
+      const req = userStore.get(id);
+      req.onsuccess = (event) => {
+        const user = event.target.result;
+        user.email = email;
+        user.firstName = firstName;
+        user.lastName = lastName;
+        user.password = password;
+        user.profilePhoto = profilePhoto;
+        user.note = noteComment;
+        user.updatedAt = new Date().toISOString();
+        const updateStore = userStore.put(user);
+        updateStore.onsuccess = () => resolve({ ok: true, data: user });
+        updateStore.onerror = () => reject({ ok: false, data: updateStore.error });
+      };
+      req.onerror = () => reject({ ok: false, data: req.error });
+    })
+  }
+
 
   GetUserByEmail(email) {
     return new Promise((resolve, reject) => {
