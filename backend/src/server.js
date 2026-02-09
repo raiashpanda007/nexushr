@@ -4,6 +4,7 @@ import DB from "./config/Db.js";
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import UserRoutesIndex from "./modules/Users/Routes/index.js";
+import RedisClient from "./utils/redis.client.js";
 class App {
   constructor(DbUrl, DbName) {
     this.app = express();
@@ -12,15 +13,18 @@ class App {
     this.#initializeRoutes();
     this.#initializeErrorHandling();
     this.Db = null;
+    this.redisClient = null;
+  }
+  async #initializeSerivces(url, name) {
+    this.Db = await new DB(url, name).Connect()
+    this.redisClient = new RedisClient().getClient();
   }
 
   #initializeRoutes() {
     this.app.use("/api/v1", new UserRoutesIndex().routes());
   }
 
-  async #initializeSerivces(url, name) {
-    this.Db = await new DB(url, name).Connect()
-  }
+
 
   #initializeMiddlewares() {
     this.app.use(cors())

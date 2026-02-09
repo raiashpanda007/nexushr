@@ -9,7 +9,8 @@ const EnvSchema = zod.object({
   ACCESS_TOKEN_SECRET: zod.string().min(1),
   MONGO_DB_URL: zod.string().min(1),
   DB_NAME: zod.string().min(1),
-  REFRESH_TOKEN: zod.string().min(1)
+  REFRESH_TOKEN: zod.string().min(1),
+  REDIS_URL: zod.string().min(1)
 });
 
 class Config {
