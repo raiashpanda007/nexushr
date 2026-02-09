@@ -6,16 +6,17 @@ dotenvConfig();
 const EnvSchema = zod.object({
   PORT: zod.coerce.number().int().positive(),
   INSTANCES: zod.coerce.number().int().positive(),
-  AUTH_TOKEN: zod.string().min(1),
+  ACCESS_TOKEN_SECRET: zod.string().min(1),
   MONGO_DB_URL: zod.string().min(1),
-  DB_NAME: zod.string().min(1)
+  DB_NAME: zod.string().min(1),
+  REFRESH_TOKEN: zod.string().min(1)
 });
 
 class Config {
   MustLoad() {
     const parsed = EnvSchema.safeParse(process.env);
     if (!parsed.success) {
-      console.error("Invalid environment variables:");
+      console.error("Invalid environment variables:", parsed.error.format());
       process.exit(1);
     }
 

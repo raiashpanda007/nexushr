@@ -1,8 +1,12 @@
-export class ApiResponse {
-  constructor(statusCode, data, message = "Success") {
+class ApiResponse {
+  constructor(statusCode, data, message = "Success", errors = []) {
     this.statusCode = statusCode
     this.data = data
     this.message = message
-    this.success = statusCode < 400  // setting a comman rules while sending status code
+    this.success = statusCode < 400
+    this.errors = errors
   }
 }
+
+
+export default ApiResponse;

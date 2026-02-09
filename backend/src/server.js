@@ -1,13 +1,21 @@
 import express from "express";
 import cors from "cors";
 import DB from "./config/Db.js";
-
+import cookieParser from "cookie-parser";
+import { errorHandler } from "./middlewares/error.middleware.js";
+import UserRoutesIndex from "./modules/Users/Routes/index.js";
 class App {
   constructor(DbUrl, DbName) {
     this.app = express();
     this.#initializeSerivces(DbUrl, DbName);
     this.#initializeMiddlewares();
+    this.#initializeRoutes();
+    this.#initializeErrorHandling();
     this.Db = null;
+  }
+
+  #initializeRoutes() {
+    this.app.use("/api/v1", new UserRoutesIndex().routes());
   }
 
   async #initializeSerivces(url, name) {
@@ -17,13 +25,19 @@ class App {
   #initializeMiddlewares() {
     this.app.use(cors())
     this.app.use(express.json())
+    this.app.use(cookieParser())
     this.app.use(express.urlencoded({ extended: false }))
+
   }
 
   Listen(PORT) {
     this.app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`)
     })
+  }
+
+  #initializeErrorHandling() {
+    this.app.use(errorHandler)
   }
 }
 

@@ -1,11 +1,9 @@
 import cluster from "cluster";
 import os from "os";
 import App from "./server.js";
-import Config from "./config/Config.js";
+import { Cfg } from "./config/env.js";
 
 
-
-export const Cfg = new Config().MustLoad();
 
 const CPUs = Math.floor(os.cpus().length / 2) < Cfg.INSTANCES ? Cfg.INSTANCES : Math.floor(os.cpus().length / 2)
 
@@ -18,8 +16,9 @@ if (cluster.isPrimary) {
   }
 
   cluster.on('exit', () => {
-    console.log('Worker died — restarting...');
-    cluster.fork();
+    throw new Error('Worker died — restarting...');
+    // console.log('Worker died — restarting...');
+    // cluster.fork();
   });
 
 } else {

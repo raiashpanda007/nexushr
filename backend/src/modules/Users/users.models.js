@@ -66,20 +66,23 @@ const UserSchema = new mongoose.Schema(
         required: true
       }
     ],
-    refreshTokens: [
-      {
-        token: {
-          type: String,
-          required: true,
-        },
+    refreshTokens: {
+      type: [
+        {
+          token: {
+            type: String,
+            required: true,
+          },
 
-        createdAt: {
-          type: Date,
-          default: Date.now,
-          expires: 60 * 60 * 24 * 30
+          createdAt: {
+            type: Date,
+            default: Date.now,
+            expires: 60 * 60 * 24 * 30
+          },
         },
-      },
-    ],
+      ],
+      select: false
+    },
   },
   {
     timestamps: true,
@@ -87,14 +90,14 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-UserSchema.index({ email: 1 });
+
 UserSchema.index({ role: 1 });
 UserSchema.index({ deptId: 1 });
 UserSchema.index({ online: 1 });
 
 
-UserSchema.pre("save", function(next) {
-  if (!this.isModified("refreshTokens")) return next();
+UserSchema.pre("save", async function () {
+  if (!this.isModified("refreshTokens")) return;
 
   const MAX_SESSIONS = 5;
 
@@ -103,24 +106,21 @@ UserSchema.pre("save", function(next) {
       .sort((a, b) => a.createdAt - b.createdAt)
       .slice(-MAX_SESSIONS);
   }
-  next();
 });
 
 
-UserSchema.pre("save", async function(next) {
-  try {
-    if (!this.isModified("passwordHash")) return next();
-    const saltRounds = 10;
-    this.passwordHash = await bcrypt.hash(
-      this.passwordHash,
-      saltRounds
-    );
-    next();
-  } catch (err) {
-    next(err);
-  }
+UserSchema.pre("save", async function () {
+  if (!this.isModified("passwordHash")) return;
+
+  const saltRounds = 10;
+  this.passwordHash = await bcrypt.hash(this.passwordHash, saltRounds);
 });
 
 
-export const UserModal = mongoose.model("Users", UserSchema);
+
+
+
+
+
+export const UserModel = mongoose.model("Users", UserSchema);
 
