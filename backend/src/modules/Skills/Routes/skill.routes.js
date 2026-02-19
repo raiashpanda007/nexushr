@@ -12,7 +12,7 @@ class SkillRoutes {
         this.router.post("/", VerifyMiddleware, ClearCacheMiddleware("/api/v1/skills"), this.skillController.Create);
         this.router.put("/:id", VerifyMiddleware, ClearCacheMiddleware("/api/v1/skills"), this.skillController.Update);
         this.router.delete("/:id", VerifyMiddleware, ClearCacheMiddleware("/api/v1/skills"), this.skillController.Delete);
-        this.router.get("/", VerifyMiddleware, ReadCacheMiddleware, this.skillController.Get);
+
         this.router.get("/:id", VerifyMiddleware, ReadCacheMiddleware, this.skillController.Get);
         return this.router;
     }

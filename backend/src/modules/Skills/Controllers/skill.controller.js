@@ -8,6 +8,9 @@ class SkillController {
     }
 
     Create = AsyncHandler(async (req, res) => {
+        if (req.user.role != "HR") {
+            throw new ApiError(Types.Errors.Forbidden, "Only HR can create skills")
+        }
         const parsedBody = Types.Skills.Create.safeParse(req.body);
         if (!parsedBody.success) {
             throw new ApiError(Types.Errors.BadRequest, "Please provide valid data to create a skill");
@@ -18,6 +21,7 @@ class SkillController {
     })
 
     Update = AsyncHandler(async (req, res) => {
+
         const skillId = req.params.id;
         if (!skillId) {
             throw new ApiError(Types.Errors.BadRequest, "Please provide a valid skill id");
@@ -35,6 +39,9 @@ class SkillController {
     })
 
     Delete = AsyncHandler(async (req, res) => {
+        if (req.user.role != "HR") {
+            throw new ApiError(Types.Errors.Forbidden, "Only HR can delete skills")
+        }
         const skillId = req.params.id;
         if (!skillId) {
             throw new ApiError(Types.Errors.BadRequest, "Please provide a valid skill id");
@@ -51,6 +58,7 @@ class SkillController {
     })
 
     Get = AsyncHandler(async (req, res) => {
+
         const skillId = req.params.id;
         if (!skillId) {
             const skills = await this.repo.find();

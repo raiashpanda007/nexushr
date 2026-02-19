@@ -1,16 +1,19 @@
 import { Router } from "express";
 import SkillRoutes from "./modules/Skills/Routes/skill.routes.js";
 import UserRoutesIndex from "./modules/Users/Routes/index.js";
+import DepartmentRoutes from "./modules/Departments/Routes/departments.routes.js";
 
 class Routes {
     constructor() {
         this.router = Router();
         this.userRoutes = new UserRoutesIndex().routes();
         this.skillRoutes = new SkillRoutes().routes();
+        this.departmentRoutes = new DepartmentRoutes().routes();
     }
     routes() {
         this.router.use("/", this.userRoutes);
         this.router.use("/skills", this.skillRoutes);
+        this.router.use("/departments", this.departmentRoutes);
         return this.router;
     }
 }
