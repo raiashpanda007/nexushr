@@ -31,9 +31,16 @@ export const ReadCacheMiddleware = AsyncHandler(async (req, res, next) => {
 export const ClearCacheMiddleware = (key) => AsyncHandler(async (req, res, next) => {
     const id = req.params.id;
     const cacheKey = id ? `${key}/${id}` : key;
-    if (cacheKey) {
+    // if (cacheKey) {
+    //     await redisClient.del(cacheKey);
+    //     console.log(`Cache Cleared for key: ${cacheKey}`);
+    // }
+
+    if (id) {
         await redisClient.del(cacheKey);
         console.log(`Cache Cleared for key: ${cacheKey}`);
+        await redisClient.del(key);
+        console.log(`Cache Cleared for key: ${key}`);
     }
     next();
 });

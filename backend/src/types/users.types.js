@@ -23,13 +23,13 @@ export const Login = zod.object({
 })
 
 export const UserUpdatesValidationSchema = zod.object({
-  email: zod.email(),
-  firstName: zod.string().min(1),
-  lastName: zod.string(),
-  deptId: zod.string(),
+  email: zod.email().optional(),
+  firstName: zod.string().min(1).optional(),
+  lastName: zod.string().optional(),
+  deptId: zod.string().optional(),
   profilePhoto: zod.string().optional(),
   note: zod.string().optional(),
-  skills: zod.array(zod.string())
+  skills: zod.array(zod.string()).optional()
 })
 
 
