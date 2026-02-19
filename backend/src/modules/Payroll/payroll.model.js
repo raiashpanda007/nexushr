@@ -50,28 +50,19 @@ const PayrollSchema = new mongoose.Schema(
 PayrollSchema.index({ user: 1 });
 
 
-PayrollSchema.pre("save", async function(next) {
-  try {
-    if (!this.isModified("bonus")) return next();
-    this.bonus.forEach((val) => {
-      val.amount = Math.abs(val.amount)
-    })
-    next();
-  } catch (e) {
-    next(e);
-  }
+PayrollSchema.pre("save", async function () {
+  if (!this.isModified("bonus")) return;
+  this.bonus.forEach((val) => {
+    val.amount = Math.abs(val.amount)
+  })
 })
 
 
-PayrollSchema.pre("save", async function(next) {
-  try {
-    if (!this.isModified("deduction")) return next();
-    this.deduction.forEach((val) => {
-      val.amount = -Math.abs(val.amount)
-    })
-  } catch (e) {
-    next(e);
-  }
+PayrollSchema.pre("save", async function () {
+  if (!this.isModified("deduction")) return;
+  this.deduction.forEach((val) => {
+    val.amount = -Math.abs(val.amount)
+  })
 })
 
 
