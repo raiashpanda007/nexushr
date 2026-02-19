@@ -22,5 +22,17 @@ export const Login = zod.object({
   password: zod.string()
 })
 
+export const UserUpdatesValidationSchema = zod.object({
+  email: zod.email(),
+  firstName: zod.string().min(1),
+  lastName: zod.string(),
+  deptId: zod.string(),
+  profilePhoto: zod.string().optional(),
+  note: zod.string().optional(),
+  skills: zod.array(zod.string())
+})
+
+
+
 
 

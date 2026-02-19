@@ -1,7 +1,8 @@
 import { ApiError, ApiResponse, AsyncHandler } from "../../../utils/index.js";
 import { UserModel } from "../users.models.js";
+import { SessionModel } from "../session.model.js";
 import Types from "../../../types/index.js"
-import { HashPassword, GenerateAccessToken, GenerateRefreshToken, VerifyRefreshToken } from "../Encrypts.js"
+import { GenerateAccessToken, GenerateRefreshToken, VerifyRefreshToken } from "../Encrypts.js"
 import bcrypt from "bcrypt";
 import { v7 as uuid } from "uuid";
 
@@ -36,7 +37,7 @@ class UserController {
       profilePhoto: profilePhoto,
       note: note,
       skills: skills,
-      passwordHash: password, // Model pre-save hook handles hashing
+      passwordHash: password,
       role: "EMPLOYEE"
     })
 
@@ -70,7 +71,7 @@ class UserController {
       profilePhoto: profilePhoto,
       note: note,
       skills: skills,
-      passwordHash: password, // Model pre-save hook handles hashing
+      passwordHash: password,
       role: "HR"
     })
 
@@ -88,8 +89,8 @@ class UserController {
 
     const { email, password } = parsedBody.data;
 
-    const savedUserDetail = await UserModel.findOne({ email }).select("+passwordHash +refreshTokens");
-    // console.log("SAVED USER DETAIL :: ", savedUserDetail);
+    const savedUserDetail = await UserModel.findOne({ email }).select("+passwordHash");
+    console.log("SAVED USER DETAIL :: ", savedUserDetail);
     console.log("PASSWORD :: ", password);
     console.log("PASSWORD HASH :: ", savedUserDetail.passwordHash);
     const isValid = await bcrypt.compare(password, savedUserDetail.passwordHash);
@@ -106,11 +107,7 @@ class UserController {
     }
 
     const RefreshToken = GenerateRefreshToken(refreshTokenPayload);
-    if (!savedUserDetail.refreshTokens) {
-      savedUserDetail.refreshTokens = [];
-    }
-    savedUserDetail.refreshTokens.push({ token: RefreshToken });
-    await savedUserDetail.save();
+    await SessionModel.create({ userId: savedUserDetail._id, token: RefreshToken });
     const AccessToken = GenerateAccessToken(email, savedUserDetail._id, savedUserDetail.firstName, savedUserDetail.lastName, savedUserDetail.role);
 
     const options = {
@@ -176,42 +173,35 @@ class UserController {
     }
 
     let decodedToken;
-    try {
-      decodedToken = VerifyRefreshToken(refreshToken);
-    } catch (error) {
-      throw new ApiError(Types.Errors.Unauthorized, "Invalid Refresh Token");
-    }
+
+    decodedToken = VerifyRefreshToken(refreshToken);
 
     if (!decodedToken) {
       throw new ApiError(Types.Errors.Unauthorized, "Unauthorized");
     }
 
-    const user = await UserModel.findById(decodedToken.id).select("+refreshTokens");
-    if (!user) {
-      throw new ApiError(Types.Errors.NotFound, "User not found");
-    }
 
-    // Check if the token exists in the DB
-    if (!user.refreshTokens) user.refreshTokens = [];
-    const tokenIndex = user.refreshTokens.findIndex(rt => rt.token === refreshToken);
+    // Check if session exists
+    const session = await SessionModel.findOne({ token: refreshToken });
 
-    if (tokenIndex === -1) {
-      // Token reuse detected! Potential theft. 
-      // Invalidate all tokens for this user.
-      user.refreshTokens = [];
-      await user.save();
+    if (!session) {
+      // Reuse detected - clear all sessions for this user
+      await SessionModel.deleteMany({ userId: decodedToken.id });
 
-      // Clear cookies
       res.clearCookie("accessToken");
       res.clearCookie("refreshToken");
 
       throw new ApiError(Types.Errors.Forbidden, "Refresh token reuse detected. Please login again.");
     }
 
-    // Token Rotation: Remove the old token from DB
-    user.refreshTokens.splice(tokenIndex, 1);
+    // Delete the used session
+    await SessionModel.findByIdAndDelete(session._id);
 
-    // Generate NEW tokens
+    const user = await UserModel.findById(decodedToken.id);
+    if (!user) {
+      throw new ApiError(Types.Errors.NotFound, "User not found");
+    }
+
     const newRefreshUniqueToken = uuid();
     const newRefreshTokenPayload = {
       id: user._id,
@@ -221,9 +211,8 @@ class UserController {
     const newRefreshToken = GenerateRefreshToken(newRefreshTokenPayload);
     const newAccessToken = GenerateAccessToken(user.email, user._id, user.firstName, user.lastName, user.role);
 
-    // Save NEW refresh token to DB
-    user.refreshTokens.push({ token: newRefreshToken });
-    await user.save();
+    // Create new session
+    await SessionModel.create({ userId: user._id, token: newRefreshToken });
 
     const options = {
       httpOnly: true,
@@ -245,6 +234,68 @@ class UserController {
         skills: user.skills,
         refreshUniqueToken: newRefreshUniqueToken
       }, "Access token refreshed successfully"))
+  })
+
+
+  UpdateEmployee = AsyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    if (!userId) {
+      throw new ApiError(Types.Errors.BadRequest, "User ID is required");
+    }
+
+    const parsedBody = Types.User.UserUpdates.safeParse(req.body);
+    if (!parsedBody.success) {
+      throw new ApiError(Types.Errors.BadRequest, "Please provide valid data to update user");
+    }
+
+    if (req.user.role != "HR") {
+      throw new ApiError(Types.Errors.Forbidden, "You are not authorized to update this user");
+    }
+
+    const { email, firstName, lastName, deptId, skills, profilePhoto, note } = parsedBody.data;
+
+    const user = await UserModel.findById(userId).select("+passwordHash");
+    if (!user) {
+      throw new ApiError(Types.Errors.NotFound, "User not found");
+    }
+
+    user.email = email;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.deptId = deptId;
+    user.skills = skills;
+    if (profilePhoto) {
+      user.profilePhoto = profilePhoto;
+    }
+    if (note) {
+      user.note = note;
+    }
+
+    await user.save();
+
+    user.passwordHash = undefined;
+
+    return res.status(200).json(new ApiResponse(200, user, "User updated successfully"));
+  })
+
+  DeleteEmployee = AsyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    if (!userId) {
+      throw new ApiError(Types.Errors.BadRequest, "User ID is required");
+    }
+
+    if (req.user.role != "HR") {
+      throw new ApiError(Types.Errors.Forbidden, "You are not authorized to delete this user");
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      throw new ApiError(Types.Errors.NotFound, "User not found");
+    }
+
+    await user.deleteOne();
+
+    return res.status(200).json(new ApiResponse(200, {}, "User deleted successfully"));
   })
 }
 

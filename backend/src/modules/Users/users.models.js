@@ -66,23 +66,7 @@ const UserSchema = new mongoose.Schema(
         required: true
       }
     ],
-    refreshTokens: {
-      type: [
-        {
-          token: {
-            type: String,
-            required: true,
-          },
 
-          createdAt: {
-            type: Date,
-            default: Date.now,
-            expires: 60 * 60 * 24 * 30
-          },
-        },
-      ],
-      select: false
-    },
   },
   {
     timestamps: true,
@@ -96,17 +80,6 @@ UserSchema.index({ deptId: 1 });
 UserSchema.index({ online: 1 });
 
 
-UserSchema.pre("save", async function () {
-  if (!this.isModified("refreshTokens")) return;
-
-  const MAX_SESSIONS = 5;
-
-  if (this.refreshTokens.length > MAX_SESSIONS) {
-    this.refreshTokens = this.refreshTokens
-      .sort((a, b) => a.createdAt - b.createdAt)
-      .slice(-MAX_SESSIONS);
-  }
-});
 
 
 UserSchema.pre("save", async function () {

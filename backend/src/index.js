@@ -17,7 +17,7 @@ if (cluster.isPrimary) {
 
   cluster.on('exit', () => {
     throw new Error('Worker died — restarting...');
-    // console.log('Worker died — restarting...');
+    // console.error('Worker died — restarting...');
     // cluster.fork();
   });
 

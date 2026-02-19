@@ -12,7 +12,6 @@ const SkillSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["TECHNICAL", "SOFTSKILLS", "LEADERSHIP", "MANAGEMENT"],
       required: true
     },
 

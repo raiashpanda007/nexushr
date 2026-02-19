@@ -25,8 +25,7 @@ const SalariesSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: { createdAt: true, updatedAt: false },
-    versionKey: false,
+    timestamps: { createdAt: true, updatedAt: false }
   }
 );
 
