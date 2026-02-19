@@ -1,9 +1,13 @@
 export interface UserDetails {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     role: string;
-    profile: string
+    profilePhoto?: string;
+    deptId?: string;
+    skills?: string[];
+    note?: string;
 }
 export interface UserState {
     userDetails: UserDetails | null;

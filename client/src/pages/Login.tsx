@@ -15,12 +15,16 @@ import ApiCaller from "@/utils/ApiCaller"
 import Loader from "@/components/Loader"
 import { useNavigate } from "react-router-dom"
 
+import { useAppDispatch } from "@/store/hooks"
+import { setUserDetails } from "@/store/slices/userStateSlice"
+
 function Login() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
     const navigate = useNavigate()
+    const dispatch = useAppDispatch()
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -36,6 +40,10 @@ function Login() {
 
             // Check if response is successful. ApiCaller returns success: true if API responded with 2xx
             if (ok && response?.success) {
+                // Dispatch user details to store
+                if (response.data) {
+                    dispatch(setUserDetails(response.data))
+                }
                 // Assuming successful login redirects to dashboard or home
                 navigate("/")
             } else {
