@@ -144,26 +144,58 @@ class UserController {
   GetUsers = AsyncHandler(async (req, res) => {
     const userID = req.params.id;
 
+    const populateOptions = [
+      {
+        path: "deptId",
+        select: "name", // only department name
+      },
+      {
+        path: "skills",
+        select: "name", // only skill name
+      },
+    ];
+
     if (req.user.role === "HR") {
       if (!userID) {
-        const users = await UserModel.find();
-        return res.status(200).json(new ApiResponse(200, users, "All users fetched successfully"));
+        const users = await UserModel.find()
+          .select("-passwordHash")
+          .populate(populateOptions);
+
+        return res
+          .status(200)
+          .json(new ApiResponse(200, users, "All users fetched successfully"));
       }
-      const user = await UserModel.findById(userID);
+
+      const user = await UserModel.findById(userID)
+        .select("-passwordHash")
+        .populate(populateOptions);
+
       if (!user) {
         throw new ApiError(Types.Errors.NotFound, "User not found");
       }
-      return res.status(200).json(new ApiResponse(200, user, "User fetched successfully"));
+
+      return res
+        .status(200)
+        .json(new ApiResponse(200, user, "User fetched successfully"));
     }
+
+    // EMPLOYEE
 
     if (!userID) {
-      const user = await UserModel.findById(req.user.id);
-      return res.status(200).json(new ApiResponse(200, user, "User fetched successfully"));
+      const user = await UserModel.findById(req.user.id)
+        .select("-passwordHash")
+        .populate(populateOptions);
+
+      return res
+        .status(200)
+        .json(new ApiResponse(200, user, "User fetched successfully"));
     }
 
-    throw new ApiError(Types.Errors.Forbidden, "You are not authorized to get this user");
-  })
-
+    throw new ApiError(
+      Types.Errors.Forbidden,
+      "You are not authorized to get this user"
+    );
+  });
 
   RefreshAccessToken = AsyncHandler(async (req, res) => {
 
