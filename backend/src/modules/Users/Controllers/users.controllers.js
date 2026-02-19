@@ -1,6 +1,6 @@
 import { ApiError, ApiResponse, AsyncHandler } from "../../../utils/index.js";
-import { UserModel } from "../users.models.js";
-import { SessionModel } from "../session.model.js";
+import { UserModel } from "../models/users.models.js";
+import { SessionModel } from "../models/session.model.js";
 import Types from "../../../types/index.js"
 import { GenerateAccessToken, GenerateRefreshToken, VerifyRefreshToken } from "../Encrypts.js"
 import bcrypt from "bcrypt";
