@@ -21,6 +21,10 @@ const LeaveTypeSchema = new mongoose.Schema(
       enum: ["HALF", "FULL"],
       default: "HALF"
 
+    },
+    isPaid: {
+      type: Boolean,
+      default: true
     }
   },
   {
@@ -28,4 +32,7 @@ const LeaveTypeSchema = new mongoose.Schema(
   }
 )
 
-export const LeaveTypeModal = mongoose.model("LeaveTypes", LeaveTypeSchema);
+const LeaveTypeModal = mongoose.model("LeaveTypes", LeaveTypeSchema);
+
+
+export default LeaveTypeModal
