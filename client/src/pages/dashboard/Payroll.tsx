@@ -45,6 +45,23 @@ interface PayrollItem {
 }
 
 const Payroll = () => {
+    function GeneratePdf(data: { BaseSalary: number; HRA: number; LTA: number; Bonus: { reason: string; amount: number }[]; Deduction: { reason: string; amount: number }[] }) {
+        const worker = new Worker(new URL("../workers/pdf.worker.ts", import.meta.url));
+
+        worker.postMessage(data);
+
+        worker.onmessage = (e) => {
+            const blob = e.data;
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "payroll.pdf";
+            link.click();
+            URL.revokeObjectURL(url);
+        };
+    }
+
+
     // Redux State
     const { userDetails } = useSelector((state: RootState) => state.userState);
     const isHR = userDetails?.role === 'HR';
@@ -233,7 +250,7 @@ const Payroll = () => {
                             const pMonth = (pDate.getMonth() + 1).toString().padStart(2, '0');
                             const { totalBonus, totalDeduction, baseSalary, netSalary } = calculateTotals(p);
                             return (
-                                <Card key={p._id} className="border-l-4 border-l-indigo-600">
+                                <Card key={p._id}>
                                     <CardContent className="p-6 flex justify-between items-center">
                                         <div>
                                             <h3 className="font-semibold text-xl mb-1">{pMonth} / {pYear}</h3>
@@ -245,6 +262,15 @@ const Payroll = () => {
                                             </div>
                                         </div>
                                         <Badge className="bg-green-100 text-green-800 hover:bg-green-200"><CheckCircle2 size={16} className="mr-1" /> Processed</Badge>
+                                        <Button size="sm" className="shadow-sm" variant="outline" onClick={() => GeneratePdf({
+                                            BaseSalary: baseSalary,
+                                            HRA: p.salary.HRA,
+                                            LTA: p.salary.LTA,
+                                            Bonus: p.bonus,
+                                            Deduction: p.deduction
+                                        })}>
+                                            <FileText size={16} className="mr-2" /> Print
+                                        </Button>
                                     </CardContent>
                                 </Card>
                             )
