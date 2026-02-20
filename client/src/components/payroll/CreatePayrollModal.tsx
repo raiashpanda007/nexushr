@@ -205,7 +205,7 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
                                 <div><span className="text-gray-500 font-medium">Base:</span> <span>${activeSalaryObj.base}</span></div>
                                 <div><span className="text-gray-500 font-medium">HRA:</span> <span>${activeSalaryObj.hra}</span></div>
                                 <div><span className="text-gray-500 font-medium">LTA:</span> <span>${activeSalaryObj.lta}</span></div>
-                                <div className="font-bold text-indigo-700">Gross: ${activeSalaryObj.base + activeSalaryObj.hra + activeSalaryObj.lta}</div>
+                                <div className="font-bold ">Gross: ${activeSalaryObj.base + activeSalaryObj.hra + activeSalaryObj.lta}</div>
                             </CardContent>
                         </Card>
                     )}
@@ -281,7 +281,7 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
 
                 <DialogFooter className="mt-6">
                     <Button variant="outline" onClick={onClose} disabled={submitting}>Cancel</Button>
-                    <Button onClick={handleSubmit} disabled={!selectedSalary || submitting} className="bg-indigo-600 hover:bg-indigo-700">
+                    <Button onClick={handleSubmit} disabled={!selectedSalary || submitting}>
                         {submitting ? 'Generating...' : 'Generate Payroll'}
                     </Button>
                 </DialogFooter>

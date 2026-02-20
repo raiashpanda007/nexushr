@@ -182,12 +182,52 @@ const Payroll = () => {
     if (!isHR) {
         return (
             <div className="p-6">
-                <h1 className="text-2xl font-bold mb-4">My Payrolls</h1>
-                {payrolls.length === 0 ? (
-                    <p className="text-gray-500">No payrolls found for your account.</p>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                    <h1 className="text-2xl font-bold">My Payrolls</h1>
+                    <div className="flex gap-4 mt-4 md:mt-0">
+                        <div className="w-32">
+                            <Select value={filterYear || "all"} onValueChange={(val) => {
+                                if (val === "all") {
+                                    setFilterYear('');
+                                    setFilterMonth('');
+                                } else {
+                                    setFilterYear(val);
+                                }
+                            }}>
+                                <SelectTrigger className="bg-white">
+                                    <SelectValue placeholder="Year" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all" className="text-gray-400 italic">All Years</SelectItem>
+                                    {[2024, 2025, 2026].map(y => (
+                                        <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="w-36">
+                            <Select value={filterMonth || "all"} onValueChange={(val) => {
+                                if (val === "all") setFilterMonth('');
+                                else setFilterMonth(val);
+                            }} disabled={!filterYear}>
+                                <SelectTrigger className="bg-white">
+                                    <SelectValue placeholder="Month" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all" className="text-gray-400 italic">All Months</SelectItem>
+                                    {Array.from({ length: 12 }).map((_, i) => (
+                                        <SelectItem key={i + 1} value={(i + 1).toString()}>{i + 1}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+                {filteredPayrolls.length === 0 ? (
+                    <p className="text-gray-500">No payrolls found matching your filters.</p>
                 ) : (
                     <div className="space-y-4">
-                        {payrolls.map(p => {
+                        {filteredPayrolls.map(p => {
                             const pDate = new Date(p.createdAt);
                             const pYear = pDate.getFullYear();
                             const pMonth = (pDate.getMonth() + 1).toString().padStart(2, '0');

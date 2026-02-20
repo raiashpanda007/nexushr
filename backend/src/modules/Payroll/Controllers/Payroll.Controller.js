@@ -29,8 +29,11 @@ class PayrollController {
         if (req.user.role != "HR") {
             throw new ApiError(Types.Errors.Forbidden, "You are not allowed to create payroll");
         }
-        const parsedBody = Types.Schemas.Payroll.Create.parse(req.body);
-        const { user, bonus, deduction, salary, month, year } = parsedBody;
+        const parsedBody = Types.Payroll.Create.safeParse(req.body);
+        if (!parsedBody.success) {
+            throw new ApiError(Types.Errors.UnprocessableData, "Invalid data", parsedBody.error.issues);
+        }
+        const { user, bonus, deduction, salary, month, year } = parsedBody.data;
 
         const payroll = await this.repo.create({
             user,
