@@ -4,6 +4,8 @@ import { CreateDepartmentValidationSchema, UpdateDepartmentValidationSchema } fr
 import { CreateLeaveTypeValidationSchema, UpdateLeaveTypeValidationSchema } from "./Leaves/LeaveTypes.types.js"
 import { CreateLeaveRequestValidationSchema, UpdateLeaveRequestValidationSchema, ResponseLeaveRequestValidationSchema } from "./Leaves/LeaveRequest.types.js"
 import { CreateLeaveBalanceValidationSchema, UpdateLeaveBalanceValidationSchema } from "./Leaves/LeaveBalance.types.js"
+import { CreateSalaryValidationSchema, UpdateSalaryValidationSchema } from "./salaries.types.js"
+
 import { ErrorTypes } from "./error.types.js"
 
 
@@ -35,6 +37,10 @@ const Types = {
     Create: CreateLeaveRequestValidationSchema,
     Update: UpdateLeaveRequestValidationSchema,
     Response: ResponseLeaveRequestValidationSchema
+  },
+  Salaries: {
+    Create: CreateSalaryValidationSchema,
+    Update: UpdateSalaryValidationSchema
   },
   Errors: ErrorTypes
 }

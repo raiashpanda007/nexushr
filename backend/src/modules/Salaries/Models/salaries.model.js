@@ -4,7 +4,7 @@ const SalariesSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Users",
       required: true,
     },
 
@@ -33,4 +33,6 @@ SalariesSchema.index({ userId: 1 });
 
 
 
-export const SalariesModel = mongoose.model("Salaries", SalariesSchema);
+const SalariesModel = mongoose.model("Salaries", SalariesSchema);
+
+export default SalariesModel

@@ -3,6 +3,7 @@ import SkillRoutes from "./modules/Skills/Routes/skill.routes.js";
 import UserRoutesIndex from "./modules/Users/Routes/index.js";
 import DepartmentRoutes from "./modules/Departments/Routes/departments.routes.js";
 import LeavesRouter from "./modules/Leaves/Leave.Routes.js";
+import SalariesRoutes from "./modules/Salaries/Routes/Salaries.routes.js";
 
 class Routes {
     constructor() {
@@ -11,12 +12,14 @@ class Routes {
         this.skillRoutes = new SkillRoutes().routes();
         this.departmentRoutes = new DepartmentRoutes().routes();
         this.leavesRoutes = new LeavesRouter().routes();
+        this.salariesRoutes = new SalariesRoutes().routes();
     }
     routes() {
         this.router.use("/", this.userRoutes);
         this.router.use("/skills", this.skillRoutes);
         this.router.use("/departments", this.departmentRoutes);
         this.router.use("/leaves", this.leavesRoutes);
+        this.router.use("/salaries", this.salariesRoutes);
         return this.router;
     }
 }
