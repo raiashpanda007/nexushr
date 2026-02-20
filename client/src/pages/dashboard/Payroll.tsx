@@ -355,7 +355,7 @@ const Payroll = () => {
                                                             <span className="text-green-600 font-medium">+{totalBonus}</span>
                                                             <span className="text-red-500 font-medium">-{totalDeduction}</span>
                                                         </div>
-                                                        <div className="font-bold text-indigo-600 px-1">
+                                                        <div className="font-bold px-1">
                                                             ${netSalary}
                                                         </div>
                                                     </div>

@@ -34,7 +34,6 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
     // Data for selects
     const [departments, setDepartments] = useState<Department[]>([]);
     const [skills, setSkills] = useState<Skill[]>([]);
-    const [loadingData, setLoadingData] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -43,7 +42,6 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
     // Fetch Departments and Skills
     useEffect(() => {
         const fetchData = async () => {
-            setLoadingData(true);
             try {
                 const [deptRes, skillRes] = await Promise.all([
                     ApiCaller<null, Department[]>({ requestType: "GET", paths: ["api", "v1", "departments"] }),
@@ -58,8 +56,6 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
                 }
             } catch (err) {
                 console.error("Failed to fetch form data", err);
-            } finally {
-                setLoadingData(false);
             }
         };
 

@@ -9,6 +9,7 @@ import LeaveBalancesTable, { type UserLeaveBalance } from "@/components/leaves/L
 import CreateLeaveBalanceModal from "@/components/leaves/CreateLeaveBalanceModal";
 import EditLeaveBalanceModal from "@/components/leaves/EditLeaveBalanceModal";
 import EmployeeLeaves from "@/pages/dashboard/EmployeeLeaves";
+import LeaveRequestsTable, { type LeaveRequest } from "@/components/leaves/LeaveRequestsTable";
 
 
 interface RawLeaveBalanceDoc {
@@ -56,6 +57,29 @@ export default function Leaves() {
 
     const [userBalances, setUserBalances] = useState<UserLeaveBalance[]>([]);
     const [balancesLoading, setBalancesLoading] = useState(false);
+
+    const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+    const [requestsLoading, setRequestsLoading] = useState(false);
+
+    const fetchLeaveRequests = async () => {
+        setRequestsLoading(true);
+        try {
+            const result = await ApiCaller<null, LeaveRequest[]>({
+                requestType: "GET",
+                paths: ["api", "v1", "leaves", "requests"],
+            });
+
+            if (result.ok) {
+                setLeaveRequests(result.response.data || []);
+            } else {
+                console.error("Failed to fetch leave requests:", result.response.message);
+            }
+        } catch (error) {
+            console.error("Error fetching leave requests:", error);
+        } finally {
+            setRequestsLoading(false);
+        }
+    };
 
     const fetchLeaveTypes = async () => {
         setLeaveTypesLoading(true);
@@ -105,6 +129,7 @@ export default function Leaves() {
         if (role === "HR") {
             fetchLeaveTypes();
             fetchUserBalances();
+            fetchLeaveRequests();
         }
     }, [role]);
 
@@ -161,6 +186,16 @@ export default function Leaves() {
         });
     }, [userBalances, search]);
 
+    const filteredLeaveRequests = useMemo(() => {
+        if (!search.trim()) return leaveRequests;
+        const q = search.toLowerCase();
+        return leaveRequests.filter((req) => {
+            const empName = `${req.requestedBy?.firstName} ${req.requestedBy?.lastName}`.toLowerCase();
+            const leaveName = typeof req.type === "object" ? req.type.name.toLowerCase() : String(req.type).toLowerCase();
+            return empName.includes(q) || leaveName.includes(q);
+        });
+    }, [leaveRequests, search]);
+
     // Employee view — delegate to dedicated component
     if (role !== "HR") {
         return <EmployeeLeaves />;
@@ -211,6 +246,22 @@ export default function Leaves() {
                         <LeaveBalancesTable
                             users={filteredUserBalances}
                             onEdit={(user) => setSelectedUserForEdit(user)}
+                        />
+                    )}
+                </div>
+            </div>
+
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold">Leave Requests</h2>
+                </div>
+                <div className="bg-white rounded-lg shadow">
+                    {requestsLoading ? (
+                        <div className="p-8 text-center text-muted-foreground">Loading leave requests...</div>
+                    ) : (
+                        <LeaveRequestsTable
+                            requests={filteredLeaveRequests}
+                            onRefresh={fetchLeaveRequests}
                         />
                     )}
                 </div>
