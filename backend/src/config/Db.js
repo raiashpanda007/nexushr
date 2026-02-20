@@ -10,12 +10,13 @@ class DB {
   async Connect() {
 
     try {
-      const connectionDB = await mongoose.connect(this.#dbUrl ,{
+      const connectionDB = await mongoose.connect(this.#dbUrl, {
         dbName: this.#dbName,
       });
       console.info("DB Connected :: ", connectionDB.connection.host);
     } catch (e) {
       console.error('Error in db/index :', e);
+      process.exit(1);
     }
 
   }

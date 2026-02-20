@@ -35,14 +35,14 @@ class LeaveRequestController {
         const id = req.params.id;
         if (!id) {
             if (req.user.role === "HR") {
-                const leaveRequests = await this.repo.find();
+                const leaveRequests = await this.repo.find().populate("requestedBy");
                 return res.status(200).json(new ApiResponse(200, leaveRequests, "Leave requests fetched successfully"));
             } else {
-                const leaveRequests = await this.repo.find({ requestedBy: req.user.id });
+                const leaveRequests = await this.repo.find({ requestedBy: req.user.id }).populate("requestedBy");
                 return res.status(200).json(new ApiResponse(200, leaveRequests, "Leave requests fetched successfully"));
             }
         } else {
-            const leaveRequest = await this.repo.findById(id, { requestedBy: req.user.id });
+            const leaveRequest = await this.repo.findById(id, { requestedBy: req.user.id }).populate("requestedBy");
             if (!leaveRequest) {
                 return ApiError(Types.Errors.NotFound, "Leave request not found");
             }

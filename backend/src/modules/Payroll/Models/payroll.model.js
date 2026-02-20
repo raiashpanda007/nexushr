@@ -16,7 +16,7 @@ const PayrollSchema = new mongoose.Schema(
           maxLength: 500
         },
         amount: {
-          type: BigInt,
+          type: Number,
           required: true,
         }
       }
@@ -30,7 +30,7 @@ const PayrollSchema = new mongoose.Schema(
           maxLength: 500
         },
         amount: {
-          type: BigInt,
+          type: Number,
           required: true,
         }
       }
@@ -39,6 +39,18 @@ const PayrollSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Salaries",
       required: true
+    },
+    month: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 12
+    },
+    year: {
+      type: Number,
+      required: true,
+      min: 1900,
+      max: 2100
     }
   },
   {
@@ -65,5 +77,21 @@ PayrollSchema.pre("save", async function () {
   })
 })
 
+PayrollSchema.pre("save", async function () {
+  if (!this.isModified("month") || !this.isModified("year")) return;
+  const payroll = await PayrollModal.findOne({
+    user: this.user,
+    month: this.month,
+    year: this.year
+  })
+  if (payroll) {
+    throw new ApiError(400, "Payroll already exists for this month and year");
+  }
+})
 
-export const PayrollModal = mongoose.model("Payrolls", PayrollSchema);
+
+
+const PayrollModal = mongoose.model("Payrolls", PayrollSchema);
+
+
+export default PayrollModal;
