@@ -3,6 +3,7 @@ import ApiError from "../utils/Error.js";
 import ApiResponse from "../utils/Response.js";
 
 const errorHandler = (err, req, res, next) => {
+    console.log("Error :: ", err);
     let error = err;
 
     if (!(error instanceof ApiError)) {

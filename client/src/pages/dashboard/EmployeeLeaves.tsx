@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import ApiCaller from "@/utils/ApiCaller";
 import ApplyLeaveModal from "@/components/leaves/ApplyLeaveModal";
 import type { LeaveBalanceEntry } from "@/components/leaves/LeaveBalancesTable";
+import { Plus, CheckCircle, XCircle, Clock, FileText, Calendar, List } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,7 +52,7 @@ interface LeaveRequest {
     createdAt: string;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+
 
 function statusBadge(status: LeaveRequest["status"]) {
     const map: Record<LeaveRequest["status"], { label: string; cls: string }> = {
@@ -76,40 +77,26 @@ function leaveTypeName(type: LeaveRequest["type"]): string {
     return String(type);
 }
 
-// ── Balance Card ─────────────────────────────────────────────────────────────
 
-const PALETTE = [
-    "from-violet-500 to-indigo-500",
-    "from-rose-500 to-pink-500",
-    "from-emerald-500 to-teal-500",
-    "from-amber-500 to-orange-500",
-    "from-sky-500 to-cyan-500",
-    "from-fuchsia-500 to-purple-500",
-];
 
-function BalanceCard({ entry, index }: { entry: LeaveBalanceEntry; index: number }) {
-    const gradient = PALETTE[index % PALETTE.length];
-
+function BalanceCard({ entry }: { entry: LeaveBalanceEntry }) {
     return (
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col gap-3">
-            {/* gradient blob */}
-            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br ${gradient} opacity-15 blur-2xl`} />
-
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col gap-3">
             <div className="flex items-start justify-between">
                 <div>
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{entry.leaveTypeName}</p>
                     <p className="text-4xl font-bold mt-1">{entry.balance}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">days available</p>
                 </div>
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-lg shadow`}>
-                    🏖
+                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shadow-sm">
+                    <Calendar className="w-5 h-5" />
                 </div>
             </div>
 
             {/* progress bar */}
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                    className={`h-full rounded-full bg-gradient-to-r ${gradient} transition-all duration-500`}
+                    className="h-full rounded-full bg-primary transition-all duration-500"
                     style={{ width: `${entry.balance > 0 ? Math.min(100, (entry.balance / 30) * 100) : 5}%` }}
                 />
             </div>
@@ -195,9 +182,8 @@ export default function EmployeeLeaves() {
                 <Button
                     onClick={() => setIsApplyModalOpen(true)}
                     disabled={balances.length === 0}
-                    className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/25 transition-all"
                 >
-                    <span className="mr-2">✚</span>
+                    <Plus className="w-4 h-4 mr-2" />
                     Apply for Leave
                 </Button>
             </div>
@@ -205,13 +191,13 @@ export default function EmployeeLeaves() {
             {/* ── Stats row ── */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                    { label: "Total Types", value: balances.length, icon: "📋" },
-                    { label: "Pending Requests", value: pendingCount, icon: "⏳" },
-                    { label: "Accepted", value: leaveRequests.filter(r => r.status === "ACCEPTED").length, icon: "✅" },
-                    { label: "Rejected", value: leaveRequests.filter(r => r.status === "REJECTED").length, icon: "❌" },
-                ].map(stat => (
-                    <div key={stat.label} className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 shadow-sm">
-                        <span className="text-2xl">{stat.icon}</span>
+                    { label: "Total Types", value: balances.length, icon: <List className="w-6 h-6" /> },
+                    { label: "Pending Requests", value: pendingCount, icon: <Clock className="w-6 h-6" /> },
+                    { label: "Accepted", value: leaveRequests.filter(r => r.status === "ACCEPTED").length, icon: <CheckCircle className="w-6 h-6" /> },
+                    { label: "Rejected", value: leaveRequests.filter(r => r.status === "REJECTED").length, icon: <XCircle className="w-6 h-6" /> },
+                ].map((stat, i) => (
+                    <div key={i} className="rounded-xl border border-border bg-card p-4 flex items-center gap-3 shadow-sm">
+                        <div className="text-muted-foreground">{stat.icon}</div>
                         <div>
                             <p className="text-2xl font-bold leading-none">{stat.value}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
@@ -234,15 +220,15 @@ export default function EmployeeLeaves() {
                         ))}
                     </div>
                 ) : balances.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-                        <p className="text-4xl mb-3">🏖</p>
+                    <div className="rounded-2xl border border-dashed border-border p-12 flex flex-col items-center justify-center text-center">
+                        <Calendar className="w-10 h-10 mb-3 text-muted-foreground" />
                         <p className="font-medium text-muted-foreground">No leave balances assigned yet.</p>
                         <p className="text-sm text-muted-foreground mt-1">Contact your HR team to set up your leave allowances.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {balances.map((b, i) => (
-                            <BalanceCard key={b.leaveTypeId} entry={b} index={i} />
+                        {balances.map((b) => (
+                            <BalanceCard key={b.leaveTypeId} entry={b} />
                         ))}
                     </div>
                 )}
@@ -262,8 +248,8 @@ export default function EmployeeLeaves() {
                         ))}
                     </div>
                 ) : leaveRequests.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-                        <p className="text-4xl mb-3">📄</p>
+                    <div className="rounded-2xl border border-dashed border-border p-12 flex flex-col items-center justify-center text-center">
+                        <FileText className="w-10 h-10 mb-3 text-muted-foreground" />
                         <p className="font-medium text-muted-foreground">No leave requests found.</p>
                         <p className="text-sm text-muted-foreground mt-1">Click "Apply for Leave" to submit your first request.</p>
                     </div>

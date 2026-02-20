@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ApiCaller from "@/utils/ApiCaller";
 import type { LeaveBalanceEntry } from "./LeaveBalancesTable";
+import { CheckCircle2, XCircle, X } from "lucide-react";
 
 interface ApplyLeaveModalProps {
     isOpen: boolean;
@@ -89,7 +90,7 @@ export default function ApplyLeaveModal({ isOpen, onClose, onSuccess, balances }
             {/* Modal */}
             <div className="relative z-10 bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
                 {/* Header */}
-                <div className="px-6 py-5 border-b border-border bg-gradient-to-r from-violet-500/10 to-indigo-500/10">
+                <div className="px-6 py-5 border-b border-border bg-muted/20">
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-xl font-bold tracking-tight">Apply for Leave</h2>
@@ -99,7 +100,7 @@ export default function ApplyLeaveModal({ isOpen, onClose, onSuccess, balances }
                             onClick={onClose}
                             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                         >
-                            ✕
+                            <X className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
@@ -131,7 +132,7 @@ export default function ApplyLeaveModal({ isOpen, onClose, onSuccess, balances }
                             ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
                             : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
                             }`}>
-                            <span>{selectedBalance.balance > 0 ? "✓" : "✗"}</span>
+                            {selectedBalance.balance > 0 ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                             <span>
                                 {selectedBalance.balance} day{selectedBalance.balance !== 1 ? "s" : ""} available for {selectedBalance.leaveTypeName}
                             </span>
@@ -182,7 +183,7 @@ export default function ApplyLeaveModal({ isOpen, onClose, onSuccess, balances }
                         </Button>
                         <Button
                             type="submit"
-                            className="flex-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0"
+                            className="flex-1"
                             disabled={loading || balances.length === 0}
                         >
                             {loading ? "Submitting…" : "Submit Request"}
