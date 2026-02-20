@@ -14,6 +14,7 @@ export interface UserLeaveBalance {
     firstName: string;
     lastName: string;
     email: string;
+    department?: string;
     balances: LeaveBalanceEntry[];
 }
 
@@ -102,6 +103,7 @@ export default function LeaveBalancesTable({ users, onUpdateBalance }: LeaveBala
                         <TableHead className="w-10">No.</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>Department</TableHead>
                         <TableHead>Leave Type</TableHead>
                         <TableHead>Balance (days)</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -128,6 +130,11 @@ export default function LeaveBalancesTable({ users, onUpdateBalance }: LeaveBala
                                 {/* Email */}
                                 <TableCell className="text-muted-foreground text-sm">
                                     {user.email}
+                                </TableCell>
+
+                                {/* Department */}
+                                <TableCell className="text-muted-foreground text-sm">
+                                    {user.department || "-"}
                                 </TableCell>
 
                                 {/* Leave Type – select */}

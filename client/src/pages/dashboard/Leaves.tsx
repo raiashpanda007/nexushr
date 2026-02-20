@@ -8,11 +8,17 @@ import LeaveTypeModal from "@/components/leaves/LeaveTypeModal";
 import LeaveBalancesTable, { type UserLeaveBalance } from "@/components/leaves/LeaveBalancesTable";
 import EmployeeLeaves from "@/pages/dashboard/EmployeeLeaves";
 
-/** Raw shape returned by the backend aggregate for leave balances */
+
 interface RawLeaveBalanceDoc {
     _id: string;
     user: string;
-    userDetails?: { _id: string; firstName: string; lastName: string; email: string };
+    userDetails?: {
+        _id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        department?: { name: string }
+    };
     leaves: Array<{
         type: string;
         amount: number;
@@ -26,6 +32,7 @@ function mapRawToUserLeaveBalance(doc: RawLeaveBalanceDoc): UserLeaveBalance {
         firstName: doc.userDetails?.firstName ?? "",
         lastName: doc.userDetails?.lastName ?? "",
         email: doc.userDetails?.email ?? "",
+        department: doc.userDetails?.department?.name ?? "",
         balances: (doc.leaves ?? []).map((l) => ({
             leaveTypeId: l.typeDetails?._id ?? String(l.type),
             leaveTypeName: l.typeDetails?.name ?? "Unknown",

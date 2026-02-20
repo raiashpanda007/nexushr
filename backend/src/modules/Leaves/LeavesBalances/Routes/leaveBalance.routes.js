@@ -13,6 +13,7 @@ class LeaveBalanceRoutes {
         this.router.get("/:id", VerifyMiddleware, this.controller.Get);
         this.router.get("/", VerifyMiddleware, this.controller.Get);
         this.router.put("/:id", VerifyMiddleware, this.controller.Update);
+        this.router.patch("/:id", VerifyMiddleware, this.controller.UpdateSingleBalance);
         return this.router;
     }
 

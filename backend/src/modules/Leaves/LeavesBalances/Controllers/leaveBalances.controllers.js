@@ -43,6 +43,29 @@ class LeaveBalanceController {
         return res.status(200).json(new ApiResponse(200, leaveBalance, "Leave balance updated successfully"))
     })
 
+    UpdateSingleBalance = AsyncHandler(async (req, res) => {
+        if (req.user.role != "HR") {
+            throw new ApiError(Types.Errors.Forbidden, "Only HR can update leave balances")
+        }
+        const id = req.params.id
+        const { leaveTypeId, balance } = req.body;
+
+        if (!id || !leaveTypeId || balance === undefined) {
+            throw new ApiError(Types.Errors.BadRequest, "Invalid data")
+        }
+
+        const leaveBalance = await this.repo.findOneAndUpdate(
+            { _id: id, "leaves.type": leaveTypeId },
+            { $set: { "leaves.$.amount": balance } },
+            { new: true }
+        );
+
+        if (!leaveBalance) {
+            throw new ApiError(Types.Errors.NotFound, "Leave balance or type not found")
+        }
+        return res.status(200).json(new ApiResponse(200, leaveBalance, "Leave balance updated successfully"))
+    })
+
     Delete = AsyncHandler(async (req, res) => {
         if (req.user.role != "HR") {
             throw new ApiError(Types.Errors.Forbidden, "Only HR can delete leave balances")
@@ -73,6 +96,20 @@ class LeaveBalanceController {
             {
                 $unwind: {
                     path: "$userDetails",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: "departments",
+                    localField: "userDetails.deptId",
+                    foreignField: "_id",
+                    as: "userDetails.department"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$userDetails.department",
                     preserveNullAndEmptyArrays: true
                 }
             },
