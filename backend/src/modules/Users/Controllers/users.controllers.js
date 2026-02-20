@@ -205,11 +205,17 @@ class UserController {
     }
 
     let decodedToken;
-
-    decodedToken = VerifyRefreshToken(refreshToken);
+    try {
+      decodedToken = VerifyRefreshToken(refreshToken);
+    } catch (err) {
+      if (err.name === "TokenExpiredError") {
+        throw new ApiError(Types.Errors.Unauthroized, "Refresh token expired");
+      }
+      throw new ApiError(Types.Errors.Unauthroized, "Invalid refresh token");
+    }
 
     if (!decodedToken) {
-      throw new ApiError(Types.Errors.Unauthorized, "Unauthorized");
+      throw new ApiError(Types.Errors.Unauthroized, "Unauthorized");
     }
 
 

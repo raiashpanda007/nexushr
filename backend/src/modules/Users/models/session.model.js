@@ -24,7 +24,6 @@ const SessionSchema = new mongoose.Schema(
     }
 );
 
-SessionSchema.index({ token: 1 });
-SessionSchema.index({ userId: 1 });
+
 
 export const SessionModel = mongoose.model("Session", SessionSchema);

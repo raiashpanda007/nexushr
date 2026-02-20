@@ -9,6 +9,7 @@ class LeaveRequestRoutes {
     }
 
     routes() {
+        this.router.get("/", VerifyMiddleware, this.controller.Get);
         this.router.post("/", VerifyMiddleware, this.controller.Create);
         this.router.delete("/:id", VerifyMiddleware, this.controller.Delete);
         this.router.get("/:id", VerifyMiddleware, this.controller.Get);

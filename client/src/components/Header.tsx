@@ -1,6 +1,30 @@
+import { useState } from "react"
+import { useDispatch } from "react-redux"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { clearUserDetails } from "@/store/slices/userStateSlice"
+import ApiCaller from "@/utils/ApiCaller"
 
 function Header() {
+    const dispatch = useDispatch()
+    const navigate = useNavigate()
+    const [loggingOut, setLoggingOut] = useState(false)
+
+    const handleLogout = async () => {
+        setLoggingOut(true)
+        try {
+            await ApiCaller({
+                requestType: "POST",
+                paths: ["api", "v1", "auth", "logout"],
+                retry: false,
+            })
+        } catch {
+            // Even if the API call fails, clear the client-side session
+        } finally {
+            dispatch(clearUserDetails())
+            navigate("/login")
+        }
+    }
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -36,9 +60,16 @@ function Header() {
                         Help
                     </Button>
                     <div className="h-6 w-[1px] bg-border hidden sm:block"></div>
-                    <Button variant="outline" size="sm" className="gap-2 transition-all hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30">
+                    <Button
+                        id="logout-btn"
+                        variant="outline"
+                        size="sm"
+                        disabled={loggingOut}
+                        onClick={handleLogout}
+                        className="gap-2 transition-all hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>
-                        Logout
+                        {loggingOut ? "Logging out…" : "Logout"}
                     </Button>
                 </div>
             </div>
@@ -46,7 +77,5 @@ function Header() {
     )
 
 }
-
-
 
 export default Header

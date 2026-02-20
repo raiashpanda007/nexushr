@@ -7,7 +7,15 @@ const VerifyMiddleware = AsyncHandler((req, res, next) => {
     if (!token) {
         throw new ApiError(401, "Unauthorized");
     }
-    const decodedToken = jwt.verify(token, Cfg.ACCESS_TOKEN_SECRET);
+    let decodedToken;
+    try {
+        decodedToken = jwt.verify(token, Cfg.ACCESS_TOKEN_SECRET);
+    } catch (err) {
+        if (err.name === "TokenExpiredError") {
+            throw new ApiError(401, "jwt expired");
+        }
+        throw new ApiError(401, "Unauthorized");
+    }
     if (!decodedToken) {
         throw new ApiError(401, "Unauthorized");
     }

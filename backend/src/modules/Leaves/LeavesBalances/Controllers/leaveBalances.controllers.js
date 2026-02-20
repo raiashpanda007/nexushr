@@ -79,7 +79,7 @@ class LeaveBalanceController {
             {
                 $lookup: {
                     from: "leavetypes",
-                    localField: "leaves.types",
+                    localField: "leaves.type",
                     foreignField: "_id",
                     as: "mappedLeaveTypes"
                 }
@@ -100,7 +100,7 @@ class LeaveBalanceController {
                                                     $filter: {
                                                         input: "$mappedLeaveTypes",
                                                         as: "type",
-                                                        cond: { $eq: ["$$type._id", "$$leave.types"] }
+                                                        cond: { $eq: ["$$type._id", "$$leave.type"] }
                                                     }
                                                 },
                                                 0
@@ -140,7 +140,12 @@ class LeaveBalanceController {
         }
 
         if (req.user.role != "HR") {
-            throw new ApiError(Types.Errors.Forbidden, "Only HR can fetch leave balances")
+            // Employee: return only their own balance
+            const leaveBalances = await this.repo.aggregate([
+                { $match: { user: new mongoose.Types.ObjectId(req.user.id) } },
+                ...pipeline
+            ])
+            return res.status(200).json(new ApiResponse(200, leaveBalances, "Leave balances fetched successfully"))
         }
         const leaveBalances = await this.repo.aggregate(pipeline)
         return res.status(200).json(new ApiResponse(200, leaveBalances, "Leave balances fetched successfully"))
