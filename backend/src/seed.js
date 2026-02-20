@@ -6,7 +6,7 @@ import SkillModal from "./modules/Skills/models/skills.models.js";
 import LeaveTypeModal from "./modules/Leaves/LeaveTypes/Models/leavetypes.model.js";
 import LeaveBalanceModel from "./modules/Leaves/LeavesBalances/Models/leavesBalances.model.js";
 import LeaveRequestModel from "./modules/Leaves/LeaveRequests/Models/leaveRequests.model.js";
-import { SalariesModel } from "./modules/Salaries/salaries.model.js";
+import SalariesModel from "./modules/Salaries/Models/salaries.model.js";
 import AttendanceModel from "./modules/Attendance/attendance.model.js";
 import { PayrollModal } from "./modules/Payroll/payroll.model.js";
 
