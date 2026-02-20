@@ -6,6 +6,8 @@ import ApiCaller from "@/utils/ApiCaller";
 import LeaveTypeTable, { type LeaveType } from "@/components/leaves/LeaveTypeTable";
 import LeaveTypeModal from "@/components/leaves/LeaveTypeModal";
 import LeaveBalancesTable, { type UserLeaveBalance } from "@/components/leaves/LeaveBalancesTable";
+import CreateLeaveBalanceModal from "@/components/leaves/CreateLeaveBalanceModal";
+import EditLeaveBalanceModal from "@/components/leaves/EditLeaveBalanceModal";
 import EmployeeLeaves from "@/pages/dashboard/EmployeeLeaves";
 
 
@@ -96,6 +98,9 @@ export default function Leaves() {
         }
     };
 
+    const [selectedUserForEdit, setSelectedUserForEdit] = useState<UserLeaveBalance | null>(null);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
     useEffect(() => {
         if (role === "HR") {
             fetchLeaveTypes();
@@ -122,13 +127,21 @@ export default function Leaves() {
         fetchLeaveTypes();
     };
 
+    const handleCreateBalanceSuccess = () => {
+        fetchUserBalances();
+    };
+
+    const handleEditBalanceSuccess = () => {
+        fetchUserBalances();
+    };
+
     const filteredLeaveTypes = useMemo(() => {
         if (!search.trim()) return leaveTypes;
         const q = search.toLowerCase();
         return leaveTypes.filter(
             (t) =>
                 t.name.toLowerCase().includes(q) ||
-                (t.description && t.description.toLowerCase().includes(q))
+                (t.code && t.code.toLowerCase().includes(q))
         );
     }, [leaveTypes, search]);
 
@@ -147,24 +160,6 @@ export default function Leaves() {
             return inUser || inBalances;
         });
     }, [userBalances, search]);
-
-    const handleUpdateBalance = async (userId: string, leaveTypeId: string, newBalance: number) => {
-        try {
-            const result = await ApiCaller({
-                requestType: "PATCH",
-                paths: ["api", "v1", "leaves", "balances", userId],
-                body: { leaveTypeId, balance: newBalance },
-            });
-
-            if (result.ok) {
-                fetchUserBalances();
-            } else {
-                console.error("Failed to update balance:", result.response.message);
-            }
-        } catch (error) {
-            console.error("Error updating balance:", error);
-        }
-    };
 
     // Employee view — delegate to dedicated component
     if (role !== "HR") {
@@ -197,7 +192,7 @@ export default function Leaves() {
                 </div>
                 <div className="bg-white rounded-lg shadow">
                     {leaveTypesLoading ? (
-                        <div className="p-8 text-center text-gray-500">Loading leave types...</div>
+                        <div className="p-8 text-center text-muted-foreground">Loading leave types...</div>
                     ) : (
                         <LeaveTypeTable leaveTypes={filteredLeaveTypes} onEdit={handleEditLeaveType} />
                     )}
@@ -207,12 +202,16 @@ export default function Leaves() {
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Employee Leave Balances</h2>
+                    <Button onClick={() => setIsCreateModalOpen(true)}>Create Leave Balance</Button>
                 </div>
                 <div className="bg-white rounded-lg shadow">
                     {balancesLoading ? (
-                        <div className="p-8 text-center text-gray-500">Loading leave balances...</div>
+                        <div className="p-8 text-center text-muted-foreground">Loading leave balances...</div>
                     ) : (
-                        <LeaveBalancesTable users={filteredUserBalances} onUpdateBalance={handleUpdateBalance} />
+                        <LeaveBalancesTable
+                            users={filteredUserBalances}
+                            onEdit={(user) => setSelectedUserForEdit(user)}
+                        />
                     )}
                 </div>
             </div>
@@ -222,6 +221,22 @@ export default function Leaves() {
                 onClose={handleLeaveTypeModalClose}
                 initialData={selectedLeaveType}
                 onSuccess={handleLeaveTypeSuccess}
+            />
+
+            <CreateLeaveBalanceModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSuccess={handleCreateBalanceSuccess}
+                existingBalances={userBalances}
+                leaveTypes={leaveTypes}
+            />
+
+            <EditLeaveBalanceModal
+                isOpen={!!selectedUserForEdit}
+                onClose={() => setSelectedUserForEdit(null)}
+                onSuccess={handleEditBalanceSuccess}
+                userBalance={selectedUserForEdit}
+                allLeaveTypes={leaveTypes}
             />
         </div>
     );

@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ApiCaller from "@/utils/ApiCaller";
 import type { LeaveType } from "./LeaveTypeTable";
 
@@ -17,8 +18,9 @@ interface LeaveTypeModalProps {
 export default function LeaveTypeModal({ isOpen, onClose, initialData, onSuccess }: LeaveTypeModalProps) {
     const [formData, setFormData] = useState({
         name: "",
-        description: "",
-        defaultBalance: "",
+        code: "",
+        length: "FULL",
+        isPaid: true,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -27,22 +29,32 @@ export default function LeaveTypeModal({ isOpen, onClose, initialData, onSuccess
         if (initialData) {
             setFormData({
                 name: initialData.name,
-                description: initialData.description || "",
-                defaultBalance: initialData.defaultBalance?.toString() ?? "",
+                code: initialData.code || "",
+                length: initialData.length || "FULL",
+                isPaid: initialData.isPaid ?? true,
             });
         } else {
             setFormData({
                 name: "",
-                description: "",
-                defaultBalance: "",
+                code: "",
+                length: "FULL",
+                isPaid: true,
             });
         }
         setError(null);
     }, [initialData, isOpen]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectChange = (value: string) => {
+        setFormData((prev) => ({ ...prev, length: value }));
+    };
+
+    const handleCheckboxChange = (checked: boolean) => {
+        setFormData((prev) => ({ ...prev, isPaid: checked }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -52,8 +64,9 @@ export default function LeaveTypeModal({ isOpen, onClose, initialData, onSuccess
 
         const payload = {
             name: formData.name,
-            description: formData.description || undefined,
-            defaultBalance: formData.defaultBalance ? Number(formData.defaultBalance) : undefined,
+            code: formData.code,
+            length: formData.length,
+            isPaid: formData.isPaid,
         };
 
         try {
@@ -99,25 +112,39 @@ export default function LeaveTypeModal({ isOpen, onClose, initialData, onSuccess
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
                     {error && <p className="text-red-500 text-sm">{error}</p>}
+
                     <div className="grid gap-2">
                         <Label htmlFor="name">Name</Label>
-                        <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
+                        <Input id="name" name="name" value={formData.name} onChange={handleChange} required placeholder="e.g. Sick Leave" />
                     </div>
+
                     <div className="grid gap-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea id="description" name="description" value={formData.description} onChange={handleChange} />
+                        <Label htmlFor="code">Code</Label>
+                        <Input id="code" name="code" value={formData.code} onChange={handleChange} required placeholder="e.g. SL" />
                     </div>
+
                     <div className="grid gap-2">
-                        <Label htmlFor="defaultBalance">Default Balance (days)</Label>
-                        <Input
-                            id="defaultBalance"
-                            name="defaultBalance"
-                            type="number"
-                            min={0}
-                            value={formData.defaultBalance}
-                            onChange={handleChange}
+                        <Label>Leave Length</Label>
+                        <Select value={formData.length} onValueChange={handleSelectChange}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select length" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="FULL">Full Day</SelectItem>
+                                <SelectItem value="HALF">Half Day</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id="isPaid"
+                            checked={formData.isPaid}
+                            onCheckedChange={handleCheckboxChange}
                         />
+                        <Label htmlFor="isPaid">Paid Leave</Label>
                     </div>
+
                     <DialogFooter>
                         <Button type="submit" disabled={loading}>
                             {loading ? "Saving..." : "Save details"}
