@@ -7,8 +7,8 @@ import LeaveTypeModal from "./modules/Leaves/LeaveTypes/Models/leavetypes.model.
 import LeaveBalanceModel from "./modules/Leaves/LeavesBalances/Models/leavesBalances.model.js";
 import LeaveRequestModel from "./modules/Leaves/LeaveRequests/Models/leaveRequests.model.js";
 import SalariesModel from "./modules/Salaries/Models/salaries.model.js";
-import AttendanceModel from "./modules/Attendance/attendance.model.js";
-import { PayrollModal } from "./modules/Payroll/payroll.model.js";
+import AttendanceModel from "./modules/Attendance/Models/attendance.model.js";
+import PayrollModal from "./modules/Payroll/Models/payroll.model.js";
 
 const seed = async () => {
     try {
@@ -45,30 +45,26 @@ const seed = async () => {
 
         // 1. Seed Departments
         console.log("\n--- Seeding Departments ---");
-        let defaultDept = null;
+        const finalDepartments = [];
         for (const d of departments) {
             let dept = await DepartmentModal.findOne({ name: d.name });
             if (!dept) {
                 dept = await DepartmentModal.create(d);
                 console.log(`Created Department: ${dept.name}`);
-            } else {
-                console.log(`Department already exists: ${dept.name}`);
             }
-            if (d.name === "General Management") defaultDept = dept;
+            finalDepartments.push(dept);
         }
 
         // 2. Seed Skills
         console.log("\n--- Seeding Skills ---");
-        let defaultSkill = null;
+        const finalSkills = [];
         for (const s of skills) {
             let skill = await SkillModal.findOne({ name: s.name });
             if (!skill) {
                 skill = await SkillModal.create(s);
                 console.log(`Created Skill: ${skill.name}`);
-            } else {
-                console.log(`Skill already exists: ${skill.name}`);
             }
-            if (s.name === "Administration") defaultSkill = skill;
+            finalSkills.push(skill);
         }
 
         // 3. Seed Leave Types
@@ -79,19 +75,66 @@ const seed = async () => {
             if (!leaveType) {
                 leaveType = await LeaveTypeModal.create(lt);
                 console.log(`Created Leave Type: ${leaveType.name}`);
-            } else {
-                console.log(`Leave Type already exists: ${leaveType.name}`);
             }
             finalLeaveTypes.push(leaveType);
         }
 
-        // Helper function to seed user related data (Balance, Salary, etc)
+        // Utility: Generate Attendance Records for a user
+        const generateAttendanceHistory = async (user) => {
+            const today = new Date();
+            // Generate attendance for the last 15 days
+            for (let i = 1; i <= 15; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                date.setUTCHours(0, 0, 0, 0);
+
+                // Skip weekends roughly
+                if (date.getDay() === 0 || date.getDay() === 6) continue;
+
+                const existingAttendance = await AttendanceModel.findOne({ user: user._id, date });
+                if (!existingAttendance) {
+                    // Randomize punches: IN around 9 AM +/- 1 hr
+                    const inHour = 8 + Math.floor(Math.random() * 3);
+                    const inMinute = Math.floor(Math.random() * 60);
+                    const inTime = new Date(date);
+                    inTime.setHours(inHour, inMinute, 0, 0);
+
+                    // OUT around 5 PM +/- 2 hrs
+                    const outHour = 16 + Math.floor(Math.random() * 4);
+                    const outMinute = Math.floor(Math.random() * 60);
+                    const outTime = new Date(date);
+                    outTime.setHours(outHour, outMinute, 0, 0);
+
+                    const punches = [
+                        { type: 'IN', time: inTime },
+                        { type: 'OUT', time: outTime }
+                    ];
+
+                    // Sometimes add a lunch break
+                    if (Math.random() > 0.5) {
+                        const lunchOut = new Date(date);
+                        lunchOut.setHours(13, 0, 0, 0);
+                        const lunchIn = new Date(date);
+                        lunchIn.setHours(14, 0, 0, 0);
+                        punches.splice(1, 0, { type: 'OUT', time: lunchOut }, { type: 'IN', time: lunchIn });
+                    }
+
+                    const diffMinutes = (outTime.getTime() - inTime.getTime()) / 60000;
+
+                    await AttendanceModel.create({
+                        user: user._id,
+                        date,
+                        punches,
+                        totalMinutes: Math.floor(diffMinutes)
+                    });
+                }
+            }
+            console.log(`Generated ~15 days attendance for ${user.email}`);
+        };
+
         const seedUserData = async (user, salaryData) => {
             if (!user) return;
 
-            console.log(`\n--- Seeding Data for ${user.email} ---`);
-
-            // Seed Salaries
             let salary = await SalariesModel.findOne({ userId: user._id });
             if (!salary) {
                 salary = await SalariesModel.create({
@@ -100,95 +143,22 @@ const seed = async () => {
                     hra: salaryData.hra,
                     lta: salaryData.lta
                 });
-                console.log(`Created Salary for: ${user.email}`);
-            } else {
-                console.log(`Salary already exists: ${user.email}`);
             }
 
-            // Seed Leave Balances
             let balance = await LeaveBalanceModel.findOne({ user: user._id });
             if (!balance) {
-                // Create balance with all leave types
                 const leavesData = finalLeaveTypes.map(lt => ({
                     type: lt._id,
-                    amount: 12 // Default 12 days
+                    amount: 15
                 }));
-
                 balance = await LeaveBalanceModel.create({
                     user: user._id,
                     leaves: leavesData
                 });
-                console.log(`Created Leave Balance: ${user.email}`);
-            } else {
-                console.log(`Leave Balance already exists: ${user.email}`);
             }
 
-            // Seed Attendance (Dummy check-in/out for today)
-            const todayStart = new Date();
-            todayStart.setHours(0, 0, 0, 0);
-            let attendance = await AttendanceModel.findOne({
-                userId: user._id,
-                timestamp: { $gte: todayStart }
-            });
-
-            if (!attendance) {
-                // Check In
-                await AttendanceModel.create({
-                    userId: user._id,
-                    type: "IN",
-                    timestamp: new Date()
-                });
-                console.log(`Created Attendance (IN): ${user.email}`);
-            } else {
-                console.log(`Attendance already exists for today: ${user.email}`);
-            }
-
-            // Seed Payroll (Just one record)
-            if (salary) {
-                let payroll = await PayrollModal.findOne({ user: user._id });
-                if (!payroll) {
-                    await PayrollModal.create({
-                        user: user._id,
-                        salary: salary._id,
-                        bonus: [],
-                        deduction: []
-                    });
-                    console.log(`Created Payroll record: ${user.email}`);
-                } else {
-                    console.log(`Payroll record already exists: ${user.email}`);
-                }
-            }
-
-            // Seed Leave Request (One pending request for employee)
-            if (user.role === 'EMPLOYEE' && finalLeaveTypes.length > 0) {
-                const sickLeave = finalLeaveTypes.find(lt => lt.code === 'SL') || finalLeaveTypes[0];
-                // Check if pending request exists
-                const existingRequest = await LeaveRequestModel.findOne({ requestedBy: user._id, status: 'PENDING' });
-
-                if (!existingRequest) {
-                    // Create a request for tomorrow
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    tomorrow.setHours(0, 0, 0, 0);
-
-                    // Ensure balance exists (it should as we just seeded it)
-                    try {
-                        const newReq = await LeaveRequestModel.create({
-                            requestedBy: user._id,
-                            type: sickLeave._id,
-                            quantity: 1,
-                            from: tomorrow,
-                            to: tomorrow,
-                            status: "PENDING"
-                        });
-                        console.log(`Created Pending Leave Request for: ${user.email}`);
-                    } catch (err) {
-                        console.log(`Failed to create leave request: ${err.message}`);
-                    }
-                } else {
-                    console.log(`Pending Leave Request already exists: ${user.email}`);
-                }
-            }
+            // Generate dense attendance data
+            await generateAttendanceHistory(user);
         };
 
         // 4. Create Admin (HR) User
@@ -203,45 +173,53 @@ const seed = async () => {
                 lastName: "User",
                 passwordHash: adminPassword,
                 role: "HR",
-                deptId: defaultDept?._id,
-                skills: defaultSkill ? [defaultSkill._id] : [],
-                note: "System Administrator",
+                deptId: finalDepartments.find(d => d.name === "Human Resources")?._id,
+                skills: finalSkills.slice(0, 2).map(s => s._id),
                 online: true
             });
-            console.log(`\nCREATED ADMIN USER:\nEmail: ${adminEmail}\nPassword: ${adminPassword}\n`);
-        } else {
-            console.log("\nAdmin user already exists.");
+            console.log(`\nCREATED ADMIN USER: ${adminEmail}`);
         }
-
-        // Seed Admin Data
         await seedUserData(admin, { base: 80000, hra: 30000, lta: 15000 });
 
+        // 5. Create 10 Additional Employees for realistic data
+        console.log("\n--- Seeding 10 Employees ---");
+        const employees = [
+            { first: "Alice", last: "Smith", dept: "Engineering" },
+            { first: "Bob", last: "Johnson", dept: "Engineering" },
+            { first: "Charlie", last: "Brown", dept: "Marketing" },
+            { first: "Diana", last: "Prince", dept: "Sales" },
+            { first: "Evan", last: "Wright", dept: "Finance" },
+            { first: "Fiona", last: "Gallagher", dept: "Marketing" },
+            { first: "George", last: "Miller", dept: "Sales" },
+            { first: "Hannah", last: "Abbott", dept: "Engineering" },
+            { first: "Ian", last: "Malcolm", dept: "General Management" },
+            { first: "Julia", last: "Roberts", dept: "Finance" }
+        ];
 
-        // 5. Create Employee User
-        const employeeEmail = "employee@nexushr.com";
-        const employeePassword = "password123";
-        let employee = await UserModel.findOne({ email: employeeEmail });
+        for (let i = 0; i < employees.length; i++) {
+            const emp = employees[i];
+            const email = `${emp.first.toLowerCase()}.${emp.last.toLowerCase()}@nexushr.com`;
+            let user = await UserModel.findOne({ email });
 
-        if (!employee) {
-            employee = await UserModel.create({
-                email: employeeEmail,
-                firstName: "John",
-                lastName: "Doe",
-                passwordHash: employeePassword,
-                role: "EMPLOYEE",
-                deptId: defaultDept?._id,
-                skills: defaultSkill ? [defaultSkill._id] : [],
-                note: "Standard Employee",
-                online: false
-            });
-            console.log(`\nCREATED EMPLOYEE USER:\nEmail: ${employeeEmail}\nPassword: ${employeePassword}\n`);
-        } else {
-            console.log("\nEmployee user already exists.");
+            if (!user) {
+                const dept = finalDepartments.find(d => d.name === emp.dept) || finalDepartments[0];
+                const empSkills = [finalSkills[i % finalSkills.length]._id, finalSkills[(i + 1) % finalSkills.length]._id];
+
+                user = await UserModel.create({
+                    email,
+                    firstName: emp.first,
+                    lastName: emp.last,
+                    passwordHash: "password123",
+                    role: "EMPLOYEE",
+                    deptId: dept._id,
+                    skills: empSkills,
+                    online: false
+                });
+                console.log(`Created Employee: ${email}`);
+            }
+
+            await seedUserData(user, { base: 40000 + (Math.random() * 20000), hra: 15000, lta: 5000 });
         }
-
-        // Seed Employee Data
-        await seedUserData(employee, { base: 40000, hra: 15000, lta: 5000 });
-
 
         console.log("\nSeeding completed successfully.");
         process.exit(0);

@@ -9,6 +9,7 @@ export default function Sidebar() {
 
     const hrItems = [
         { name: "Employee", path: "/employee", icon: "Users" },
+        { name: "Attendance", path: "/attendance", icon: "CalendarCheck" },
         { name: "Leaves", path: "/leaves", icon: "CalendarDays" },
         { name: "Departments", path: "/departments", icon: "Building2" },
         { name: "Salaries", path: "/salaries", icon: "BadgeCommon" },
