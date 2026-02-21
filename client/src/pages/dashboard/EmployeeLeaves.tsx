@@ -1,58 +1,9 @@
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import ApiCaller from "@/utils/ApiCaller";
 import ApplyLeaveModal from "@/components/leaves/ApplyLeaveModal";
 import type { LeaveBalanceEntry } from "@/components/leaves/LeaveBalancesTable";
 import { Plus, CheckCircle, XCircle, Clock, FileText, Calendar, List } from "lucide-react";
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-/** Raw shape returned by the backend aggregate */
-interface RawLeaveDoc {
-    _id: string;
-    user: string;
-    userDetails?: { _id: string; firstName: string; lastName: string; email: string };
-    leaves: Array<{
-        type: string;
-        amount: number;
-        typeDetails?: { _id: string; name: string };
-    }>;
-}
-
-interface MyLeaveBalance {
-    userId: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    balances: LeaveBalanceEntry[];
-}
-
-/** Map backend raw doc → display shape */
-function mapRawDoc(doc: RawLeaveDoc): MyLeaveBalance {
-    return {
-        userId: doc._id,
-        firstName: doc.userDetails?.firstName ?? "",
-        lastName: doc.userDetails?.lastName ?? "",
-        email: doc.userDetails?.email ?? "",
-        balances: doc.leaves.map((l) => ({
-            leaveTypeId: l.typeDetails?._id ?? String(l.type),
-            leaveTypeName: l.typeDetails?.name ?? "Unknown",
-            balance: l.amount,
-        })),
-    };
-}
-
-interface LeaveRequest {
-    _id: string;
-    type: { _id: string; name: string } | string;
-    quantity: number;
-    from: string;
-    to: string;
-    status: "PENDING" | "ACCEPTED" | "REJECTED";
-    createdAt: string;
-}
-
-
+import { useEmployeeLeaves } from "@/hooks/EmployeeLeaves/useEmployeeLeaves";
+import type { LeaveRequest } from "@/hooks/EmployeeLeaves/useEmployeeLeaves";
 
 function statusBadge(status: LeaveRequest["status"]) {
     const map: Record<LeaveRequest["status"], { label: string; cls: string }> = {
@@ -76,8 +27,6 @@ function leaveTypeName(type: LeaveRequest["type"]): string {
     if (typeof type === "object" && type !== null) return type.name;
     return String(type);
 }
-
-
 
 function BalanceCard({ entry }: { entry: LeaveBalanceEntry }) {
     return (
@@ -104,80 +53,24 @@ function BalanceCard({ entry }: { entry: LeaveBalanceEntry }) {
     );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function EmployeeLeaves() {
-    const [myBalance, setMyBalance] = useState<MyLeaveBalance | null>(null);
-    const [balanceLoading, setBalanceLoading] = useState(false);
+    const {
+        balanceLoading,
+        leaveRequests,
+        requestsLoading,
+        requestsPage,
+        setRequestsPage,
+        requestsTotal,
+        requestsLimit,
+        isApplyModalOpen,
+        setIsApplyModalOpen,
+        handleApplySuccess,
+        balances,
+        pendingCount
+    } = useEmployeeLeaves();
 
-    const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-    const [requestsLoading, setRequestsLoading] = useState(false);
-    const [requestsPage, setRequestsPage] = useState(1);
-    const [requestsTotal, setRequestsTotal] = useState(0);
-    const requestsLimit = 10;
 
-    const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-
-    // ── Fetchers ─────────────────────────────────────────────────────────────
-
-    const fetchMyBalance = async () => {
-        setBalanceLoading(true);
-        try {
-            const result = await ApiCaller<null, RawLeaveDoc[]>({
-                requestType: "GET",
-                paths: ["api", "v1", "leaves", "balances"],
-            });
-            if (result.ok && result.response.data) {
-                const raw = result.response.data;
-                // Backend returns an array; employee gets their own single record
-                const docs = Array.isArray(raw) ? raw : [raw];
-                setMyBalance(docs.length > 0 ? mapRawDoc(docs[0]) : null);
-            }
-        } finally {
-            setBalanceLoading(false);
-        }
-    };
-
-    const fetchMyRequests = async (currentPage = 1) => {
-        setRequestsLoading(true);
-        try {
-            // GET /api/v1/leaves/requests/:id — passing a dummy ':id' placeholder as backend
-            // returns all of this user's requests when role == EMPLOYEE
-            const result = await ApiCaller<null, any>({
-                requestType: "GET",
-                paths: ["api", "v1", "leaves", "requests"],
-                queryParams: { page: currentPage.toString(), limit: requestsLimit.toString() }
-            });
-            if (result.ok) {
-                if (Array.isArray(result.response.data)) {
-                    setLeaveRequests(result.response.data);
-                } else if (result.response.data?.data) {
-                    setLeaveRequests(result.response.data.data);
-                    setRequestsTotal(result.response.data.total || 0);
-                }
-            }
-        } finally {
-            setRequestsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchMyBalance();
-    }, []);
-
-    useEffect(() => {
-        fetchMyRequests(requestsPage);
-    }, [requestsPage]);
-
-    const handleApplySuccess = () => {
-        fetchMyBalance();
-        fetchMyRequests(requestsPage);
-    };
-
-    const balances = myBalance?.balances ?? [];
-    const pendingCount = leaveRequests.filter(r => r.status === "PENDING").length;
-
-    // ── Render ────────────────────────────────────────────────────────────────
 
     return (
         <div className="p-6 space-y-8">
@@ -326,7 +219,6 @@ export default function EmployeeLeaves() {
                 )}
             </section>
 
-            {/* ── Apply Leave Modal ── */}
             <ApplyLeaveModal
                 isOpen={isApplyModalOpen}
                 onClose={() => setIsApplyModalOpen(false)}

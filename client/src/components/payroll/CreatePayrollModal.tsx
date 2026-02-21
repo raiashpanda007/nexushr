@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2 } from 'lucide-react';
-import ApiCaller from '@/utils/ApiCaller';
+import { useCreatePayrollModal } from '@/hooks/payroll/useCreatePayrollModal';
 
 interface User {
     _id: string;
@@ -23,11 +23,6 @@ interface Salary {
     lta: number;
 }
 
-interface BonusDeductionItem {
-    reason: string;
-    amount: number;
-}
-
 interface CreatePayrollModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -37,109 +32,24 @@ interface CreatePayrollModalProps {
 }
 
 const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose, user, salaries, onSuccess }) => {
-    const [selectedSalary, setSelectedSalary] = useState<string>('');
-    const [month, setMonth] = useState<string>((new Date().getMonth() === 0 ? 12 : new Date().getMonth()).toString()); // default to previous month
-    const [year, setYear] = useState<string>((new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear()).toString());
-
-    const [bonuses, setBonuses] = useState<BonusDeductionItem[]>([]);
-    const [deductions, setDeductions] = useState<BonusDeductionItem[]>([]);
-
-    const [newBonus, setNewBonus] = useState<BonusDeductionItem>({ reason: '', amount: 0 });
-    const [newDeduction, setNewDeduction] = useState<BonusDeductionItem>({ reason: '', amount: 0 });
-
-    const [loadingDeductions, setLoadingDeductions] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
-
-    const userSalaries = user ? salaries.filter(s => {
-        if (typeof s.userId === 'string') return s.userId === user._id;
-        return s.userId && s.userId._id === user._id;
-    }) : [];
-
-    const activeSalaryObj = userSalaries.find(s => s._id === selectedSalary);
-
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedSalary('');
-            setBonuses([]);
-            setDeductions([]);
-            setMonth((new Date().getMonth() === 0 ? 12 : new Date().getMonth()).toString());
-            setYear((new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear()).toString());
-        }
-    }, [isOpen]);
-
-    useEffect(() => {
-        const fetchLeaveDeductions = async () => {
-            if (!user?._id || !month || !year || !selectedSalary) return;
-            setLoadingDeductions(true);
-            try {
-                const { response } = await ApiCaller<any, any>({
-                    requestType: 'GET',
-                    paths: ['api', 'v1', 'payroll', 'deduction', user._id],
-                    queryParams: { month, year, salary: selectedSalary }
-                });
-
-                if (response?.data?.deductionsOnLeave) {
-                    setDeductions(prev => {
-                        const customDeductions = prev.filter(p => !response.data.deductionsOnLeave.some((l: any) => l.reason === p.reason));
-                        return [...customDeductions, ...response.data.deductionsOnLeave];
-                    });
-                }
-            } catch (err) {
-                console.error("Failed to fetch leave deductions", err);
-            } finally {
-                setLoadingDeductions(false);
-            }
-        };
-
-        fetchLeaveDeductions();
-    }, [user?._id, month, year, selectedSalary]);
-
-    const handleAddBonus = () => {
-        if (newBonus.reason && newBonus.amount > 0) {
-            setBonuses([...bonuses, { ...newBonus }]);
-            setNewBonus({ reason: '', amount: 0 });
-        }
-    };
-
-    const handleAddDeduction = () => {
-        if (newDeduction.reason && newDeduction.amount > 0) {
-            setDeductions([...deductions, { ...newDeduction }]);
-            setNewDeduction({ reason: '', amount: 0 });
-        }
-    };
-
-    const removeBonus = (index: number) => {
-        setBonuses(bonuses.filter((_, i) => i !== index));
-    };
-
-    const removeDeduction = (index: number) => {
-        setDeductions(deductions.filter((_, i) => i !== index));
-    };
-
-    const handleSubmit = async () => {
-        if (!user || !selectedSalary || !month || !year) return;
-        setSubmitting(true);
-        try {
-            await ApiCaller({
-                requestType: 'POST',
-                paths: ['api', 'v1', 'payroll'],
-                body: {
-                    user: user._id,
-                    salary: selectedSalary,
-                    month: Number(month),
-                    year: Number(year),
-                    bonus: bonuses,
-                    deduction: deductions
-                }
-            });
-            onSuccess();
-        } catch (err) {
-            console.error(err);
-            alert("Failed to create payroll");
-        } finally {
-            setSubmitting(false);
-        }
-    };
+    const {
+        selectedSalary, setSelectedSalary,
+        month, setMonth,
+        year, setYear,
+        bonuses,
+        deductions,
+        newBonus, setNewBonus,
+        newDeduction, setNewDeduction,
+        loadingDeductions,
+        submitting,
+        userSalaries,
+        activeSalaryObj,
+        handleAddBonus,
+        handleAddDeduction,
+        removeBonus,
+        removeDeduction,
+        handleSubmit
+    } = useCreatePayrollModal({ isOpen, onClose, user, salaries, onSuccess });
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>

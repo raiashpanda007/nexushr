@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import ApiCaller from "@/utils/ApiCaller";
 import type { LeaveType } from "@/components/leaves/LeaveTypeTable";
 import type { UserLeaveBalance } from "@/components/leaves/LeaveBalancesTable";
+import { useCreateLeaveBalanceModal } from "@/hooks/leaves/useCreateLeaveBalanceModal";
 
 interface CreateLeaveBalanceModalProps {
     isOpen: boolean;
@@ -16,13 +15,6 @@ interface CreateLeaveBalanceModalProps {
     leaveTypes: LeaveType[];
 }
 
-interface User {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-}
-
 export default function CreateLeaveBalanceModal({
     isOpen,
     onClose,
@@ -30,105 +22,18 @@ export default function CreateLeaveBalanceModal({
     existingBalances,
     leaveTypes,
 }: CreateLeaveBalanceModalProps) {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loadingUsers, setLoadingUsers] = useState(false);
-    const [selectedUserId, setSelectedUserId] = useState<string>("");
-
-    // State for managing multiple leave allocations
-    // Each allocation is { leaveTypeId, amount }
-    const [allocations, setAllocations] = useState<Array<{ leaveTypeId: string; amount: number }>>([
-        { leaveTypeId: "", amount: 0 }
-    ]);
-
-    const [saving, setSaving] = useState(false);
-
-    useEffect(() => {
-        if (isOpen) {
-            fetchUsers();
-            // Reset form
-            setSelectedUserId("");
-            setAllocations([{ leaveTypeId: "", amount: 0 }]);
-        }
-    }, [isOpen]);
-
-    const fetchUsers = async () => {
-        setLoadingUsers(true);
-        try {
-            // Fetch all users
-            const result = await ApiCaller<null, User[]>({
-                requestType: "GET",
-                paths: ["api", "v1", "user", "get-users"],
-            });
-
-            if (result.ok && result.response.data) {
-                // Filter users who already have a leave balance
-                const existingUserIds = new Set(existingBalances.map(b => b.userId));
-                const usersWithoutBalance = result.response.data.filter(u => !existingUserIds.has(u._id));
-                setUsers(usersWithoutBalance);
-            }
-        } catch (error) {
-            console.error("Error fetching users:", error);
-        } finally {
-            setLoadingUsers(false);
-        }
-    };
-
-    const handleAddAllocation = () => {
-        setAllocations([...allocations, { leaveTypeId: "", amount: 0 }]);
-    };
-
-    const handleRemoveAllocation = (index: number) => {
-        const newAllocations = [...allocations];
-        newAllocations.splice(index, 1);
-        setAllocations(newAllocations);
-    };
-
-    const handleAllocationChange = (index: number, field: "leaveTypeId" | "amount", value: string | number) => {
-        const newAllocations = [...allocations];
-        if (field === "amount") {
-            newAllocations[index].amount = Number(value);
-        } else {
-            newAllocations[index].leaveTypeId = String(value);
-        }
-        setAllocations(newAllocations);
-    };
-
-    const handleSave = async () => {
-        if (!selectedUserId) return;
-
-        // Filter out invalid allocations
-        const validAllocations = allocations.filter(a => a.leaveTypeId && a.amount >= 0);
-        if (validAllocations.length === 0) return;
-
-        setSaving(true);
-        try {
-            const payload = {
-                user: selectedUserId,
-                leaves: validAllocations.map(a => ({
-                    type: a.leaveTypeId,
-                    amount: a.amount
-                }))
-            };
-
-            const result = await ApiCaller({
-                requestType: "POST",
-                paths: ["api", "v1", "leaves", "balances"],
-                body: payload
-            });
-
-            if (result.ok) {
-                onSuccess();
-                onClose();
-            } else {
-                console.error("Failed to create leave balance:", result.response.message);
-                // Ideally show toast error
-            }
-        } catch (error) {
-            console.error("Error creating leave balance:", error);
-        } finally {
-            setSaving(false);
-        }
-    };
+    const {
+        users,
+        loadingUsers,
+        selectedUserId,
+        setSelectedUserId,
+        allocations,
+        saving,
+        handleAddAllocation,
+        handleRemoveAllocation,
+        handleAllocationChange,
+        handleSave
+    } = useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existingBalances });
 
     // Check LeaveBalance.types.js again.
     // CreateLeaveBalanceValidationSchema: leaves: zod.array(zod.object({ types: zod.string(), amount: zod.number() }))

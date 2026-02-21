@@ -1,30 +1,8 @@
-import { useState } from "react"
-import { useDispatch } from "react-redux"
-import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { clearUserDetails } from "@/store/slices/userStateSlice"
-import ApiCaller from "@/utils/ApiCaller"
+import { useHeader } from "@/hooks/Header/useHeader"
 
 function Header() {
-    const dispatch = useDispatch()
-    const navigate = useNavigate()
-    const [loggingOut, setLoggingOut] = useState(false)
-
-    const handleLogout = async () => {
-        setLoggingOut(true)
-        try {
-            await ApiCaller({
-                requestType: "POST",
-                paths: ["api", "v1", "auth", "logout"],
-                retry: false,
-            })
-        } catch {
-            // Even if the API call fails, clear the client-side session
-        } finally {
-            dispatch(clearUserDetails())
-            navigate("/login")
-        }
-    }
+    const { loggingOut, handleLogout } = useHeader();
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

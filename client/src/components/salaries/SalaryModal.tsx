@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     Dialog,
     DialogContent,
@@ -22,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useSalaryModal } from '@/hooks/salaries/useSalaryModal';
 
 interface User {
     _id: string;
@@ -60,47 +60,7 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
     loading,
     isEditMode,
 }) => {
-    const [formData, setFormData] = useState<SalaryFormData>({
-        userId: '',
-        baseSalary: 0,
-        hra: 0,
-        lta: 0,
-    });
-
-    useEffect(() => {
-        if (isOpen) {
-            if (salaryData) {
-                setFormData(salaryData);
-            } else {
-                setFormData({
-                    userId: '',
-                    baseSalary: 0,
-                    hra: 0,
-                    lta: 0,
-                });
-            }
-        }
-    }, [isOpen, salaryData]);
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: Number(value),
-        }));
-    };
-
-    const handleUserChange = (value: string) => {
-        setFormData((prev) => ({
-            ...prev,
-            userId: value,
-        }));
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSubmit(formData);
-    };
+    const { formData, handleInputChange, handleUserChange, handleSubmit } = useSalaryModal({ isOpen, salaryData, onSubmit });
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>

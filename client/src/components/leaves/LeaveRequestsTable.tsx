@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
-import ApiCaller from "@/utils/ApiCaller";
-import { useState } from "react";
+import { useLeaveRequestsTable } from "@/hooks/leaves/useLeaveRequestsTable";
 
 export interface LeaveRequest {
     _id: string;
@@ -47,29 +46,7 @@ function statusBadge(status: LeaveRequest["status"]) {
 }
 
 export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequestsTableProps) {
-    const [processingId, setProcessingId] = useState<string | null>(null);
-
-    const handleAction = async (id: string, newStatus: "ACCEPTED" | "REJECTED") => {
-        setProcessingId(id);
-        try {
-            const result = await ApiCaller<{ status: string }, unknown>({
-                requestType: "PUT",
-                paths: ["api", "v1", "leaves", "requests", id],
-                body: { status: newStatus },
-            });
-            if (result.ok) {
-                onRefresh();
-            } else {
-                console.error("Failed to update status:", result.response?.message);
-                alert("Failed to update status: " + (result.response?.message || "Unknown error"));
-            }
-        } catch (error) {
-            console.error("Error updating status:", error);
-            alert("Error updating status.");
-        } finally {
-            setProcessingId(null);
-        }
-    };
+    const { processingId, handleAction } = useLeaveRequestsTable(onRefresh);
 
     if (requests.length === 0) {
         return <div className="p-8 text-center text-muted-foreground">No leave requests found.</div>;
