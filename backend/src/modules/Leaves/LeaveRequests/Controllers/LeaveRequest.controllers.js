@@ -69,12 +69,28 @@ class LeaveRequestController {
     Get = AsyncHandler(async (req, res) => {
         const uid = req.params.uid;
         if (!uid) {
+            const { page: pageQuery, limit: limitQuery } = req.query;
+            let limit = parseInt(limitQuery) || 10;
+            let page = parseInt(pageQuery) || 1;
+            if (limit > 100) limit = 100;
+            const skip = (page - 1) * limit;
+
             if (req.user.role === "HR") {
-                const leaveRequests = await this.repo.find().populate("requestedBy").populate("respondedBy").populate("type");
-                return res.status(200).json(new ApiResponse(200, leaveRequests, "Leave requests fetched successfully"));
+                let queryOptions = this.repo.find().populate("requestedBy").populate("respondedBy").populate("type").sort({ createdAt: -1 });
+                if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
+
+                const leaveRequests = await queryOptions;
+                const total = await this.repo.countDocuments();
+
+                return res.status(200).json(new ApiResponse(200, { data: leaveRequests, total, page, limit: limitQuery === 'all' ? total : limit }, "Leave requests fetched successfully"));
             } else {
-                const leaveRequests = await this.repo.find({ requestedBy: req.user.id }).populate("requestedBy").populate("respondedBy").populate("type");
-                return res.status(200).json(new ApiResponse(200, leaveRequests, "Leave requests fetched successfully"));
+                let queryOptions = this.repo.find({ requestedBy: req.user.id }).populate("requestedBy").populate("respondedBy").populate("type").sort({ createdAt: -1 });
+                if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
+
+                const leaveRequests = await queryOptions;
+                const total = await this.repo.countDocuments({ requestedBy: req.user.id });
+
+                return res.status(200).json(new ApiResponse(200, { data: leaveRequests, total, page, limit: limitQuery === 'all' ? total : limit }, "Leave requests fetched successfully"));
             }
         } else {
             if (req.user.role != "HR") {

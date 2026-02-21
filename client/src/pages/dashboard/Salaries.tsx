@@ -48,6 +48,11 @@ const Salaries = () => {
     const [actionLoading, setActionLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const limit = 10;
+
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -60,14 +65,20 @@ const Salaries = () => {
     });
 
     // Fetch Data
-    const fetchSalaries = async () => {
+    const fetchSalaries = async (currentPage = 1) => {
         try {
-            const { response } = await ApiCaller<any, Salary[]>({
+            const { response } = await ApiCaller<any, any>({
                 requestType: 'GET',
-                paths: ['api', 'v1', 'salaries']
+                paths: ['api', 'v1', 'salaries'],
+                queryParams: { page: currentPage.toString(), limit: limit.toString() }
             });
-            if (response?.data && Array.isArray(response.data)) {
-                setSalaries(response.data);
+            if (response?.data) {
+                if (Array.isArray(response.data)) {
+                    setSalaries(response.data);
+                } else if (response.data.data) {
+                    setSalaries(response.data.data);
+                    setTotal(response.data.total || 0);
+                }
             }
         } catch (error) {
             console.error('Error fetching salaries:', error);
@@ -91,15 +102,15 @@ const Salaries = () => {
     const initData = async () => {
         setLoading(true);
         await Promise.all([
-            fetchSalaries(),
-            isHR ? fetchUsers() : Promise.resolve()
+            fetchSalaries(page),
+            isHR && users.length === 0 ? fetchUsers() : Promise.resolve()
         ]);
         setLoading(false);
     };
 
     useEffect(() => {
         initData();
-    }, [userDetails]);
+    }, [userDetails, page]);
 
     // Handlers
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,13 +240,40 @@ const Salaries = () => {
             )}
 
             {/* Content Table */}
-            <SalaryTable
-                salaries={filteredSalaries}
-                isHR={isHR}
-                onEdit={handleOpenModal}
-                onDelete={handleDelete}
-                loading={actionLoading}
-            />
+            <div className="bg-white rounded-lg shadow">
+                <SalaryTable
+                    salaries={filteredSalaries}
+                    isHR={isHR}
+                    onEdit={handleOpenModal}
+                    onDelete={handleDelete}
+                    loading={actionLoading}
+                />
+                {!loading && total > 0 && (
+                    <div className="p-4 flex justify-between items-center border-t border-gray-100">
+                        <div className="text-sm text-gray-500">
+                            Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total}
+                        </div>
+                        <div className="flex space-x-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(p => Math.min(Math.ceil(total / limit), p + 1))}
+                                disabled={page === Math.ceil(total / limit) || Math.ceil(total / limit) === 0}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* Create/Edit Modal */}
             <SalaryModal

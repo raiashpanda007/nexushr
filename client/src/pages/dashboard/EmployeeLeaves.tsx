@@ -112,6 +112,9 @@ export default function EmployeeLeaves() {
 
     const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
     const [requestsLoading, setRequestsLoading] = useState(false);
+    const [requestsPage, setRequestsPage] = useState(1);
+    const [requestsTotal, setRequestsTotal] = useState(0);
+    const requestsLimit = 10;
 
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
@@ -135,18 +138,23 @@ export default function EmployeeLeaves() {
         }
     };
 
-    const fetchMyRequests = async () => {
+    const fetchMyRequests = async (currentPage = 1) => {
         setRequestsLoading(true);
         try {
             // GET /api/v1/leaves/requests/:id — passing a dummy ':id' placeholder as backend
             // returns all of this user's requests when role == EMPLOYEE
-            const result = await ApiCaller<null, LeaveRequest[]>({
+            const result = await ApiCaller<null, any>({
                 requestType: "GET",
                 paths: ["api", "v1", "leaves", "requests"],
+                queryParams: { page: currentPage.toString(), limit: requestsLimit.toString() }
             });
-            if (result.ok && result.response.data) {
-                console.log(result.response.data);
-                setLeaveRequests(Array.isArray(result.response.data) ? result.response.data : []);
+            if (result.ok) {
+                if (Array.isArray(result.response.data)) {
+                    setLeaveRequests(result.response.data);
+                } else if (result.response.data?.data) {
+                    setLeaveRequests(result.response.data.data);
+                    setRequestsTotal(result.response.data.total || 0);
+                }
             }
         } finally {
             setRequestsLoading(false);
@@ -155,12 +163,15 @@ export default function EmployeeLeaves() {
 
     useEffect(() => {
         fetchMyBalance();
-        fetchMyRequests();
     }, []);
+
+    useEffect(() => {
+        fetchMyRequests(requestsPage);
+    }, [requestsPage]);
 
     const handleApplySuccess = () => {
         fetchMyBalance();
-        fetchMyRequests();
+        fetchMyRequests(requestsPage);
     };
 
     const balances = myBalance?.balances ?? [];
@@ -238,7 +249,7 @@ export default function EmployeeLeaves() {
             <section className="space-y-4">
                 <div className="flex items-center gap-2">
                     <h2 className="text-lg font-semibold">My Leave Requests</h2>
-                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{leaveRequests.length} total</span>
+                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{requestsTotal || leaveRequests.length} total</span>
                 </div>
 
                 {requestsLoading ? (
@@ -271,7 +282,7 @@ export default function EmployeeLeaves() {
                                 <tbody className="divide-y divide-border">
                                     {leaveRequests.map((req, i) => (
                                         <tr key={req._id} className="hover:bg-muted/30 transition-colors">
-                                            <td className="px-4 py-3 text-muted-foreground">{i + 1}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">{(requestsPage - 1) * requestsLimit + i + 1}</td>
                                             <td className="px-4 py-3 font-medium">{leaveTypeName(req.type)}</td>
                                             <td className="px-4 py-3">{fmtDate(req.from)}</td>
                                             <td className="px-4 py-3">{fmtDate(req.to)}</td>
@@ -285,6 +296,31 @@ export default function EmployeeLeaves() {
                                     ))}
                                 </tbody>
                             </table>
+                            {requestsTotal > 0 && (
+                                <div className="p-4 flex justify-between items-center border-t border-border bg-card">
+                                    <div className="text-sm text-muted-foreground">
+                                        Showing {(requestsPage - 1) * requestsLimit + 1} to {Math.min(requestsPage * requestsLimit, requestsTotal)} of {requestsTotal} requests
+                                    </div>
+                                    <div className="flex space-x-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setRequestsPage(p => Math.max(1, p - 1))}
+                                            disabled={requestsPage === 1 || requestsLoading}
+                                        >
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setRequestsPage(p => Math.min(Math.ceil(requestsTotal / requestsLimit), p + 1))}
+                                            disabled={requestsPage === Math.ceil(requestsTotal / requestsLimit) || Math.ceil(requestsTotal / requestsLimit) === 0 || requestsLoading}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

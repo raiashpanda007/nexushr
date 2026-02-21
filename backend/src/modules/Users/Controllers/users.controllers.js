@@ -23,9 +23,6 @@ class UserController {
     if (!parsedBody.success) {
       throw new ApiError(Types.Errors.BadRequest, "Please provide valid data to create employee")
     }
-
-
-
     const { email, firstName, lastName, password, deptId, skills, profilePhoto, note } = parsedBody.data
 
 
@@ -157,13 +154,25 @@ class UserController {
 
     if (req.user.role === "HR") {
       if (!userID) {
+        const { page: pageQuery, limit: limitQuery } = req.query;
+        let limit = parseInt(limitQuery) || 10;
+        let page = parseInt(pageQuery) || 1;
+        if (limit > 50) limit = 50;
+
+        const skip = (page - 1) * limit;
+
         const users = await UserModel.find()
+          .sort({ _id: -1 })
           .select("-passwordHash")
-          .populate(populateOptions);
+          .populate(populateOptions)
+          .skip(skip)
+          .limit(limit);
+
+        const total = await UserModel.countDocuments();
 
         return res
           .status(200)
-          .json(new ApiResponse(200, users, "All users fetched successfully"));
+          .json(new ApiResponse(200, { data: users, total, page, limit }, "All users fetched successfully"));
       }
 
       const user = await UserModel.findById(userID)
@@ -200,7 +209,7 @@ class UserController {
   RefreshAccessToken = AsyncHandler(async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
-      throw new ApiError(Types.Errors.Unauthorized, "Unauthorized");
+      throw new ApiError(Types.Errors.Unauthroized, "Unauthorized");
     }
 
     let decodedToken;

@@ -67,13 +67,26 @@ class LeaveTypeController {
             return res.status(200).json(new ApiResponse(200, leaveType, "Leave type fetched successfully"))
         }
 
-        const byPaid = req.query.isPaid;
-        if (byPaid) {
-            const leaveTypes = await this.repo.find({ isPaid: byPaid })
-            return res.status(200).json(new ApiResponse(200, leaveTypes, "Leave types fetched successfully"))
+        const { page: pageQuery, limit: limitQuery, isPaid } = req.query;
+        let limit = parseInt(limitQuery) || 10;
+        let page = parseInt(pageQuery) || 1;
+        if (limit > 100) limit = 100;
+
+        const skip = (page - 1) * limit;
+        const query = {};
+        if (isPaid !== undefined) {
+            query.isPaid = isPaid;
         }
-        const leaveTypes = await this.repo.find()
-        return res.status(200).json(new ApiResponse(200, leaveTypes, "Leave types fetched successfully"))
+
+        let queryOptions = this.repo.find(query);
+        if (limitQuery !== 'all') {
+            queryOptions = queryOptions.skip(skip).limit(limit);
+        }
+
+        const leaveTypes = await queryOptions;
+        const total = await this.repo.countDocuments(query);
+
+        return res.status(200).json(new ApiResponse(200, { data: leaveTypes, total, page, limit: limitQuery === 'all' ? total : limit }, "Leave types fetched successfully"));
     })
 
 

@@ -6,9 +6,10 @@ import type { Employee } from "@/types";
 interface EmployeeTableProps {
     employees: Employee[];
     onEdit: (employee: Employee) => void;
+    startIndex?: number;
 }
 
-export default function EmployeeTable({ employees, onEdit }: EmployeeTableProps) {
+export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: EmployeeTableProps) {
     if (!employees || employees.length === 0) {
         return <div className="p-4 text-center">No employees found.</div>;
     }
@@ -42,7 +43,7 @@ export default function EmployeeTable({ employees, onEdit }: EmployeeTableProps)
                 <TableBody>
                     {employees.map((employee, index) => (
                         <TableRow key={employee._id || employee.id}>
-                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{startIndex + index}</TableCell>
                             <TableCell>{employee.firstName} {employee.lastName}</TableCell>
                             <TableCell>{employee.email}</TableCell>
                             <TableCell>{getDepartmentName(employee.deptId)}</TableCell>

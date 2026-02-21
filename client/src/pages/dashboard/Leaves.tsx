@@ -52,25 +52,39 @@ export default function Leaves() {
 
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
     const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
+    const [leaveTypesPage, setLeaveTypesPage] = useState(1);
+    const [leaveTypesTotal, setLeaveTypesTotal] = useState(0);
+
     const [selectedLeaveType, setSelectedLeaveType] = useState<LeaveType | null>(null);
     const [isLeaveTypeModalOpen, setIsLeaveTypeModalOpen] = useState(false);
 
     const [userBalances, setUserBalances] = useState<UserLeaveBalance[]>([]);
     const [balancesLoading, setBalancesLoading] = useState(false);
+    const [balancesPage, setBalancesPage] = useState(1);
+    const [balancesTotal, setBalancesTotal] = useState(0);
 
     const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
     const [requestsLoading, setRequestsLoading] = useState(false);
+    const [requestsPage, setRequestsPage] = useState(1);
+    const [requestsTotal, setRequestsTotal] = useState(0);
+    const requestsLimit = 10;
 
-    const fetchLeaveRequests = async () => {
+    const fetchLeaveRequests = async (currentPage = 1) => {
         setRequestsLoading(true);
         try {
-            const result = await ApiCaller<null, LeaveRequest[]>({
+            const result = await ApiCaller<null, any>({
                 requestType: "GET",
                 paths: ["api", "v1", "leaves", "requests"],
+                queryParams: { page: currentPage.toString(), limit: requestsLimit.toString() }
             });
 
             if (result.ok) {
-                setLeaveRequests(result.response.data || []);
+                if (Array.isArray(result.response.data)) {
+                    setLeaveRequests(result.response.data);
+                } else if (result.response.data?.data) {
+                    setLeaveRequests(result.response.data.data);
+                    setRequestsTotal(result.response.data.total || 0);
+                }
             } else {
                 console.error("Failed to fetch leave requests:", result.response.message);
             }
@@ -81,18 +95,22 @@ export default function Leaves() {
         }
     };
 
-    const fetchLeaveTypes = async () => {
+    const fetchLeaveTypes = async (currentPage = 1) => {
         setLeaveTypesLoading(true);
         try {
-            const result = await ApiCaller<null, LeaveType[]>({
+            const result = await ApiCaller<null, any>({
                 requestType: "GET",
                 paths: ["api", "v1", "leaves", "types"],
+                queryParams: { page: currentPage.toString(), limit: "10" }
             });
 
             if (result.ok) {
-                setLeaveTypes(result.response.data || []);
-            } else {
-                console.error("Failed to fetch leave types:", result.response.message);
+                if (Array.isArray(result.response.data)) {
+                    setLeaveTypes(result.response.data);
+                } else if (result.response.data?.data) {
+                    setLeaveTypes(result.response.data.data);
+                    setLeaveTypesTotal(result.response.data.total || 0);
+                }
             }
         } catch (error) {
             console.error("Error fetching leave types:", error);
@@ -101,19 +119,20 @@ export default function Leaves() {
         }
     };
 
-    const fetchUserBalances = async () => {
+    const fetchUserBalances = async (currentPage = 1) => {
         setBalancesLoading(true);
         try {
-            const result = await ApiCaller<null, RawLeaveBalanceDoc[]>({
+            const result = await ApiCaller<null, any>({
                 requestType: "GET",
                 paths: ["api", "v1", "leaves", "balances"],
+                queryParams: { page: currentPage.toString(), limit: "10" }
             });
 
             if (result.ok) {
-                const raw = result.response.data || [];
+                const data = result.response.data;
+                const raw = Array.isArray(data) ? data : (data?.data || []);
                 setUserBalances(raw.map(mapRawToUserLeaveBalance));
-            } else {
-                console.error("Failed to fetch leave balances:", result.response.message);
+                setBalancesTotal(data?.total || 0);
             }
         } catch (error) {
             console.error("Error fetching leave balances:", error);
@@ -127,11 +146,21 @@ export default function Leaves() {
 
     useEffect(() => {
         if (role === "HR") {
-            fetchLeaveTypes();
-            fetchUserBalances();
-            fetchLeaveRequests();
+            fetchLeaveTypes(leaveTypesPage);
         }
-    }, [role]);
+    }, [role, leaveTypesPage]);
+
+    useEffect(() => {
+        if (role === "HR") {
+            fetchUserBalances(balancesPage);
+        }
+    }, [role, balancesPage]);
+
+    useEffect(() => {
+        if (role === "HR") {
+            fetchLeaveRequests(requestsPage);
+        }
+    }, [role, requestsPage]);
 
     const handleAddLeaveType = () => {
         setSelectedLeaveType(null);
@@ -149,15 +178,15 @@ export default function Leaves() {
     };
 
     const handleLeaveTypeSuccess = () => {
-        fetchLeaveTypes();
+        fetchLeaveTypes(leaveTypesPage);
     };
 
     const handleCreateBalanceSuccess = () => {
-        fetchUserBalances();
+        fetchUserBalances(balancesPage);
     };
 
     const handleEditBalanceSuccess = () => {
-        fetchUserBalances();
+        fetchUserBalances(balancesPage);
     };
 
     const filteredLeaveTypes = useMemo(() => {
@@ -229,7 +258,34 @@ export default function Leaves() {
                     {leaveTypesLoading ? (
                         <div className="p-8 text-center text-muted-foreground">Loading leave types...</div>
                     ) : (
-                        <LeaveTypeTable leaveTypes={filteredLeaveTypes} onEdit={handleEditLeaveType} />
+                        <>
+                            <LeaveTypeTable leaveTypes={filteredLeaveTypes} onEdit={handleEditLeaveType} />
+                            {leaveTypesTotal > 0 && (
+                                <div className="p-4 flex justify-between items-center border-t border-gray-100">
+                                    <div className="text-sm text-gray-500">
+                                        Showing {(leaveTypesPage - 1) * 10 + 1} to {Math.min(leaveTypesPage * 10, leaveTypesTotal)} of {leaveTypesTotal}
+                                    </div>
+                                    <div className="flex space-x-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setLeaveTypesPage(p => Math.max(1, p - 1))}
+                                            disabled={leaveTypesPage === 1}
+                                        >
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setLeaveTypesPage(p => Math.min(Math.ceil(leaveTypesTotal / 10), p + 1))}
+                                            disabled={leaveTypesPage === Math.ceil(leaveTypesTotal / 10) || Math.ceil(leaveTypesTotal / 10) === 0}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -243,10 +299,37 @@ export default function Leaves() {
                     {balancesLoading ? (
                         <div className="p-8 text-center text-muted-foreground">Loading leave balances...</div>
                     ) : (
-                        <LeaveBalancesTable
-                            users={filteredUserBalances}
-                            onEdit={(user) => setSelectedUserForEdit(user)}
-                        />
+                        <>
+                            <LeaveBalancesTable
+                                users={filteredUserBalances}
+                                onEdit={(user) => setSelectedUserForEdit(user)}
+                            />
+                            {balancesTotal > 0 && (
+                                <div className="p-4 flex justify-between items-center border-t border-gray-100">
+                                    <div className="text-sm text-gray-500">
+                                        Showing {(balancesPage - 1) * 10 + 1} to {Math.min(balancesPage * 10, balancesTotal)} of {balancesTotal}
+                                    </div>
+                                    <div className="flex space-x-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setBalancesPage(p => Math.max(1, p - 1))}
+                                            disabled={balancesPage === 1}
+                                        >
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setBalancesPage(p => Math.min(Math.ceil(balancesTotal / 10), p + 1))}
+                                            disabled={balancesPage === Math.ceil(balancesTotal / 10) || Math.ceil(balancesTotal / 10) === 0}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -259,10 +342,37 @@ export default function Leaves() {
                     {requestsLoading ? (
                         <div className="p-8 text-center text-muted-foreground">Loading leave requests...</div>
                     ) : (
-                        <LeaveRequestsTable
-                            requests={filteredLeaveRequests}
-                            onRefresh={fetchLeaveRequests}
-                        />
+                        <>
+                            <LeaveRequestsTable
+                                requests={filteredLeaveRequests}
+                                onRefresh={() => fetchLeaveRequests(requestsPage)}
+                            />
+                            {requestsTotal > 0 && (
+                                <div className="p-4 flex justify-between items-center border-t border-gray-100">
+                                    <div className="text-sm text-gray-500">
+                                        Showing {(requestsPage - 1) * requestsLimit + 1} to {Math.min(requestsPage * requestsLimit, requestsTotal)} of {requestsTotal} requests
+                                    </div>
+                                    <div className="flex space-x-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setRequestsPage(p => Math.max(1, p - 1))}
+                                            disabled={requestsPage === 1}
+                                        >
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setRequestsPage(p => Math.min(Math.ceil(requestsTotal / requestsLimit), p + 1))}
+                                            disabled={requestsPage === Math.ceil(requestsTotal / requestsLimit) || Math.ceil(requestsTotal / requestsLimit) === 0}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

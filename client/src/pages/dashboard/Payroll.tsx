@@ -81,13 +81,18 @@ const Payroll = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const limit = 10;
+
     const initData = async () => {
         setLoading(true);
         try {
             await Promise.all([
                 fetchUsers(),
                 fetchSalaries(),
-                fetchPayrolls()
+                fetchPayrolls(page)
             ]);
         } catch (error) {
             console.error('Initial data fetch error:', error);
@@ -99,6 +104,10 @@ const Payroll = () => {
     useEffect(() => {
         initData();
     }, [userDetails]);
+
+    useEffect(() => {
+        fetchPayrolls(page);
+    }, [page]);
 
     const fetchUsers = async () => {
         if (!isHR) return;
@@ -130,18 +139,22 @@ const Payroll = () => {
         }
     };
 
-    const fetchPayrolls = async () => {
+    const fetchPayrolls = async (currentPage = 1) => {
         try {
             const { response } = await ApiCaller<any, any>({
                 requestType: 'GET',
-                paths: ['api', 'v1', 'payroll']
+                paths: ['api', 'v1', 'payroll'],
+                queryParams: { page: currentPage.toString(), limit: limit.toString() }
             });
-            // If the response is an array of payrolls
             if (response?.data) {
                 if (Array.isArray(response.data)) {
                     setPayrolls(response.data);
+                } else if (response.data.data) {
+                    setPayrolls(response.data.data);
+                    setTotal(response.data.total || 0);
                 } else {
                     setPayrolls([response.data]);
+                    setTotal(1);
                 }
             }
         } catch (error) {
@@ -275,6 +288,32 @@ const Payroll = () => {
                                 </Card>
                             )
                         })}
+
+                        {total > 0 && (
+                            <div className="p-4 flex justify-between items-center border-t border-gray-100">
+                                <div className="text-sm text-gray-500">
+                                    Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total}
+                                </div>
+                                <div className="flex space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        disabled={page === 1}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPage(p => Math.min(Math.ceil(total / limit), p + 1))}
+                                        disabled={page === Math.ceil(total / limit) || Math.ceil(total / limit) === 0}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

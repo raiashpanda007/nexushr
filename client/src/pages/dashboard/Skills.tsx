@@ -17,16 +17,27 @@ export default function Skills() {
     const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const fetchSkills = async () => {
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const limit = 10;
+
+    const fetchSkills = async (currentPage = 1) => {
         setLoading(true);
         try {
-            const result = await ApiCaller<null, Skill[]>({
+            const result = await ApiCaller<null, any>({
                 requestType: "GET",
                 paths: ["api", "v1", "skills"],
+                queryParams: { page: currentPage.toString(), limit: limit.toString() }
             });
 
             if (result.ok) {
-                setSkills(result.response.data || []);
+                if (Array.isArray(result.response.data)) {
+                    setSkills(result.response.data);
+                } else if (result.response.data?.data) {
+                    setSkills(result.response.data.data);
+                    setTotal(result.response.data.total || 0);
+                }
             } else {
                 console.error("Failed to fetch skills:", result.response.message);
             }
@@ -38,8 +49,8 @@ export default function Skills() {
     };
 
     useEffect(() => {
-        fetchSkills();
-    }, []);
+        fetchSkills(page);
+    }, [page]);
 
     const handleAddSkill = () => {
         setSelectedSkill(null);
@@ -60,7 +71,7 @@ export default function Skills() {
                 paths: ["api", "v1", "skills", id],
             });
             if (result.ok) {
-                fetchSkills();
+                fetchSkills(page);
             } else {
                 alert("Failed to delete: " + result.response.message);
             }
@@ -75,7 +86,7 @@ export default function Skills() {
     };
 
     const handleSuccess = () => {
-        fetchSkills();
+        fetchSkills(page);
     };
 
     return (
@@ -89,7 +100,34 @@ export default function Skills() {
                 {loading ? (
                     <div className="p-8 text-center text-gray-500">Loading skills...</div>
                 ) : (
-                    <SkillTable skills={skills} onEdit={handleEditSkill} onDelete={handleDeleteSkill} />
+                    <>
+                        <SkillTable skills={skills} onEdit={handleEditSkill} onDelete={handleDeleteSkill} />
+                        {total > 0 && (
+                            <div className="p-4 flex justify-between items-center border-t border-gray-100">
+                                <div className="text-sm text-gray-500">
+                                    Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total}
+                                </div>
+                                <div className="flex space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        disabled={page === 1}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPage(p => Math.min(Math.ceil(total / limit), p + 1))}
+                                        disabled={page === Math.ceil(total / limit) || Math.ceil(total / limit) === 0}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 

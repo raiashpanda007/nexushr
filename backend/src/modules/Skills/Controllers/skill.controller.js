@@ -58,12 +58,23 @@ class SkillController {
     })
 
     Get = AsyncHandler(async (req, res) => {
-
         const skillId = req.params.id;
+        const { page: pageQuery, limit: limitQuery } = req.query;
+        let limit = parseInt(limitQuery) || 10;
+        let page = parseInt(pageQuery) || 1;
+        if (limit > 100) limit = 100;
+        const skip = (page - 1) * limit;
+
         if (!skillId) {
-            const skills = await this.repo.find();
-            return res.status(200).json(new ApiResponse(200, skills, "Skills fetched successfully"));
+            let queryOptions = this.repo.find();
+            if (limitQuery !== 'all') {
+                queryOptions = queryOptions.skip(skip).limit(limit);
+            }
+            const skills = await queryOptions;
+            const total = await this.repo.countDocuments();
+            return res.status(200).json(new ApiResponse(200, { data: skills, total, page, limit: limitQuery === 'all' ? total : limit }, "Skills fetched successfully"));
         }
+
         const skill = await this.repo.findById(skillId);
         if (!skill) {
             throw new ApiError(Types.Errors.NotFound, "Skill not found");

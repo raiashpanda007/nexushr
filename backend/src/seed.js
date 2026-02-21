@@ -24,6 +24,9 @@ const seed = async () => {
             { name: "Sales", description: "Responsible for revenue generation and client acquisition." },
             { name: "Finance", description: "Manages company finances and accounting." }
         ];
+        for (let i = departments.length + 1; i <= 50; i++) {
+            departments.push({ name: `Department ${i}`, description: `Auto generated department ${i}` });
+        }
 
         const skills = [
             { name: "Administration", category: "MANAGEMENT" },
@@ -35,6 +38,10 @@ const seed = async () => {
             { name: "Leadership", category: "MANAGEMENT" },
             { name: "Data Analysis", category: "TECHNICAL" }
         ];
+        const categories = ["MANAGEMENT", "TECHNICAL", "SOFT_SKILL"];
+        for (let i = skills.length + 1; i <= 50; i++) {
+            skills.push({ name: `Skill ${i}`, category: categories[i % 3] });
+        }
 
         const leaveTypes = [
             { name: "Sick Leave", code: "SL", length: "FULL", isPaid: true },
@@ -42,6 +49,9 @@ const seed = async () => {
             { name: "Annual Leave", code: "AL", length: "FULL", isPaid: true },
             { name: "Loss Of Pay", code: "LOP", length: "FULL", isPaid: false }
         ];
+        for (let i = leaveTypes.length + 1; i <= 50; i++) {
+            leaveTypes.push({ name: `Leave Type ${i}`, code: `LT${i}`, length: i % 2 === 0 ? "FULL" : "HALF", isPaid: i % 2 !== 0 });
+        }
 
         // 1. Seed Departments
         console.log("\n--- Seeding Departments ---");
@@ -159,6 +169,51 @@ const seed = async () => {
 
             // Generate dense attendance data
             await generateAttendanceHistory(user);
+
+            // Generate Leave Request
+            const selectedLeave = balance.leaves[Math.floor(Math.random() * balance.leaves.length)];
+            const leaveTypeId = selectedLeave.type;
+            const fromDate = new Date();
+            fromDate.setUTCHours(0, 0, 0, 0);
+            fromDate.setDate(fromDate.getDate() + 1);
+
+            const toDate = new Date();
+            toDate.setUTCHours(0, 0, 0, 0);
+            toDate.setDate(toDate.getDate() + 2);
+
+            let leaveReq = await LeaveRequestModel.findOne({ requestedBy: user._id });
+            if (!leaveReq) {
+                try {
+                    await LeaveRequestModel.create({
+                        requestedBy: user._id,
+                        type: leaveTypeId,
+                        quantity: 2,
+                        from: fromDate,
+                        to: toDate,
+                        status: "PENDING"
+                    });
+                } catch (err) {
+                    console.log(`Failed to create leave request for ${user.firstName}`, err.message);
+                }
+            }
+
+            // Generate Payroll
+            const currentDate = new Date();
+            let payroll = await PayrollModal.findOne({ user: user._id, month: currentDate.getMonth() + 1, year: currentDate.getFullYear() });
+            if (!payroll) {
+                try {
+                    await PayrollModal.create({
+                        user: user._id,
+                        bonus: [{ reason: "Performance", amount: 1000 }],
+                        deduction: [{ reason: "Tax", amount: 500 }],
+                        salary: salary._id,
+                        month: currentDate.getMonth() + 1,
+                        year: currentDate.getFullYear()
+                    });
+                } catch (err) {
+                    console.log(`Failed to create payroll for ${user.firstName}`, err.message);
+                }
+            }
         };
 
         // 4. Create Admin (HR) User
@@ -181,8 +236,8 @@ const seed = async () => {
         }
         await seedUserData(admin, { base: 80000, hra: 30000, lta: 15000 });
 
-        // 5. Create 10 Additional Employees for realistic data
-        console.log("\n--- Seeding 10 Employees ---");
+        // 5. Create 50 Employees for realistic data
+        console.log("\n--- Seeding 50 Employees ---");
         const employees = [
             { first: "Alice", last: "Smith", dept: "Engineering" },
             { first: "Bob", last: "Johnson", dept: "Engineering" },
@@ -195,6 +250,9 @@ const seed = async () => {
             { first: "Ian", last: "Malcolm", dept: "General Management" },
             { first: "Julia", last: "Roberts", dept: "Finance" }
         ];
+        for (let i = employees.length + 1; i <= 50; i++) {
+            employees.push({ first: `EmployeeFirst${i}`, last: `EmployeeLast${i}`, dept: departments[i % departments.length].name });
+        }
 
         for (let i = 0; i < employees.length; i++) {
             const emp = employees[i];

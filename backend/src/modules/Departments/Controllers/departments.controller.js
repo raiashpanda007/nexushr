@@ -56,7 +56,14 @@ class DepartmentsController {
     })
 
     Get = AsyncHandler(async (req, res) => {
-        const id = req.params.id
+        const id = req.params.id;
+        const { page: pageQuery, limit: limitQuery } = req.query;
+        let limit = parseInt(limitQuery) || 10;
+        let page = parseInt(pageQuery) || 1;
+        if (limit > 100) limit = 100;
+
+        const skip = (page - 1) * limit;
+
         if (id) {
             const department = await this.repo.findById(id)
             if (!department) {
@@ -64,8 +71,15 @@ class DepartmentsController {
             }
             return res.status(200).json(new ApiResponse(200, department, "Department fetched successfully"))
         }
-        const departments = await this.repo.find()
-        return res.status(200).json(new ApiResponse(200, departments, "Departments fetched successfully"))
+
+        let queryOptions = this.repo.find();
+        if (limitQuery !== 'all') {
+            queryOptions = queryOptions.skip(skip).limit(limit);
+        }
+
+        const departments = await queryOptions;
+        const total = await this.repo.countDocuments();
+        return res.status(200).json(new ApiResponse(200, { data: departments, total, page, limit: limitQuery === 'all' ? total : limit }, "Departments fetched successfully"))
     })
 
 

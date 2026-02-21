@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Punch {
     type: "IN" | "OUT";
@@ -43,6 +43,11 @@ const Attendance = () => {
     const isHR = userDetails?.role === 'HR';
 
     const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
+    const [analyticsData, setAnalyticsData] = useState<AttendanceRecord[]>([]);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const limit = 10;
+
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
 
@@ -66,29 +71,34 @@ const Attendance = () => {
     const availableDepartments = useMemo(() => {
         const uniqueIds = new Set<string>();
         const depts: Department[] = [];
-        attendances.forEach(a => {
+        analyticsData.forEach(a => {
             if (a.user?.deptId && !uniqueIds.has(a.user.deptId._id)) {
                 uniqueIds.add(a.user.deptId._id);
                 depts.push(a.user.deptId);
             }
         });
         return depts;
-    }, [attendances]);
+    }, [analyticsData]);
 
-    const fetchAttendances = async (dateStr?: string) => {
+    const fetchAttendances = async (dateStr?: string, currentPage = 1) => {
         setLoading(true);
         try {
-            const queryParams: Record<string, string> = {};
+            const queryParams: Record<string, string> = { page: currentPage.toString(), limit: limit.toString() };
             if (dateStr) queryParams.date = dateStr;
 
-            const { response } = await ApiCaller<any, AttendanceRecord[]>({
+            const { response } = await ApiCaller<any, any>({
                 requestType: 'GET',
                 paths: ['api', 'v1', 'attendance'],
                 queryParams
             });
 
-            if (response?.data && Array.isArray(response.data)) {
-                setAttendances(response.data);
+            if (response?.data) {
+                if (Array.isArray(response.data)) {
+                    setAttendances(response.data);
+                } else if (response.data.data) {
+                    setAttendances(response.data.data);
+                    setTotal(response.data.total || 0);
+                }
             }
         } catch (error) {
             console.error('Error fetching attendances:', error);
@@ -97,11 +107,41 @@ const Attendance = () => {
         }
     };
 
+    const fetchAnalyticsData = async (monthStr: string) => {
+        if (!isHR) return;
+        try {
+            const startDate = `${monthStr}-01`;
+            const endDate = format(new Date(parseInt(monthStr.split('-')[0]), parseInt(monthStr.split('-')[1]), 0), 'yyyy-MM-dd');
+
+            const { response } = await ApiCaller<any, any>({
+                requestType: 'GET',
+                paths: ['api', 'v1', 'attendance'],
+                queryParams: { startDate, endDate, limit: 'all' }
+            });
+
+            if (response?.data) {
+                if (Array.isArray(response.data)) {
+                    setAnalyticsData(response.data);
+                } else if (response.data.data) {
+                    setAnalyticsData(response.data.data);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching analytics:', error);
+        }
+    };
+
     useEffect(() => {
         if (userDetails) {
-            fetchAttendances(filterDate);
+            fetchAttendances(filterDate, page);
         }
-    }, [userDetails, filterDate]);
+    }, [userDetails, filterDate, page]);
+
+    useEffect(() => {
+        if (isHR && userDetails && activeTab === "Analytics") {
+            fetchAnalyticsData(analyticsMonthFilter);
+        }
+    }, [isHR, userDetails, activeTab, analyticsMonthFilter]);
 
     const handlePunch = async (type: "IN" | "OUT") => {
         if (!userDetails) return;
@@ -161,13 +201,13 @@ const Attendance = () => {
 
     // Filter overall attendance first by the selected analytics month
     const analyticsFilteredAttendances = useMemo(() => {
-        return attendances.filter(a => {
+        return analyticsData.filter(a => {
             if (!a.date) return false;
             const d = new Date(a.date);
             if (isNaN(d.getTime())) return false;
             return format(d, 'yyyy-MM') === analyticsMonthFilter;
         });
-    }, [attendances, analyticsMonthFilter]);
+    }, [analyticsData, analyticsMonthFilter]);
 
     const departmentStats = useMemo(() => {
         if (!isHR) return [];
@@ -216,10 +256,10 @@ const Attendance = () => {
 
     const selectedEmpRecords = useMemo(() => {
         if (!selectedEmpId) return [];
-        return attendances
+        return analyticsData
             .filter(a => a.user?._id === selectedEmpId && a.date)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }, [attendances, selectedEmpId]);
+    }, [analyticsData, selectedEmpId]);
 
     const chartDaily = useMemo(() => {
         return selectedEmpRecords.map(a => {
@@ -271,6 +311,8 @@ const Attendance = () => {
 
     const canPunchIn = !lastPunch || lastPunch.type === "OUT";
     const canPunchOut = lastPunch && lastPunch.type === "IN";
+
+    const totalPages = Math.ceil(total / limit);
 
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6 text-gray-900 bg-white min-h-screen">
@@ -427,6 +469,32 @@ const Attendance = () => {
                                         )}
                                     </TableBody>
                                 </Table>
+
+                                {total > 0 && (
+                                    <div className="p-4 flex justify-between items-center border-t border-gray-100">
+                                        <div className="text-sm text-gray-500">
+                                            Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} records
+                                        </div>
+                                        <div className="flex space-x-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                                disabled={page === 1}
+                                            >
+                                                Previous
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                                disabled={page === totalPages || totalPages === 0}
+                                            >
+                                                Next
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

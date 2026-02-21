@@ -80,10 +80,20 @@ class SalariesController {
             ]
         };
 
+        const { page: pageQuery, limit: limitQuery } = req.query;
+        let limit = parseInt(limitQuery) || 10;
+        let page = parseInt(pageQuery) || 1;
+        if (limit > 100) limit = 100;
+        const skip = (page - 1) * limit;
+
         if (!id) {
             if (req.user.role != "HR") {
-                const salary = await SalariesModel.find({ userId: req.user.id }).populate(populateOptions);
-                return res.status(200).json(new ApiResponse(200, salary, "Salary fetched successfully"));
+                let queryOptions = SalariesModel.find({ userId: req.user.id }).populate(populateOptions);
+                if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
+
+                const salary = await queryOptions;
+                const total = await SalariesModel.countDocuments({ userId: req.user.id });
+                return res.status(200).json(new ApiResponse(200, { data: salary, total, page, limit: limitQuery === 'all' ? total : limit }, "Salary fetched successfully"));
             }
 
             const query = {};
@@ -91,8 +101,12 @@ class SalariesController {
                 query.userId = req.query.userId;
             }
 
-            const salaries = await SalariesModel.find(query).populate(populateOptions);
-            return res.status(200).json(new ApiResponse(200, salaries, "All salaries fetched successfully"));
+            let queryOptions = SalariesModel.find(query).populate(populateOptions);
+            if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
+
+            const salaries = await queryOptions;
+            const total = await SalariesModel.countDocuments(query);
+            return res.status(200).json(new ApiResponse(200, { data: salaries, total, page, limit: limitQuery === 'all' ? total : limit }, "All salaries fetched successfully"));
         }
 
         const salary = await SalariesModel.findById(id).populate(populateOptions);

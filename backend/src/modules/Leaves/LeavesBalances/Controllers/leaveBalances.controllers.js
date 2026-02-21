@@ -158,6 +158,13 @@ class LeaveBalanceController {
             }
         ]
 
+        const { page: pageQuery, limit: limitQuery } = req.query;
+        let limit = parseInt(limitQuery) || 10;
+        let page = parseInt(pageQuery) || 1;
+        if (limit > 100) limit = 100;
+
+        const skip = (page - 1) * limit;
+
         if (id) {
             if (id != req.user.id) {
                 if (req.user.role != "HR") {
@@ -177,15 +184,26 @@ class LeaveBalanceController {
         }
 
         if (req.user.role != "HR") {
-            // Employee: return only their own balance
-            const leaveBalances = await this.repo.aggregate([
-                { $match: { user: new mongoose.Types.ObjectId(req.user.id) } },
-                ...pipeline
-            ])
-            return res.status(200).json(new ApiResponse(200, leaveBalances, "Leave balances fetched successfully"))
+            // Employee: return only their own balance. Need pagination logic if ever multiple, but it's usually 1
+            const matchPipeline = [{ $match: { user: new mongoose.Types.ObjectId(req.user.id) } }];
+            let paginatedPipeline = [...matchPipeline, ...pipeline];
+            if (limitQuery !== 'all') {
+                paginatedPipeline = [...matchPipeline, { $skip: skip }, { $limit: limit }, ...pipeline];
+            }
+
+            const leaveBalances = await this.repo.aggregate(paginatedPipeline);
+            const total = await this.repo.countDocuments({ user: req.user.id });
+            return res.status(200).json(new ApiResponse(200, { data: leaveBalances, total, page, limit: limitQuery === 'all' ? total : limit }, "Leave balances fetched successfully"));
         }
-        const leaveBalances = await this.repo.aggregate(pipeline)
-        return res.status(200).json(new ApiResponse(200, leaveBalances, "Leave balances fetched successfully"))
+
+        let paginatedPipeline = pipeline;
+        if (limitQuery !== 'all') {
+            paginatedPipeline = [{ $skip: skip }, { $limit: limit }, ...pipeline];
+        }
+
+        const leaveBalances = await this.repo.aggregate(paginatedPipeline)
+        const total = await this.repo.countDocuments();
+        return res.status(200).json(new ApiResponse(200, { data: leaveBalances, total, page, limit: limitQuery === 'all' ? total : limit }, "Leave balances fetched successfully"))
     })
 }
 

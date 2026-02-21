@@ -73,6 +73,11 @@ class AttendanceController {
             query.date = queryDate;
         }
 
+        const { page: pageQuery, limit: limitQuery } = req.query;
+        let limit = parseInt(limitQuery) || 10;
+        let page = parseInt(pageQuery) || 1;
+        if (limit > 100) limit = 100;
+
         const populateOptions = {
             path: "user",
             select: "firstName lastName email deptId",
@@ -82,9 +87,18 @@ class AttendanceController {
             }
         };
 
-        const attendances = await this.repo.find(query).populate(populateOptions).sort({ date: -1 });
+        let queryOptions = this.repo.find(query).populate(populateOptions).sort({ date: -1 });
 
-        return res.status(200).json(new ApiResponse(200, attendances, "Attendances fetched successfully"));
+        // Disable pagination if limit=all is requested for Analytics
+        if (limitQuery !== 'all') {
+            const skip = (page - 1) * limit;
+            queryOptions = queryOptions.skip(skip).limit(limit);
+        }
+
+        const attendances = await queryOptions;
+        const total = await this.repo.countDocuments(query);
+
+        return res.status(200).json(new ApiResponse(200, { data: attendances, total, page, limit: limitQuery === 'all' ? total : limit }, "Attendances fetched successfully"));
     });
 }
 

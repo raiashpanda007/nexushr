@@ -61,32 +61,34 @@ class PayrollController {
         if (year > 2100 || year < 1900 || year <= new Date().getFullYear()) {
             throw new ApiError(Types.Errors.NotFound, "Invalid year");
         }
+        const { page: pageQuery, limit: limitQuery } = req.query;
+        let limit = parseInt(limitQuery) || 10;
+        let page = parseInt(pageQuery) || 1;
+        if (limit > 100) limit = 100;
+        const skip = (page - 1) * limit;
+
         if (!id) {
-            if (req.user.role != "HR") {
-                if (!year) {
-                    const payroll = await this.repo.find({ user: req.user.id }).populate("salary")
-                    return res.status(200).json(new ApiResponse(200, payroll, "Payroll fetched successfully"));
-                } else {
-                    if (month) {
-                        const payroll = await this.repo.findOne({ user: req.user.id, month, year }).populate("salary")
-                        return res.status(200).json(new ApiResponse(200, payroll, "Payroll fetched successfully"));
-                    }
-                    const payroll = await this.repo.find({ user: req.user.id, year }).populate("salary")
-                    return res.status(200).json(new ApiResponse(200, payroll, "Payroll fetched successfully"));
-                }
-            } else {
-                if (!year) {
-                    const payroll = await this.repo.find().populate("salary")
-                    return res.status(200).json(new ApiResponse(200, payroll, "Payroll fetched successfully"));
-                } else {
-                    if (month) {
-                        const payroll = await this.repo.findOne({ month, year }).populate("salary")
-                        return res.status(200).json(new ApiResponse(200, payroll, "Payroll fetched successfully"));
-                    }
-                    const payroll = await this.repo.find({ year }).populate("salary")
+            let filter = {};
+            if (req.user.role !== "HR") {
+                filter.user = req.user.id;
+            }
+            if (year) {
+                filter.year = year;
+                if (month) {
+                    filter.month = month;
+                    const payroll = await this.repo.findOne(filter).populate("salary");
                     return res.status(200).json(new ApiResponse(200, payroll, "Payroll fetched successfully"));
                 }
             }
+
+            let queryOptions = this.repo.find(filter).populate("salary");
+            if (limitQuery !== 'all') {
+                queryOptions = queryOptions.skip(skip).limit(limit);
+            }
+            const payrolls = await queryOptions;
+            const total = await this.repo.countDocuments(filter);
+
+            return res.status(200).json(new ApiResponse(200, { data: payrolls, total, page, limit: limitQuery === 'all' ? total : limit }, "Payroll fetched successfully"));
         }
 
         const payroll = await this.repo.findById(id).populate("salary")
