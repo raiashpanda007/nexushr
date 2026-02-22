@@ -26,6 +26,7 @@ export interface PayrollItem {
     bonus: { reason: string; amount: number }[];
     deduction: { reason: string; amount: number }[];
     createdAt: string;
+    syncState?: "unsynced" | "synced";
 }
 
 export function usePayroll() {
@@ -80,22 +81,34 @@ export function usePayroll() {
 
     const fetchPayrolls = async (currentPage = 1) => {
         try {
-            const { response } = await ApiCaller<any, any>({
-                requestType: 'GET',
-                paths: ['api', 'v1', 'payroll'],
-                queryParams: { page: currentPage.toString(), limit: limit.toString() }
-            });
-            if (response?.data) {
-                if (Array.isArray(response.data)) {
-                    setPayrolls(response.data);
-                } else if (response.data.data) {
-                    setPayrolls(response.data.data);
-                    setTotal(response.data.total || 0);
-                } else {
-                    setPayrolls([response.data]);
-                    setTotal(1);
+            let apiPayrolls: PayrollItem[] = [];
+            let apiTotal = 0;
+
+            if (navigator.onLine) {
+                const { response } = await ApiCaller<any, any>({
+                    requestType: 'GET',
+                    paths: ['api', 'v1', 'payroll'],
+                    queryParams: { page: currentPage.toString(), limit: limit.toString() }
+                });
+                if (response?.data) {
+                    if (Array.isArray(response.data)) {
+                        apiPayrolls = response.data;
+                    } else if (response.data.data) {
+                        apiPayrolls = response.data.data;
+                        apiTotal = response.data.total || 0;
+                    } else {
+                        apiPayrolls = [response.data];
+                        apiTotal = 1;
+                    }
                 }
             }
+
+            // Fetch Offline Queue and merge
+            const { default: offlineQueue } = await import("@/utils/DbManger");
+            const { data: mergedPayrolls, addedCount } = await offlineQueue.getMergedData<PayrollItem>("PAYROLLS", apiPayrolls);
+
+            setPayrolls(mergedPayrolls);
+            setTotal(apiTotal + addedCount);
         } catch (error) {
             console.error('Error fetching payrolls:', error);
         }

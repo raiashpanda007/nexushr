@@ -68,22 +68,33 @@ export function useLeaves() {
     const fetchLeaveRequests = async (currentPage = 1) => {
         setRequestsLoading(true);
         try {
-            const result = await ApiCaller<null, any>({
-                requestType: "GET",
-                paths: ["api", "v1", "leaves", "requests"],
-                queryParams: { page: currentPage.toString(), limit: requestsLimit.toString() }
-            });
+            let apiRequests: LeaveRequest[] = [];
+            let apiTotal = 0;
 
-            if (result.ok) {
-                if (Array.isArray(result.response.data)) {
-                    setLeaveRequests(result.response.data);
-                } else if (result.response.data?.data) {
-                    setLeaveRequests(result.response.data.data);
-                    setRequestsTotal(result.response.data.total || 0);
+            if (navigator.onLine) {
+                const result = await ApiCaller<null, any>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "leaves", "requests"],
+                    queryParams: { page: currentPage.toString(), limit: requestsLimit.toString() }
+                });
+
+                if (result.ok) {
+                    if (Array.isArray(result.response.data)) {
+                        apiRequests = result.response.data;
+                    } else if (result.response.data?.data) {
+                        apiRequests = result.response.data.data;
+                        apiTotal = result.response.data.total || 0;
+                    }
+                } else {
+                    console.error("Failed to fetch leave requests:", result.response.message);
                 }
-            } else {
-                console.error("Failed to fetch leave requests:", result.response.message);
             }
+
+            const { default: offlineQueue } = await import("@/utils/DbManger");
+            const { data: mergedRequests, addedCount } = await offlineQueue.getMergedData<LeaveRequest>("LEAVEREQUEST", apiRequests);
+
+            setLeaveRequests(mergedRequests);
+            setRequestsTotal(apiTotal + addedCount);
         } catch (error) {
             console.error("Error fetching leave requests:", error);
         } finally {
@@ -94,20 +105,31 @@ export function useLeaves() {
     const fetchLeaveTypes = async (currentPage = 1) => {
         setLeaveTypesLoading(true);
         try {
-            const result = await ApiCaller<null, any>({
-                requestType: "GET",
-                paths: ["api", "v1", "leaves", "types"],
-                queryParams: { page: currentPage.toString(), limit: "10" }
-            });
+            let apiTypes: LeaveType[] = [];
+            let apiTotal = 0;
 
-            if (result.ok) {
-                if (Array.isArray(result.response.data)) {
-                    setLeaveTypes(result.response.data);
-                } else if (result.response.data?.data) {
-                    setLeaveTypes(result.response.data.data);
-                    setLeaveTypesTotal(result.response.data.total || 0);
+            if (navigator.onLine) {
+                const result = await ApiCaller<null, any>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "leaves", "types"],
+                    queryParams: { page: currentPage.toString(), limit: "10" }
+                });
+
+                if (result.ok) {
+                    if (Array.isArray(result.response.data)) {
+                        apiTypes = result.response.data;
+                    } else if (result.response.data?.data) {
+                        apiTypes = result.response.data.data;
+                        apiTotal = result.response.data.total || 0;
+                    }
                 }
             }
+
+            const { default: offlineQueue } = await import("@/utils/DbManger");
+            const { data: mergedTypes, addedCount } = await offlineQueue.getMergedData<LeaveType>("LEAVETYPE", apiTypes);
+
+            setLeaveTypes(mergedTypes);
+            setLeaveTypesTotal(apiTotal + addedCount);
         } catch (error) {
             console.error("Error fetching leave types:", error);
         } finally {
@@ -118,18 +140,29 @@ export function useLeaves() {
     const fetchUserBalances = async (currentPage = 1) => {
         setBalancesLoading(true);
         try {
-            const result = await ApiCaller<null, any>({
-                requestType: "GET",
-                paths: ["api", "v1", "leaves", "balances"],
-                queryParams: { page: currentPage.toString(), limit: "10" }
-            });
+            let apiBalances: UserLeaveBalance[] = [];
+            let apiTotal = 0;
 
-            if (result.ok) {
-                const data = result.response.data;
-                const raw = Array.isArray(data) ? data : (data?.data || []);
-                setUserBalances(raw.map(mapRawToUserLeaveBalance));
-                setBalancesTotal(data?.total || 0);
+            if (navigator.onLine) {
+                const result = await ApiCaller<null, any>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "leaves", "balances"],
+                    queryParams: { page: currentPage.toString(), limit: "10" }
+                });
+
+                if (result.ok) {
+                    const data = result.response.data;
+                    const raw = Array.isArray(data) ? data : (data?.data || []);
+                    apiBalances = raw.map(mapRawToUserLeaveBalance);
+                    apiTotal = data?.total || 0;
+                }
             }
+
+            const { default: offlineQueue } = await import("@/utils/DbManger");
+            const { data: mergedBalances, addedCount } = await offlineQueue.getMergedData<UserLeaveBalance>("LEAVEBALANCE", apiBalances);
+
+            setUserBalances(mergedBalances);
+            setBalancesTotal(apiTotal + addedCount);
         } catch (error) {
             console.error("Error fetching leave balances:", error);
         } finally {

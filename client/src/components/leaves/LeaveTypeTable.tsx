@@ -8,6 +8,7 @@ export interface LeaveType {
     code: string;
     length: "HALF" | "FULL";
     isPaid: boolean;
+    syncState?: "unsynced" | "synced";
 }
 
 interface LeaveTypeTableProps {
@@ -38,7 +39,16 @@ export default function LeaveTypeTable({ leaveTypes, onEdit }: LeaveTypeTablePro
                         <TableRow key={type._id}>
                             <TableCell>{index + 1}</TableCell>
                             <TableCell className="font-mono text-xs">{type.code}</TableCell>
-                            <TableCell className="font-medium">{type.name}</TableCell>
+                            <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                    {type.name}
+                                    {type.syncState === 'unsynced' && (
+                                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold">
+                                            Unsynced
+                                        </Badge>
+                                    )}
+                                </div>
+                            </TableCell>
                             <TableCell>
                                 <Badge variant="outline">{type.length}</Badge>
                             </TableCell>

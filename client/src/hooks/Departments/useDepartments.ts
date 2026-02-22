@@ -21,22 +21,34 @@ export function useDepartments() {
     const fetchDepartments = async (currentPage = 1) => {
         setLoading(true);
         try {
-            const result = await ApiCaller<null, any>({
-                requestType: "GET",
-                paths: ["api", "v1", "departments"],
-                queryParams: { page: currentPage.toString(), limit: limit.toString() }
-            });
+            let apiDepartments: Department[] = [];
+            let apiTotal = 0;
 
-            if (result.ok) {
-                if (Array.isArray(result.response.data)) {
-                    setDepartments(result.response.data);
-                } else if (result.response.data?.data) {
-                    setDepartments(result.response.data.data);
-                    setTotal(result.response.data.total || 0);
+            if (navigator.onLine) {
+                const result = await ApiCaller<null, any>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "departments"],
+                    queryParams: { page: currentPage.toString(), limit: limit.toString() }
+                });
+
+                if (result.ok) {
+                    if (Array.isArray(result.response.data)) {
+                        apiDepartments = result.response.data;
+                    } else if (result.response.data?.data) {
+                        apiDepartments = result.response.data.data;
+                        apiTotal = result.response.data.total || 0;
+                    }
+                } else {
+                    console.error("Failed to fetch departments:", result.response.message);
                 }
-            } else {
-                console.error("Failed to fetch departments:", result.response.message);
             }
+
+            // Fetch Offline Queue and merge
+            const { default: offlineQueue } = await import("@/utils/DbManger");
+            const { data: mergedDepartments, addedCount } = await offlineQueue.getMergedData<Department>("DEPARTMENTS", apiDepartments);
+
+            setDepartments(mergedDepartments);
+            setTotal(apiTotal + addedCount);
         } catch (error) {
             console.error("Error fetching departments:", error);
         } finally {

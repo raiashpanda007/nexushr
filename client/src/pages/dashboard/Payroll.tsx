@@ -18,8 +18,12 @@ import { usePayroll } from "@/hooks/Payroll/usePayroll";
 
 
 const Payroll = () => {
-    function GeneratePdf(data: { BaseSalary: number; HRA: number; LTA: number; Bonus: { reason: string; amount: number }[]; Deduction: { reason: string; amount: number }[] }) {
-        const worker = new Worker(new URL("../workers/pdf.worker.ts", import.meta.url));
+    function GeneratePdf(data: {
+        BaseSalary: number; HRA: number; LTA: number; Bonus: { reason: string; amount: number }[]; deduction: { reason: string; amount: number }[];
+        createdAt: string;
+        syncState?: "unsynced" | "synced";
+    }) {
+        const worker = new Worker(new URL("../../workers/pdf.worker.tsx", import.meta.url));
 
         worker.postMessage(data);
 
@@ -121,7 +125,14 @@ const Payroll = () => {
                                 <Card key={p._id}>
                                     <CardContent className="p-6 flex justify-between items-center">
                                         <div>
-                                            <h3 className="font-semibold text-xl mb-1">{pMonth} / {pYear}</h3>
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-semibold text-xl mb-1">{pMonth} / {pYear}</h3>
+                                                {p.syncState === 'unsynced' && (
+                                                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold mb-1">
+                                                        Unsynced
+                                                    </Badge>
+                                                )}
+                                            </div>
                                             <div className="flex flex-wrap gap-2 text-sm mt-2">
                                                 <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">Base: ${baseSalary}</span>
                                                 <span className="bg-green-50 text-green-700 px-2 py-1 rounded">Bonuses: +${totalBonus}</span>
@@ -135,7 +146,9 @@ const Payroll = () => {
                                             HRA: p.salary.HRA,
                                             LTA: p.salary.LTA,
                                             Bonus: p.bonus,
-                                            Deduction: p.deduction
+                                            deduction: p.deduction,
+                                            createdAt: p.createdAt,
+                                            syncState: p.syncState
                                         })}>
                                             <FileText size={16} className="mr-2" /> Print
                                         </Button>
@@ -303,7 +316,14 @@ const Payroll = () => {
                                         return (
                                             <TableRow key={p._id} className="hover:bg-emerald-50/30 transition-colors">
                                                 <TableCell className="font-medium text-gray-900">
-                                                    {getUserName(p.user)}
+                                                    <div className="flex items-center gap-2">
+                                                        {getUserName(p.user)}
+                                                        {p.syncState === 'unsynced' && (
+                                                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold">
+                                                                Unsynced
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline" className="bg-white">{pMonth}/{pYear}</Badge>

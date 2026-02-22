@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useLeaveRequestsTable } from "@/hooks/leaves/useLeaveRequestsTable";
 
+import { Badge } from "@/components/ui/badge";
+
 export interface LeaveRequest {
     _id: string;
     requestedBy: {
@@ -15,6 +17,7 @@ export interface LeaveRequest {
     to: string;
     status: "PENDING" | "ACCEPTED" | "REJECTED";
     createdAt: string;
+    syncState?: "unsynced" | "synced";
 }
 
 interface LeaveRequestsTableProps {
@@ -71,8 +74,13 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                     {requests.map((req) => (
                         <tr key={req._id} className="hover:bg-muted/20">
                             <td className="px-4 py-3">
-                                <div className="font-medium">
+                                <div className="font-medium flex items-center gap-2">
                                     {req.requestedBy?.firstName} {req.requestedBy?.lastName}
+                                    {req.syncState === 'unsynced' && (
+                                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold h-4">
+                                            Unsynced
+                                        </Badge>
+                                    )}
                                 </div>
                                 <div className="text-xs text-muted-foreground">{req.requestedBy?.email}</div>
                             </td>

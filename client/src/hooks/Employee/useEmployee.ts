@@ -23,23 +23,35 @@ export function useEmployee() {
         setLoading(true);
 
         try {
-            const result = await ApiCaller<null, GetUsersResponse>({
-                requestType: "GET",
-                paths: ["api", "v1", "user", "get-users"],
-                queryParams: { page: currentPage.toString(), limit: limit.toString() }
-            });
+            let apiEmployees: Employee[] = [];
+            let apiTotal = 0;
 
-            if (result.ok) {
-                const responseData = result.response.data as GetUsersResponse;
-                if (Array.isArray(responseData)) {
-                    setEmployees(responseData);
-                } else if (responseData && responseData.data) {
-                    setEmployees(responseData.data);
-                    setTotal(responseData.total || 0);
+            if (navigator.onLine) {
+                const result = await ApiCaller<null, GetUsersResponse>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "user", "get-users"],
+                    queryParams: { page: currentPage.toString(), limit: limit.toString() }
+                });
+
+                if (result.ok) {
+                    const responseData = result.response.data as GetUsersResponse;
+                    if (Array.isArray(responseData)) {
+                        apiEmployees = responseData;
+                    } else if (responseData && responseData.data) {
+                        apiEmployees = responseData.data;
+                        apiTotal = responseData.total || 0;
+                    }
+                } else {
+                    console.error("Failed to fetch employees:", result.response.message);
                 }
-            } else {
-                console.error("Failed to fetch employees:", result.response.message);
             }
+
+            // Fetch Offline Queue and merge
+            const { default: offlineQueue } = await import("@/utils/DbManger");
+            const { data: mergedEmployees, addedCount } = await offlineQueue.getMergedData<Employee>("EMPLOYEE", apiEmployees);
+
+            setEmployees(mergedEmployees);
+            setTotal(apiTotal + addedCount); // Approximate total
         } catch (error) {
             console.error("Error fetching employees:", error);
         } finally {

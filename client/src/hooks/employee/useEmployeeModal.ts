@@ -33,15 +33,17 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
         const fetchData = async () => {
             try {
                 const [deptRes, skillRes] = await Promise.all([
-                    ApiCaller<null, Department[]>({ requestType: "GET", paths: ["api", "v1", "departments"] }),
-                    ApiCaller<null, Skill[]>({ requestType: "GET", paths: ["api", "v1", "skills"] })
+                    ApiCaller<null, any>({ requestType: "GET", paths: ["api", "v1", "departments"], queryParams: { limit: "100" } }),
+                    ApiCaller<null, any>({ requestType: "GET", paths: ["api", "v1", "skills"], queryParams: { limit: "100" } })
                 ]);
 
                 if (deptRes.ok) {
-                    setDepartments(deptRes.response.data || []);
+                    const dData = deptRes.response.data;
+                    setDepartments(Array.isArray(dData) ? dData : dData?.data || []);
                 }
                 if (skillRes.ok) {
-                    setSkills(skillRes.response.data || []);
+                    const sData = skillRes.response.data;
+                    setSkills(Array.isArray(sData) ? sData : sData?.data || []);
                 }
             } catch (err) {
                 console.error("Failed to fetch form data", err);

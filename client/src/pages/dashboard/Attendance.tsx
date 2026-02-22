@@ -210,7 +210,14 @@ const Attendance = () => {
                                                     {isHR && (
                                                         <TableCell className="border-b border-gray-100">
                                                             <div className="flex flex-col">
-                                                                <span className="font-semibold text-gray-900">{record.user?.firstName} {record.user?.lastName}</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-semibold text-gray-900">{record.user?.firstName} {record.user?.lastName}</span>
+                                                                    {record.syncState === 'unsynced' && (
+                                                                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold">
+                                                                            Unsynced
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                                 <span className="text-xs text-gray-400">{record.user?._id.slice(-6).toUpperCase()} • {record.user?.deptId?.name || 'N/A'}</span>
                                                             </div>
                                                         </TableCell>

@@ -4,6 +4,7 @@ import type { LeaveBalanceEntry } from "@/components/leaves/LeaveBalancesTable";
 import { Plus, CheckCircle, XCircle, Clock, FileText, Calendar, List } from "lucide-react";
 import { useEmployeeLeaves } from "@/hooks/EmployeeLeaves/useEmployeeLeaves";
 import type { LeaveRequest } from "@/hooks/EmployeeLeaves/useEmployeeLeaves";
+import { Badge } from "@/components/ui/badge";
 
 function statusBadge(status: LeaveRequest["status"]) {
     const map: Record<LeaveRequest["status"], { label: string; cls: string }> = {
@@ -176,7 +177,16 @@ export default function EmployeeLeaves() {
                                     {leaveRequests.map((req, i) => (
                                         <tr key={req._id} className="hover:bg-muted/30 transition-colors">
                                             <td className="px-4 py-3 text-muted-foreground">{(requestsPage - 1) * requestsLimit + i + 1}</td>
-                                            <td className="px-4 py-3 font-medium">{leaveTypeName(req.type)}</td>
+                                            <td className="px-4 py-3 font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    {leaveTypeName(req.type)}
+                                                    {req.syncState === 'unsynced' && (
+                                                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold">
+                                                            Unsynced
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-3">{fmtDate(req.from)}</td>
                                             <td className="px-4 py-3">{fmtDate(req.to)}</td>
                                             <td className="px-4 py-3">

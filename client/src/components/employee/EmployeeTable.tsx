@@ -1,6 +1,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { Employee } from "@/types";
 
 interface EmployeeTableProps {
@@ -44,7 +45,16 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                     {employees.map((employee, index) => (
                         <TableRow key={employee._id || employee.id}>
                             <TableCell>{startIndex + index}</TableCell>
-                            <TableCell>{employee.firstName} {employee.lastName}</TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                    {employee.firstName} {employee.lastName}
+                                    {employee.syncState === 'unsynced' && (
+                                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold">
+                                            Unsynced
+                                        </Badge>
+                                    )}
+                                </div>
+                            </TableCell>
                             <TableCell>{employee.email}</TableCell>
                             <TableCell>{getDepartmentName(employee.deptId)}</TableCell>
                             <TableCell>{getSkillsList(employee.skills)}</TableCell>

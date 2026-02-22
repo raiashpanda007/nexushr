@@ -26,6 +26,7 @@ export interface AttendanceRecord {
     date: string;
     punches: Punch[];
     totalMinutes: number;
+    syncState?: "unsynced" | "synced";
 }
 
 export function useAttendance() {
@@ -76,20 +77,31 @@ export function useAttendance() {
             const queryParams: Record<string, string> = { page: currentPage.toString(), limit: limit.toString() };
             if (dateStr) queryParams.date = dateStr;
 
-            const { response } = await ApiCaller<any, any>({
-                requestType: 'GET',
-                paths: ['api', 'v1', 'attendance'],
-                queryParams
-            });
+            let apiAttendances: AttendanceRecord[] = [];
+            let apiTotal = 0;
 
-            if (response?.data) {
-                if (Array.isArray(response.data)) {
-                    setAttendances(response.data);
-                } else if (response.data.data) {
-                    setAttendances(response.data.data);
-                    setTotal(response.data.total || 0);
+            if (navigator.onLine) {
+                const { response } = await ApiCaller<any, any>({
+                    requestType: 'GET',
+                    paths: ['api', 'v1', 'attendance'],
+                    queryParams
+                });
+
+                if (response?.data) {
+                    if (Array.isArray(response.data)) {
+                        apiAttendances = response.data;
+                    } else if (response.data.data) {
+                        apiAttendances = response.data.data;
+                        apiTotal = response.data.total || 0;
+                    }
                 }
             }
+
+            const { default: offlineQueue } = await import("@/utils/DbManger");
+            const { data: mergedAttendances, addedCount } = await offlineQueue.getMergedData<AttendanceRecord>("ATTENDANCE", apiAttendances);
+
+            setAttendances(mergedAttendances);
+            setTotal(apiTotal + addedCount);
         } catch (error) {
             console.error('Error fetching attendances:', error);
         } finally {

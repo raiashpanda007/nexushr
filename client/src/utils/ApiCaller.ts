@@ -5,6 +5,8 @@ import type { RequestType } from "@/types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+import offlineQueue from "./DbManger";
+
 const INVALID_ERROR: ApiResponse<string> = {
     statusCode: 500,
     message: "Unexpected error occurred",
@@ -42,6 +44,36 @@ const onRefreshed = (tokenSuccess: boolean) => {
     refreshSubscribers = [];
 };
 
+function mapRequestToQueueItem(
+    paths: string[],
+    requestType: RequestType
+): { table: any; type: "CREATE" | "UPDATE" | "DELETE" } | null {
+    if (!["POST", "PUT", "DELETE", "PATCH"].includes(requestType.toUpperCase())) {
+        return null;
+    }
+
+    let type: "CREATE" | "UPDATE" | "DELETE" = "CREATE";
+    if (requestType.toUpperCase() === "POST") type = "CREATE";
+    if (requestType.toUpperCase() === "PUT" || requestType.toUpperCase() === "PATCH") type = "UPDATE";
+    if (requestType.toUpperCase() === "DELETE") type = "DELETE";
+
+    const pathStr = paths.join("/");
+    let table: any = null;
+
+    if (pathStr.includes("user/create-employee") || pathStr.includes("user/update-employee") || pathStr.includes("user/delete-employee")) table = "EMPLOYEE";
+    else if (pathStr.includes("attendance")) table = "ATTENDANCE";
+    else if (pathStr.includes("leaves/requests")) table = "LEAVEREQUEST";
+    else if (pathStr.includes("leaves/balances")) table = "LEAVEBALANCE";
+    else if (pathStr.includes("leaves/types")) table = "LEAVETYPE";
+    else if (pathStr.includes("salaries")) table = "SALARIES";
+    else if (pathStr.includes("payroll")) table = "PAYROLLS";
+    else if (pathStr.includes("departments")) table = "DEPARTMENTS";
+    else if (pathStr.includes("skills")) table = "SKILLS";
+
+    if (table) return { table, type };
+    return null;
+}
+
 async function ApiCaller<TBody, TResp>({
     requestType,
     paths = [],
@@ -75,12 +107,49 @@ async function ApiCaller<TBody, TResp>({
         },
     };
 
+    const handleOfflineQueue = async () => {
+        const queueMapping = mapRequestToQueueItem(paths, requestType);
+        if (queueMapping) {
+            const queueItem = {
+                id: crypto.randomUUID(),
+                table: queueMapping.table,
+                type: queueMapping.type,
+                payload: { paths, requestType, body, queryParams },
+                createdAt: new Date()
+            };
+
+            await offlineQueue.add(queueItem);
+
+            return {
+                ok: true,
+                response: {
+                    statusCode: 200,
+                    message: "Saved to offline queue",
+                    data: null as any,
+                    success: true,
+                    errors: []
+                }
+            } as ApiResult<TResp>;
+        }
+        return null;
+    };
+
+    if (!navigator.onLine) {
+        const offlineRes = await handleOfflineQueue();
+        if (offlineRes) return offlineRes;
+    }
+
     try {
         const res = await axios<ApiResponse<TResp>>(config);
         return { ok: true, response: res.data };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
+        if (err.code === "ERR_NETWORK" || err.message === "Network Error") {
+            const offlineRes = await handleOfflineQueue();
+            if (offlineRes) return offlineRes;
+        }
+
         if (axios.isAxiosError(err)) {
             const status = err.response?.status;
 

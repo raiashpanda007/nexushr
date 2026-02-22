@@ -47,6 +47,7 @@ export interface LeaveRequest {
     to: string;
     status: "PENDING" | "ACCEPTED" | "REJECTED";
     createdAt: string;
+    syncState?: "unsynced" | "synced";
 }
 
 export function useEmployeeLeaves() {
@@ -84,19 +85,27 @@ export function useEmployeeLeaves() {
     const fetchMyRequests = async (currentPage = 1) => {
         setRequestsLoading(true);
         try {
-            const result = await ApiCaller<null, any>({
-                requestType: "GET",
-                paths: ["api", "v1", "leaves", "requests"],
-                queryParams: { page: currentPage.toString(), limit: requestsLimit.toString() }
-            });
-            if (result.ok && result.response.data) {
-                // Backend always returns paginated wrapper { data: [...], total, page, limit }
-                const payload = result.response.data;
-                const items: LeaveRequest[] = Array.isArray(payload) ? payload : (payload.data ?? []);
-                const total: number = payload.total ?? items.length;
-                setLeaveRequests(items);
-                setRequestsTotal(total);
+            let apiRequests: LeaveRequest[] = [];
+            let apiTotal = 0;
+
+            if (navigator.onLine) {
+                const result = await ApiCaller<null, any>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "leaves", "requests"],
+                    queryParams: { page: currentPage.toString(), limit: requestsLimit.toString() }
+                });
+                if (result.ok && result.response.data) {
+                    const payload = result.response.data;
+                    apiRequests = Array.isArray(payload) ? payload : (payload.data ?? []);
+                    apiTotal = payload.total ?? apiRequests.length;
+                }
             }
+
+            const { default: offlineQueue } = await import("@/utils/DbManger");
+            const { data: mergedRequests, addedCount } = await offlineQueue.getMergedData<LeaveRequest>("LEAVEREQUEST", apiRequests);
+
+            setLeaveRequests(mergedRequests);
+            setRequestsTotal(apiTotal + addedCount);
         } finally {
             setRequestsLoading(false);
         }

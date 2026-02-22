@@ -56,19 +56,31 @@ export function useSalaries() {
 
     const fetchSalaries = async (currentPage = 1) => {
         try {
-            const { response } = await ApiCaller<any, any>({
-                requestType: 'GET',
-                paths: ['api', 'v1', 'salaries'],
-                queryParams: { page: currentPage.toString(), limit: limit.toString() }
-            });
-            if (response?.data) {
-                if (Array.isArray(response.data)) {
-                    setSalaries(response.data);
-                } else if (response.data.data) {
-                    setSalaries(response.data.data);
-                    setTotal(response.data.total || 0);
+            let apiSalaries: Salary[] = [];
+            let apiTotal = 0;
+
+            if (navigator.onLine) {
+                const { response } = await ApiCaller<any, any>({
+                    requestType: 'GET',
+                    paths: ['api', 'v1', 'salaries'],
+                    queryParams: { page: currentPage.toString(), limit: limit.toString() }
+                });
+                if (response?.data) {
+                    if (Array.isArray(response.data)) {
+                        apiSalaries = response.data;
+                    } else if (response.data.data) {
+                        apiSalaries = response.data.data;
+                        apiTotal = response.data.total || 0;
+                    }
                 }
             }
+
+            // Fetch Offline Queue and merge
+            const { default: offlineQueue } = await import("@/utils/DbManger");
+            const { data: mergedSalaries, addedCount } = await offlineQueue.getMergedData<Salary>("SALARIES", apiSalaries);
+
+            setSalaries(mergedSalaries);
+            setTotal(apiTotal + addedCount);
         } catch (error) {
             console.error('Error fetching salaries:', error);
         }

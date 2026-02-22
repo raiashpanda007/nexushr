@@ -21,6 +21,7 @@ export interface Employee {
     online?: boolean;
     createdAt?: string;
     updatedAt?: string;
+    syncState?: "unsynced" | "synced";
 }
 
 export interface UserState {
