@@ -24,9 +24,7 @@ const seed = async () => {
             { name: "Sales", description: "Responsible for revenue generation and client acquisition." },
             { name: "Finance", description: "Manages company finances and accounting." }
         ];
-        for (let i = departments.length + 1; i <= 50; i++) {
-            departments.push({ name: `Department ${i}`, description: `Auto generated department ${i}` });
-        }
+
 
         const skills = [
             { name: "Administration", category: "MANAGEMENT" },
@@ -39,9 +37,7 @@ const seed = async () => {
             { name: "Data Analysis", category: "TECHNICAL" }
         ];
         const categories = ["MANAGEMENT", "TECHNICAL", "SOFT_SKILL"];
-        for (let i = skills.length + 1; i <= 50; i++) {
-            skills.push({ name: `Skill ${i}`, category: categories[i % 3] });
-        }
+
 
         const leaveTypes = [
             { name: "Sick Leave", code: "SL", length: "FULL", isPaid: true },
@@ -49,9 +45,7 @@ const seed = async () => {
             { name: "Annual Leave", code: "AL", length: "FULL", isPaid: true },
             { name: "Loss Of Pay", code: "LOP", length: "FULL", isPaid: false }
         ];
-        for (let i = leaveTypes.length + 1; i <= 50; i++) {
-            leaveTypes.push({ name: `Leave Type ${i}`, code: `LT${i}`, length: i % 2 === 0 ? "FULL" : "HALF", isPaid: i % 2 !== 0 });
-        }
+
 
         // 1. Seed Departments
         console.log("\n--- Seeding Departments ---");

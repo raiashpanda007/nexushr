@@ -1,5 +1,5 @@
 import { ApiError, ApiResponse, AsyncHandler } from "../../../utils/index.js";
-import { UserModel } from "../models/users.models.js";
+import UserModel from "../models/users.models.js";
 import { SessionModel } from "../models/session.model.js";
 import Types from "../../../types/index.js"
 import { GenerateAccessToken, GenerateRefreshToken, VerifyRefreshToken } from "../Encrypts.js"
@@ -13,7 +13,7 @@ class UserController {
   CreateEmployee = AsyncHandler(async (req, res) => {
 
     if (!req.user || req.user.role != "HR") {
-      throw new ApiError(Types.Errors.Forbidden, "Only HR created by HR");
+      throw new ApiError(Types.Errors.Forbidden, "Only HR can create employee");
     }
 
 

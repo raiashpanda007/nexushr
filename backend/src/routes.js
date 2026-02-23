@@ -7,6 +7,7 @@ import SalariesRoutes from "./modules/Salaries/Routes/Salaries.routes.js";
 import PayrollRoutes from "./modules/Payroll/Routes/payroll.routes.js";
 import AttendanceRoutes from "./modules/Attendance/Routes/Attendance.routes.js";
 import SyncRoutes from "./modules/Sync/Routes/sync.routes.js";
+import SearchRoutes from "./modules/Search/Routes/search.routes.js";
 
 class Routes {
     constructor() {
@@ -19,6 +20,7 @@ class Routes {
         this.payrollRoutes = new PayrollRoutes().routes();
         this.attendanceRoutes = new AttendanceRoutes().routes();
         this.syncRoutes = new SyncRoutes().routes();
+        this.searchRoutes = new SearchRoutes().routes();
     }
     routes() {
         this.router.use("/", this.userRoutes);
@@ -29,6 +31,7 @@ class Routes {
         this.router.use("/payroll", this.payrollRoutes);
         this.router.use("/attendance", this.attendanceRoutes);
         this.router.use("/sync", this.syncRoutes);
+        this.router.use("/search", this.searchRoutes);
         return this.router;
     }
 }

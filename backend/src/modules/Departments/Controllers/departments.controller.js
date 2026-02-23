@@ -1,4 +1,4 @@
-import { DepartmentModal } from "../Models/departments.models.js";
+import DepartmentModal from "../Models/departments.models.js";
 import { ApiError, AsyncHandler, ApiResponse } from "../../../utils/index.js"
 import Types from "../../../types/index.js"
 class DepartmentsController {

@@ -38,14 +38,15 @@ export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existin
     const fetchUsers = async () => {
         setLoadingUsers(true);
         try {
-            const result = await ApiCaller<null, User[]>({
+            const result = await ApiCaller<null, { data: User[] }>({
                 requestType: "GET",
                 paths: ["api", "v1", "user", "get-users"],
             });
 
             if (result.ok && result.response.data) {
                 const existingUserIds = new Set(existingBalances.map(b => b.userId));
-                const usersWithoutBalance = result.response.data.filter(u => !existingUserIds.has(u._id));
+                console.log("::: existingUserIds ::: ", result)
+                const usersWithoutBalance = result.response.data.data.filter(u => !existingUserIds.has(u._id));
                 setUsers(usersWithoutBalance);
             }
         } catch (error) {

@@ -32,6 +32,13 @@ const LeaveTypeSchema = new mongoose.Schema(
   }
 )
 
+
+LeaveTypeSchema.index({
+  name: "text",
+  code: "text",
+})
+
+
 const LeaveTypeModal = mongoose.model("LeaveTypes", LeaveTypeSchema);
 
 

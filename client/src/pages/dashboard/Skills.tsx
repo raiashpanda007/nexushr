@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import SkillTable from "@/components/skills/SkillTable";
 import SkillModal from "@/components/skills/SkillModal";
 import { useSkills } from "@/hooks/Skills/useSkills";
@@ -13,6 +14,8 @@ export default function Skills() {
         setPage,
         total,
         limit,
+        searchQuery,
+        setSearchQuery,
         handleAddSkill,
         handleEditSkill,
         handleDeleteSkill,
@@ -24,7 +27,15 @@ export default function Skills() {
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">Skills Management</h1>
-                <Button onClick={handleAddSkill}>Add Skill</Button>
+                <div className="flex items-center gap-4">
+                    <Input
+                        placeholder="Search skills..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-64"
+                    />
+                    <Button onClick={handleAddSkill}>Add Skill</Button>
+                </div>
             </div>
 
             <div className="bg-white rounded-lg shadow">

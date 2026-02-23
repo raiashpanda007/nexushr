@@ -22,5 +22,11 @@ const DepartmentSchema = new mongoose.Schema(
 );
 
 
+DepartmentSchema.index({
+  name: "text",
 
-export const DepartmentModal = mongoose.model("Departments", DepartmentSchema);
+})
+
+
+const DepartmentModal = mongoose.model("Departments", DepartmentSchema);
+export default DepartmentModal

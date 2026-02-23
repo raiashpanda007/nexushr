@@ -1,10 +1,10 @@
 import { z as zod } from "zod";
 export const CreateEmployeValidationSchema = zod.object({
-  email: zod.email(),
-  firstName: zod.string().min(1),
-  lastName: zod.string(),
-  password: zod.string().min(8),
-  deptId: zod.string(),
+  email: zod.email().trim(),
+  firstName: zod.string().min(1).trim(),
+  lastName: zod.string().trim(),
+  password: zod.string().min(8).trim(),
+  deptId: zod.string().trim(),
   profilePhoto: zod.string().optional(),
   note: zod.string().optional(),
   skills: zod.array(zod.string())

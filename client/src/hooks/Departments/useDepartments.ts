@@ -12,34 +12,55 @@ export function useDepartments() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedDept, setSelectedDept] = useState<Department | null>(null);
     const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     // Pagination
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 10;
 
-    const fetchDepartments = async (currentPage = 1) => {
+    const fetchDepartments = async (currentPage = 1, query: string = "") => {
         setLoading(true);
         try {
             let apiDepartments: Department[] = [];
             let apiTotal = 0;
 
             if (navigator.onLine) {
-                const result = await ApiCaller<null, any>({
-                    requestType: "GET",
-                    paths: ["api", "v1", "departments"],
-                    queryParams: { page: currentPage.toString(), limit: limit.toString() }
-                });
+                if (query.trim()) {
+                    const result = await ApiCaller<null, any>({
+                        requestType: "GET",
+                        paths: ["api", "v1", "search", "departments"],
+                        queryParams: { query: query.trim() }
+                    });
 
-                if (result.ok) {
-                    if (Array.isArray(result.response.data)) {
-                        apiDepartments = result.response.data;
-                    } else if (result.response.data?.data) {
-                        apiDepartments = result.response.data.data;
-                        apiTotal = result.response.data.total || 0;
+                    if (result.ok) {
+                        const responseData = result.response.data;
+                        if (Array.isArray(responseData)) {
+                            apiDepartments = responseData;
+                        } else if (responseData && responseData.data) {
+                            apiDepartments = responseData.data;
+                        }
+                        apiTotal = apiDepartments.length;
+                    } else {
+                        console.error("Failed to search departments:", result.response.message);
                     }
                 } else {
-                    console.error("Failed to fetch departments:", result.response.message);
+                    const result = await ApiCaller<null, any>({
+                        requestType: "GET",
+                        paths: ["api", "v1", "departments"],
+                        queryParams: { page: currentPage.toString(), limit: limit.toString() }
+                    });
+
+                    if (result.ok) {
+                        if (Array.isArray(result.response.data)) {
+                            apiDepartments = result.response.data;
+                        } else if (result.response.data?.data) {
+                            apiDepartments = result.response.data.data;
+                            apiTotal = result.response.data.total || 0;
+                        }
+                    } else {
+                        console.error("Failed to fetch departments:", result.response.message);
+                    }
                 }
             }
 
@@ -53,8 +74,11 @@ export function useDepartments() {
     };
 
     useEffect(() => {
-        fetchDepartments(page);
-    }, [page]);
+        const timeoutId = setTimeout(() => {
+            fetchDepartments(page, searchQuery);
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [page, searchQuery]);
 
     const handleAddDept = () => {
         setSelectedDept(null);
@@ -75,7 +99,7 @@ export function useDepartments() {
                 paths: ["api", "v1", "departments", id],
             });
             if (result.ok) {
-                fetchDepartments(page);
+                fetchDepartments(page, searchQuery);
             } else {
                 alert("Failed to delete: " + result.response.message);
             }
@@ -90,7 +114,7 @@ export function useDepartments() {
     };
 
     const handleSuccess = () => {
-        fetchDepartments(page);
+        fetchDepartments(page, searchQuery);
     };
 
     return {
@@ -102,6 +126,8 @@ export function useDepartments() {
         setPage,
         total,
         limit,
+        searchQuery,
+        setSearchQuery,
         handleAddDept,
         handleEditDept,
         handleDeleteDept,

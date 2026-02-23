@@ -91,9 +91,17 @@ UserSchema.pre("save", async function () {
 
 
 
+UserSchema.index({
+  firstName: "text",
+  lastName: "text",
+  email: "text",
+  role: "text",
+})
 
 
 
+const UserModel = mongoose.model("Users", UserSchema);
 
-export const UserModel = mongoose.model("Users", UserSchema);
+
+export default UserModel
 

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import DepartmentTable from "@/components/departments/DepartmentTable";
 import DepartmentModal from "@/components/departments/DepartmentModal";
 import { useDepartments } from "@/hooks/Departments/useDepartments";
@@ -13,6 +14,8 @@ export default function Departments() {
         setPage,
         total,
         limit,
+        searchQuery,
+        setSearchQuery,
         handleAddDept,
         handleEditDept,
         handleDeleteDept,
@@ -24,7 +27,15 @@ export default function Departments() {
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">Department Management</h1>
-                <Button onClick={handleAddDept}>Add Department</Button>
+                <div className="flex items-center gap-4">
+                    <Input
+                        placeholder="Search departments..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-64"
+                    />
+                    <Button onClick={handleAddDept}>Add Department</Button>
+                </div>
             </div>
 
             <div className="bg-white rounded-lg shadow">

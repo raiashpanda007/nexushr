@@ -21,6 +21,13 @@ const SkillSchema = new mongoose.Schema(
   })
 
 
+
+
+SkillSchema.index({
+  name: "text",
+  category: "text",
+})
+
 const SkillModal = mongoose.model("Skills", SkillSchema);
 
 export default SkillModal;

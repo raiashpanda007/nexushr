@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import EmployeeTable from "@/components/employee/EmployeeTable";
 import EmployeeModal from "@/components/employee/EmployeeModal";
 import { useEmployee } from "@/hooks/Employee/useEmployee";
@@ -10,6 +11,8 @@ export default function Employee() {
         setPage,
         total,
         limit,
+        searchQuery,
+        setSearchQuery,
         isModalOpen,
         selectedEmployee,
         loading,
@@ -24,7 +27,15 @@ export default function Employee() {
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">Employee Management</h1>
-                <Button onClick={handleAddEmployee}>Add Employee</Button>
+                <div className="flex items-center gap-4">
+                    <Input
+                        placeholder="Search employees..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-64"
+                    />
+                    <Button onClick={handleAddEmployee}>Add Employee</Button>
+                </div>
             </div>
 
             <div className="bg-white rounded-lg shadow">

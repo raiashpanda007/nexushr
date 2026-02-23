@@ -12,34 +12,55 @@ export function useSkills() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
     const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     // Pagination
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 10;
 
-    const fetchSkills = async (currentPage = 1) => {
+    const fetchSkills = async (currentPage = 1, query: string = "") => {
         setLoading(true);
         try {
             let apiSkills: Skill[] = [];
             let apiTotal = 0;
 
             if (navigator.onLine) {
-                const result = await ApiCaller<null, any>({
-                    requestType: "GET",
-                    paths: ["api", "v1", "skills"],
-                    queryParams: { page: currentPage.toString(), limit: limit.toString() }
-                });
+                if (query.trim()) {
+                    const result = await ApiCaller<null, any>({
+                        requestType: "GET",
+                        paths: ["api", "v1", "search", "skills"],
+                        queryParams: { query: query.trim() }
+                    });
 
-                if (result.ok) {
-                    if (Array.isArray(result.response.data)) {
-                        apiSkills = result.response.data;
-                    } else if (result.response.data?.data) {
-                        apiSkills = result.response.data.data;
-                        apiTotal = result.response.data.total || 0;
+                    if (result.ok) {
+                        const responseData = result.response.data;
+                        if (Array.isArray(responseData)) {
+                            apiSkills = responseData;
+                        } else if (responseData && responseData.data) {
+                            apiSkills = responseData.data;
+                        }
+                        apiTotal = apiSkills.length;
+                    } else {
+                        console.error("Failed to search skills:", result.response.message);
                     }
                 } else {
-                    console.error("Failed to fetch skills:", result.response.message);
+                    const result = await ApiCaller<null, any>({
+                        requestType: "GET",
+                        paths: ["api", "v1", "skills"],
+                        queryParams: { page: currentPage.toString(), limit: limit.toString() }
+                    });
+
+                    if (result.ok) {
+                        if (Array.isArray(result.response.data)) {
+                            apiSkills = result.response.data;
+                        } else if (result.response.data?.data) {
+                            apiSkills = result.response.data.data;
+                            apiTotal = result.response.data.total || 0;
+                        }
+                    } else {
+                        console.error("Failed to fetch skills:", result.response.message);
+                    }
                 }
             }
 
@@ -53,8 +74,11 @@ export function useSkills() {
     };
 
     useEffect(() => {
-        fetchSkills(page);
-    }, [page]);
+        const timeoutId = setTimeout(() => {
+            fetchSkills(page, searchQuery);
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [page, searchQuery]);
 
     const handleAddSkill = () => {
         setSelectedSkill(null);
@@ -75,7 +99,7 @@ export function useSkills() {
                 paths: ["api", "v1", "skills", id],
             });
             if (result.ok) {
-                fetchSkills(page);
+                fetchSkills(page, searchQuery);
             } else {
                 alert("Failed to delete: " + result.response.message);
             }
@@ -90,7 +114,7 @@ export function useSkills() {
     };
 
     const handleSuccess = () => {
-        fetchSkills(page);
+        fetchSkills(page, searchQuery);
     };
 
     return {
@@ -102,6 +126,8 @@ export function useSkills() {
         setPage,
         total,
         limit,
+        searchQuery,
+        setSearchQuery,
         handleAddSkill,
         handleEditSkill,
         handleDeleteSkill,

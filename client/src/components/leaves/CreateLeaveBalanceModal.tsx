@@ -35,13 +35,9 @@ export default function CreateLeaveBalanceModal({
         handleSave
     } = useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existingBalances });
 
-    // Check LeaveBalance.types.js again.
-    // CreateLeaveBalanceValidationSchema: leaves: zod.array(zod.object({ types: zod.string(), amount: zod.number() }))
-    // So backend expects "types" key for the leave type ID. 
-
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[800px]">
                 <DialogHeader>
                     <DialogTitle>Create Leave Balance</DialogTitle>
                     <DialogDescription>
