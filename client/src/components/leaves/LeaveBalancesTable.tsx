@@ -16,7 +16,6 @@ export interface UserLeaveBalance {
     email: string;
     department?: string;
     balances: LeaveBalanceEntry[];
-    syncState?: "unsynced" | "synced";
 }
 
 interface LeaveBalancesTableProps {
@@ -47,14 +46,7 @@ export default function LeaveBalancesTable({ users, onEdit }: LeaveBalancesTable
                             <TableCell>{idx + 1}</TableCell>
                             <TableCell>
                                 <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium">{user.firstName} {user.lastName}</span>
-                                        {user.syncState === 'unsynced' && (
-                                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold h-4">
-                                                Unsynced
-                                            </Badge>
-                                        )}
-                                    </div>
+                                    <span className="font-medium">{user.firstName} {user.lastName}</span>
                                     <span className="text-xs text-muted-foreground">{user.email}</span>
                                 </div>
                             </TableCell>

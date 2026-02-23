@@ -31,7 +31,6 @@ interface Salary {
     hra: number;
     lta: number;
     createdAt: string;
-    syncState?: "unsynced" | "synced";
 }
 
 interface SalaryTableProps {
@@ -76,14 +75,7 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                         {salaries.map((salary) => (
                             <TableRow key={salary._id}>
                                 <TableCell className="font-medium">
-                                    <div className="flex items-center gap-2">
-                                        {salary.userId?.firstName} {salary.userId?.lastName}
-                                        {salary.syncState === 'unsynced' && (
-                                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold">
-                                                Unsynced
-                                            </Badge>
-                                        )}
-                                    </div>
+                                    {salary.userId?.firstName} {salary.userId?.lastName}
                                 </TableCell>
                                 <TableCell>{salary.userId?.email}</TableCell>
                                 <TableCell>

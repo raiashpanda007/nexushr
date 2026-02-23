@@ -75,12 +75,8 @@ export function useSalaries() {
                 }
             }
 
-            // Fetch Offline Queue and merge
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedSalaries, addedCount } = await offlineQueue.getMergedData<Salary>("SALARIES", apiSalaries);
-
-            setSalaries(mergedSalaries);
-            setTotal(apiTotal + addedCount);
+            setSalaries(apiSalaries);
+            setTotal(apiTotal);
         } catch (error) {
             console.error('Error fetching salaries:', error);
         }

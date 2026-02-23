@@ -43,12 +43,8 @@ export function useSkills() {
                 }
             }
 
-            // Fetch Offline Queue and merge
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedSkills, addedCount } = await offlineQueue.getMergedData<Skill>("SKILLS", apiSkills);
-
-            setSkills(mergedSkills);
-            setTotal(apiTotal + addedCount);
+            setSkills(apiSkills);
+            setTotal(apiTotal);
         } catch (error) {
             console.error("Error fetching skills:", error);
         } finally {

@@ -21,7 +21,7 @@ interface Salary {
 
 export interface PayrollItem {
     _id: string;
-    user: string;
+    user: any;
     salary: any;
     bonus: { reason: string; amount: number }[];
     deduction: { reason: string; amount: number }[];
@@ -42,22 +42,32 @@ export function usePayroll() {
     const [filterYear, setFilterYear] = useState<string>('');
     const [filterMonth, setFilterMonth] = useState<string>('');
 
+    const [usersPage, setUsersPage] = useState(1);
+    const [usersTotal, setUsersTotal] = useState(0);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const limit = 10;
+    const usersLimit = 10;
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (currentPage = 1) => {
         if (!isHR) return;
         try {
             const { response } = await ApiCaller<any, User[]>({
                 requestType: 'GET',
-                paths: ['api', 'v1', 'user', 'get-users']
+                paths: ['api', 'v1', 'user', 'get-users'],
+                queryParams: { limit: usersLimit.toString(), page: currentPage.toString() }
             });
-            if (response?.data && Array.isArray(response.data)) {
-                setUsers(response.data);
+            if (response?.data) {
+                if (Array.isArray(response.data)) {
+                    setUsers(response.data);
+                } else if ((response.data as any).data && Array.isArray((response.data as any).data)) {
+                    setUsers((response.data as any).data);
+                    setUsersTotal((response.data as any).total || 0);
+                }
             }
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -103,12 +113,8 @@ export function usePayroll() {
                 }
             }
 
-            // Fetch Offline Queue and merge
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedPayrolls, addedCount } = await offlineQueue.getMergedData<PayrollItem>("PAYROLLS", apiPayrolls);
-
-            setPayrolls(mergedPayrolls);
-            setTotal(apiTotal + addedCount);
+            setPayrolls(apiPayrolls);
+            setTotal(apiTotal);
         } catch (error) {
             console.error('Error fetching payrolls:', error);
         }
@@ -137,6 +143,10 @@ export function usePayroll() {
         fetchPayrolls(page);
     }, [page]);
 
+    useEffect(() => {
+        fetchUsers(usersPage);
+    }, [usersPage]);
+
     const handleOpenModal = (user: User) => {
         setSelectedUser(user);
         setIsModalOpen(true);
@@ -164,17 +174,21 @@ export function usePayroll() {
         return true;
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    const getUserName = (userId: string) => {
+    const getUserName = (userId: any) => {
+        if (!userId) return 'Unknown User';
+        if (typeof userId === 'object' && userId.firstName) {
+            return `${userId.firstName} ${userId.lastName}`;
+        }
         const u = users.find(x => x._id === userId);
         return u ? `${u.firstName} ${u.lastName}` : 'Unknown User';
     };
 
     const calculateTotals = (payroll: PayrollItem) => {
-        const totalBonus = (payroll.bonus || []).reduce((acc, curr) => acc + curr.amount, 0);
-        const totalDeduction = (payroll.deduction || []).reduce((acc, curr) => acc + curr.amount, 0);
+        const totalBonus = (payroll.bonus || []).reduce((acc, curr) => acc + Math.abs(Number(curr.amount) || 0), 0);
+        const totalDeduction = (payroll.deduction || []).reduce((acc, curr) => acc + Math.abs(Number(curr.amount) || 0), 0);
         let baseSalary = 0;
         if (payroll.salary && typeof payroll.salary === 'object') {
-            baseSalary = (payroll.salary.base || 0) + (payroll.salary.hra || 0) + (payroll.salary.lta || 0);
+            baseSalary = Number(payroll.salary.base || 0) + Number(payroll.salary.hra || 0) + Number(payroll.salary.lta || 0);
         }
         const netSalary = baseSalary + totalBonus - totalDeduction;
         return { totalBonus, totalDeduction, baseSalary, netSalary };
@@ -199,6 +213,10 @@ export function usePayroll() {
         setPage,
         total,
         limit,
+        usersPage,
+        setUsersPage,
+        usersTotal,
+        usersLimit,
         handleOpenModal,
         handleModalSuccess,
         filteredUsers,

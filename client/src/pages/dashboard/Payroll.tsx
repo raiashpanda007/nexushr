@@ -56,6 +56,10 @@ const Payroll = () => {
         setPage,
         total,
         limit,
+        usersPage,
+        setUsersPage,
+        usersTotal,
+        usersLimit,
         handleOpenModal,
         handleModalSuccess,
         filteredUsers,
@@ -246,6 +250,31 @@ const Payroll = () => {
                                 </TableBody>
                             </Table>
                         </div>
+                        {usersTotal > 0 && !userSearchTerm && (
+                            <div className="p-4 flex justify-between items-center border-t border-gray-100">
+                                <div className="text-sm text-gray-500">
+                                    Showing {(usersPage - 1) * usersLimit + 1} to {Math.min(usersPage * usersLimit, usersTotal)} of {usersTotal}
+                                </div>
+                                <div className="flex space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setUsersPage(p => Math.max(1, p - 1))}
+                                        disabled={usersPage === 1}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setUsersPage(p => Math.min(Math.ceil(usersTotal / usersLimit), p + 1))}
+                                        disabled={usersPage === Math.ceil(usersTotal / usersLimit) || Math.ceil(usersTotal / usersLimit) === 0}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -331,12 +360,12 @@ const Payroll = () => {
                                                 <TableCell className="text-right">
                                                     <div className="flex flex-col items-end gap-1">
                                                         <div className="text-xs shadow-sm inline-flex items-center gap-2 px-2 py-1 rounded-md border border-gray-100 bg-white">
-                                                            <span className="text-gray-600 font-medium">Base: ${baseSalary}</span>
-                                                            <span className="text-green-600 font-medium">+{totalBonus}</span>
-                                                            <span className="text-red-500 font-medium">-{totalDeduction}</span>
+                                                            <span className="text-gray-600 font-medium">Base: ${baseSalary.toFixed(2)}</span>
+                                                            <span className="text-green-600 font-medium">+{totalBonus.toFixed(2)}</span>
+                                                            <span className="text-red-500 font-medium">-{totalDeduction.toFixed(2)}</span>
                                                         </div>
                                                         <div className="font-bold px-1">
-                                                            ${netSalary}
+                                                            ${netSalary.toFixed(2)}
                                                         </div>
                                                     </div>
                                                 </TableCell>

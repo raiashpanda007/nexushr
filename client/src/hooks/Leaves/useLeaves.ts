@@ -90,11 +90,8 @@ export function useLeaves() {
                 }
             }
 
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedRequests, addedCount } = await offlineQueue.getMergedData<LeaveRequest>("LEAVEREQUEST", apiRequests);
-
-            setLeaveRequests(mergedRequests);
-            setRequestsTotal(apiTotal + addedCount);
+            setLeaveRequests(apiRequests);
+            setRequestsTotal(apiTotal);
         } catch (error) {
             console.error("Error fetching leave requests:", error);
         } finally {
@@ -125,11 +122,8 @@ export function useLeaves() {
                 }
             }
 
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedTypes, addedCount } = await offlineQueue.getMergedData<LeaveType>("LEAVETYPE", apiTypes);
-
-            setLeaveTypes(mergedTypes);
-            setLeaveTypesTotal(apiTotal + addedCount);
+            setLeaveTypes(apiTypes);
+            setLeaveTypesTotal(apiTotal);
         } catch (error) {
             console.error("Error fetching leave types:", error);
         } finally {
@@ -158,11 +152,8 @@ export function useLeaves() {
                 }
             }
 
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedBalances, addedCount } = await offlineQueue.getMergedData<UserLeaveBalance>("LEAVEBALANCE", apiBalances);
-
-            setUserBalances(mergedBalances);
-            setBalancesTotal(apiTotal + addedCount);
+            setUserBalances(apiBalances);
+            setBalancesTotal(apiTotal);
         } catch (error) {
             console.error("Error fetching leave balances:", error);
         } finally {

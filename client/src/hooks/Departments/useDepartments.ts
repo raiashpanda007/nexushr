@@ -43,12 +43,8 @@ export function useDepartments() {
                 }
             }
 
-            // Fetch Offline Queue and merge
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedDepartments, addedCount } = await offlineQueue.getMergedData<Department>("DEPARTMENTS", apiDepartments);
-
-            setDepartments(mergedDepartments);
-            setTotal(apiTotal + addedCount);
+            setDepartments(apiDepartments);
+            setTotal(apiTotal);
         } catch (error) {
             console.error("Error fetching departments:", error);
         } finally {

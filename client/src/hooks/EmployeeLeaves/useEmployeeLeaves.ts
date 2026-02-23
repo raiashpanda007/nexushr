@@ -101,11 +101,8 @@ export function useEmployeeLeaves() {
                 }
             }
 
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedRequests, addedCount } = await offlineQueue.getMergedData<LeaveRequest>("LEAVEREQUEST", apiRequests);
-
-            setLeaveRequests(mergedRequests);
-            setRequestsTotal(apiTotal + addedCount);
+            setLeaveRequests(apiRequests);
+            setRequestsTotal(apiTotal);
         } finally {
             setRequestsLoading(false);
         }

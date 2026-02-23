@@ -1,13 +1,11 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 interface Department {
     _id: string;
     name: string;
     description: string;
-    syncState?: "unsynced" | "synced";
 }
 
 interface DepartmentTableProps {
@@ -37,14 +35,7 @@ export default function DepartmentTable({ departments, onEdit, onDelete }: Depar
                         <TableRow key={dept._id}>
                             <TableCell>{index + 1}</TableCell>
                             <TableCell>
-                                <div className="flex items-center gap-2">
-                                    {dept.name}
-                                    {dept.syncState === 'unsynced' && (
-                                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold">
-                                            Unsynced
-                                        </Badge>
-                                    )}
-                                </div>
+                                {dept.name}
                             </TableCell>
                             <TableCell>{dept.description}</TableCell>
                             <TableCell className="text-right space-x-2">

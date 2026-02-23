@@ -46,12 +46,8 @@ export function useEmployee() {
                 }
             }
 
-            // Fetch Offline Queue and merge
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedEmployees, addedCount } = await offlineQueue.getMergedData<Employee>("EMPLOYEE", apiEmployees);
-
-            setEmployees(mergedEmployees);
-            setTotal(apiTotal + addedCount); // Approximate total
+            setEmployees(apiEmployees);
+            setTotal(apiTotal);
         } catch (error) {
             console.error("Error fetching employees:", error);
         } finally {

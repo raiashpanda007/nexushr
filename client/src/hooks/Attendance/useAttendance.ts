@@ -97,10 +97,53 @@ export function useAttendance() {
                 }
             }
 
-            const { default: offlineQueue } = await import("@/utils/DbManger");
-            const { data: mergedAttendances, addedCount } = await offlineQueue.getMergedData<AttendanceRecord>("ATTENDANCE", apiAttendances);
+            // Sync with local offline queue punches
+            const { default: OfflineQueue } = await import("@/utils/DbManger");
+            const offlinePunches = await OfflineQueue.getAllPunches();
+            let addedCount = 0;
 
-            setAttendances(mergedAttendances);
+            if (offlinePunches.length > 0) {
+                // Determine today's date for local punch grouping
+                const today = format(new Date(), 'yyyy-MM-dd');
+
+                // Check if today matches the currently filtered date
+                if (!dateStr || dateStr === today) {
+                    const existingRecordIdx = apiAttendances.findIndex(a =>
+                        a.user?._id === userDetails?.id && a.date === today
+                    );
+
+                    const punches = offlinePunches.map(p => ({
+                        type: p.type as "IN" | "OUT",
+                        time: new Date(p.createdAt).toISOString(),
+                    }));
+
+                    if (existingRecordIdx !== -1) {
+                        apiAttendances[existingRecordIdx] = {
+                            ...apiAttendances[existingRecordIdx],
+                            punches: [...apiAttendances[existingRecordIdx].punches, ...punches],
+                            syncState: 'unsynced'
+                        };
+                    } else if (userDetails) {
+                        // Create a new phantom record for today
+                        apiAttendances.unshift({
+                            _id: `offline-${Date.now()}`,
+                            user: {
+                                _id: userDetails.id,
+                                firstName: userDetails.firstName || '',
+                                lastName: userDetails.lastName || '',
+                                email: userDetails.email || ''
+                            },
+                            date: today,
+                            punches: punches,
+                            totalMinutes: 0,
+                            syncState: 'unsynced'
+                        } as AttendanceRecord);
+                        addedCount = 1;
+                    }
+                }
+            }
+
+            setAttendances(apiAttendances);
             setTotal(apiTotal + addedCount);
         } catch (error) {
             console.error('Error fetching attendances:', error);
@@ -108,6 +151,35 @@ export function useAttendance() {
             setLoading(false);
         }
     };
+
+    // Auto-flush queues when returning online
+    useEffect(() => {
+        const handleOnline = async () => {
+            if (userDetails) {
+                const { default: OfflineQueue } = await import("@/utils/DbManger");
+                await OfflineQueue.flushInBatches(async (batch) => {
+                    for (const item of batch) {
+                        try {
+                            await ApiCaller({
+                                requestType: 'POST',
+                                paths: ['api', 'v1', 'attendance'],
+                                body: {
+                                    userId: userDetails.id,
+                                    type: item.type
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Failed to sync punch', e);
+                        }
+                    }
+                });
+                fetchAttendances(filterDate, page);
+            }
+        };
+
+        window.addEventListener('online', handleOnline);
+        return () => window.removeEventListener('online', handleOnline);
+    }, [userDetails, filterDate, page]);
 
     const fetchAnalyticsData = async (monthStr: string) => {
         if (!isHR) return;
@@ -150,6 +222,13 @@ export function useAttendance() {
 
         setActionLoading(true);
         try {
+            if (!navigator.onLine) {
+                const { default: OfflineQueue } = await import("@/utils/DbManger");
+                await OfflineQueue.addPunch(type);
+                await fetchAttendances(filterDate);
+                return;
+            }
+
             const result = await ApiCaller<{ userId: string; type: string }, any>({
                 requestType: 'POST',
                 paths: ['api', 'v1', 'attendance'],

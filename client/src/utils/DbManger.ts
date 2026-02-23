@@ -1,55 +1,48 @@
 import { openDB } from "idb";
 import type { IDBPDatabase } from "idb";
 
-interface QueueItem<T = any> {
+export type PunchType = "IN" | "OUT";
+
+interface AttendanceQueueItem {
     id: string;
-    table: "EMPLOYEE" | "ATTENDANCE" | "LEAVEREQUEST" | "LEAVEBALANCE" | "LEAVETYPE" | "SALARIES" | "PAYROLLS" | "DEPARTMENTS" | "SKILLS";
-    type: "CREATE" | "UPDATE" | "DELETE";
-    payload: T;
-    createdAt: Date;
+    type: PunchType;
+    createdAt: number;
 }
 
-class OfflineQueueDB {
-    private dbName: string;
-    private storeName: string;
-    private version: number;
+class OfflineAttendanceQueue {
+    private dbName = "attendance-queue";
+    private storeName = "punches";
+    private version = 1;
 
     private db!: IDBPDatabase;
 
-    constructor() {
-        this.dbName = "offline-queue";
-        this.storeName = "queue";
-        this.version = 1;
-    }
-
     async init() {
         this.db = await openDB(this.dbName, this.version, {
-            upgrade: (db, _oldVersion, _newVersion, transaction) => {
-                let store;
-
+            upgrade: (db) => {
                 if (!db.objectStoreNames.contains(this.storeName)) {
-                    store = db.createObjectStore(this.storeName, {
+                    const store = db.createObjectStore(this.storeName, {
                         keyPath: "id",
                     });
-                } else {
-                    store = transaction.objectStore(this.storeName);
-                }
-                if (!store.indexNames.contains("table")) {
-                    store.createIndex("table", "table", { unique: false });
+
+                    store.createIndex("createdAt", "createdAt");
                 }
             },
         });
     }
 
-    async add<T>(item: QueueItem<T>) {
-        await this.db.add(this.storeName, item);
+    async addPunch(type: PunchType) {
+        await this.db.add(this.storeName, {
+            id: crypto.randomUUID(),
+            type,
+            createdAt: Date.now(),
+        });
     }
 
-    async getAll(): Promise<QueueItem[]> {
-        return this.db.getAll(this.storeName);
+    async getAllPunches(): Promise<AttendanceQueueItem[]> {
+        return this.db.getAllFromIndex(this.storeName, "createdAt");
     }
 
-    async delete(id: number) {
+    async deletePunch(id: string) {
         await this.db.delete(this.storeName, id);
     }
 
@@ -57,47 +50,30 @@ class OfflineQueueDB {
         await this.db.clear(this.storeName);
     }
 
-    async getMergedData<T extends { _id?: string; id?: string; syncState?: "unsynced" | "synced" }>(
-        tableName: QueueItem["table"],
-        apiData: T[]
-    ): Promise<{ data: T[]; addedCount: number }> {
-        const queueItems = await this.getAll();
-        const tableQueue = queueItems.filter((q) => q.table === tableName);
+    async flushInBatches(
+        sendBatchToServer: (batch: AttendanceQueueItem[]) => Promise<void>,
+        batchSize = 10
+    ) {
+        const punches = await this.getAllPunches();
 
-        let mergedData = [...apiData];
-        let addedCount = 0;
+        for (let i = 0; i < punches.length; i += batchSize) {
+            const batch = punches.slice(i, i + batchSize);
 
-        tableQueue.forEach((item) => {
-            if (item.type === "CREATE") {
-                const record = item.payload.body as T;
-                mergedData.unshift({
-                    ...record,
-                    _id: item.id,
-                    id: item.id, // temporary ID for UI mapping
-                    syncState: "unsynced"
-                });
-                addedCount++;
-            } else if (item.type === "UPDATE") {
-                const recordId = item.payload.paths[item.payload.paths.length - 1];
-                const index = mergedData.findIndex((e) => e._id === recordId || e.id === recordId);
-                if (index !== -1) {
-                    mergedData[index] = {
-                        ...mergedData[index],
-                        ...item.payload.body,
-                        syncState: "unsynced"
-                    };
+            try {
+                await sendBatchToServer(batch);
+
+                for (const item of batch) {
+                    await this.deletePunch(item.id);
                 }
-            } else if (item.type === "DELETE") {
-                const recordId = item.payload.paths[item.payload.paths.length - 1];
-                mergedData = mergedData.filter((e) => e._id !== recordId && e.id !== recordId);
+            } catch (err) {
+                console.error("Batch failed — stopping sync", err);
+                break;
             }
-        });
-
-        return { data: mergedData, addedCount };
+        }
     }
 }
 
+const attendanceQueue = new OfflineAttendanceQueue();
+await attendanceQueue.init();
 
-const offlineQueue = new OfflineQueueDB();
-await offlineQueue.init();
-export default offlineQueue;
+export default attendanceQueue;
