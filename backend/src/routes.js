@@ -6,6 +6,7 @@ import LeavesRouter from "./modules/Leaves/Leave.Routes.js";
 import SalariesRoutes from "./modules/Salaries/Routes/Salaries.routes.js";
 import PayrollRoutes from "./modules/Payroll/Routes/payroll.routes.js";
 import AttendanceRoutes from "./modules/Attendance/Routes/Attendance.routes.js";
+import SyncRoutes from "./modules/Sync/Routes/sync.routes.js";
 
 class Routes {
     constructor() {
@@ -17,6 +18,7 @@ class Routes {
         this.salariesRoutes = new SalariesRoutes().routes();
         this.payrollRoutes = new PayrollRoutes().routes();
         this.attendanceRoutes = new AttendanceRoutes().routes();
+        this.syncRoutes = new SyncRoutes().routes();
     }
     routes() {
         this.router.use("/", this.userRoutes);
@@ -26,6 +28,7 @@ class Routes {
         this.router.use("/salaries", this.salariesRoutes);
         this.router.use("/payroll", this.payrollRoutes);
         this.router.use("/attendance", this.attendanceRoutes);
+        this.router.use("/sync", this.syncRoutes);
         return this.router;
     }
 }

@@ -49,28 +49,6 @@ class OfflineAttendanceQueue {
     async clear() {
         await this.db.clear(this.storeName);
     }
-
-    async flushInBatches(
-        sendBatchToServer: (batch: AttendanceQueueItem[]) => Promise<void>,
-        batchSize = 10
-    ) {
-        const punches = await this.getAllPunches();
-
-        for (let i = 0; i < punches.length; i += batchSize) {
-            const batch = punches.slice(i, i + batchSize);
-
-            try {
-                await sendBatchToServer(batch);
-
-                for (const item of batch) {
-                    await this.deletePunch(item.id);
-                }
-            } catch (err) {
-                console.error("Batch failed — stopping sync", err);
-                break;
-            }
-        }
-    }
 }
 
 const attendanceQueue = new OfflineAttendanceQueue();

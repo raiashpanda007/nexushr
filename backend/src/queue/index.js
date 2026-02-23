@@ -1,10 +1,12 @@
+
 import IORedis from "ioredis";
 import { Queue } from "bullmq";
+import { Cfg } from "../config/env.js";
 
 class RedisClient {
-    private static client: IORedis | null = null;
+    static client = null;
 
-    static init(host: string, port: number) {
+    static init(host, port) {
         if (!RedisClient.client) {
             RedisClient.client = new IORedis({
                 host,
@@ -16,16 +18,20 @@ class RedisClient {
         return RedisClient.client;
     }
 
-    static getClient(): IORedis {
+    static getClient() {
         if (!RedisClient.client) {
-            throw new Error("Redis not initialized. Call RedisClient.init()");
+            // Auto-initialize using env config if not already done
+            RedisClient.init(Cfg.REDIS_HOST, Cfg.REDIS_PORT);
         }
         return RedisClient.client;
     }
 }
 
+export const OfflineBatchQueue = new Queue("offline-batch", {
+    connection: RedisClient.getClient(),
+});
 
-const OfflineBatchQueue = new Queue("offline-batch", {
-    connection: RedisClient.getClient()
-})
 
+
+
+export default RedisClient;

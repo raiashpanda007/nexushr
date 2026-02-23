@@ -10,7 +10,9 @@ const EnvSchema = zod.object({
   MONGO_DB_URL: zod.string().min(1),
   DB_NAME: zod.string().min(1),
   REFRESH_TOKEN: zod.string().min(1),
-  REDIS_URL: zod.string().min(1)
+  REDIS_URL: zod.string().min(1),
+  REDIS_HOST: zod.string().min(1),
+  REDIS_PORT: zod.coerce.number().int().positive(),
 });
 
 class Config {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { format, startOfWeek, startOfMonth } from 'date-fns';
 import ApiCaller from '@/utils/ApiCaller';
@@ -152,28 +152,37 @@ export function useAttendance() {
         }
     };
 
+    // Spawn a Web Worker to flush the offline queue to the backend
+    const workerRef = useRef<Worker | null>(null);
+
+    const triggerSyncWorker = (onComplete?: () => void) => {
+        if (workerRef.current) {
+            workerRef.current.terminate();
+        }
+        const worker = new Worker(
+            new URL('../../workers/syncQueue.worker.ts', import.meta.url),
+            { type: 'module' }
+        );
+        workerRef.current = worker;
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        worker.postMessage({ type: 'FLUSH', baseUrl });
+        worker.onmessage = (e) => {
+            if (e.data?.type === 'FLUSH_COMPLETE') {
+                console.log('[SyncWorker] Offline punches synced successfully.');
+                onComplete?.();
+            } else if (e.data?.type === 'FLUSH_ERROR') {
+                console.error('[SyncWorker] Sync error:', e.data.error);
+            }
+            worker.terminate();
+            workerRef.current = null;
+        };
+    };
+
     // Auto-flush queues when returning online
     useEffect(() => {
-        const handleOnline = async () => {
+        const handleOnline = () => {
             if (userDetails) {
-                const { default: OfflineQueue } = await import("@/utils/DbManger");
-                await OfflineQueue.flushInBatches(async (batch) => {
-                    for (const item of batch) {
-                        try {
-                            await ApiCaller({
-                                requestType: 'POST',
-                                paths: ['api', 'v1', 'attendance'],
-                                body: {
-                                    userId: userDetails.id,
-                                    type: item.type
-                                }
-                            });
-                        } catch (e) {
-                            console.error('Failed to sync punch', e);
-                        }
-                    }
-                });
-                fetchAttendances(filterDate, page);
+                triggerSyncWorker(() => fetchAttendances(filterDate, page));
             }
         };
 

@@ -76,12 +76,12 @@ class PayrollController {
                 filter.year = year;
                 if (month) {
                     filter.month = month;
-                    const payroll = await this.repo.findOne(filter).populate("salary");
+                    const payroll = await this.repo.findOne(filter).populate("salary").populate("user", "firstName lastName email profilePhoto");
                     return res.status(200).json(new ApiResponse(200, payroll, "Payroll fetched successfully"));
                 }
             }
 
-            let queryOptions = this.repo.find(filter).populate("salary");
+            let queryOptions = this.repo.find(filter).populate("salary").populate("user", "firstName lastName email profilePhoto");
             if (limitQuery !== 'all') {
                 queryOptions = queryOptions.skip(skip).limit(limit);
             }
@@ -91,7 +91,7 @@ class PayrollController {
             return res.status(200).json(new ApiResponse(200, { data: payrolls, total, page, limit: limitQuery === 'all' ? total : limit }, "Payroll fetched successfully"));
         }
 
-        const payroll = await this.repo.findById(id).populate("salary")
+        const payroll = await this.repo.findById(id).populate("salary").populate("user", "firstName lastName email profilePhoto");
 
         if (req.user.role != "HR" && payroll.user != req.user.id) {
             throw new ApiError(Types.Errors.NotFound, "Payroll not found");
