@@ -207,6 +207,8 @@ class UserController {
   });
 
   RefreshAccessToken = AsyncHandler(async (req, res) => {
+
+    console.log("Refresh Token hit :: ");
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       throw new ApiError(Types.Errors.Unauthroized, "Unauthorized");

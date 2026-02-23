@@ -9,7 +9,7 @@ export interface UserDetails {
 
 export interface Employee {
     _id: string;
-    id?: string; // Fallback if sometimes mapped
+    id?: string;
     firstName: string;
     lastName: string;
     email: string;

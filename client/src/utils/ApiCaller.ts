@@ -119,12 +119,13 @@ async function ApiCaller<TBody, TResp>({
                     return new Promise((resolve) => {
                         subscribeToRefresh((tokenSuccess) => {
                             if (tokenSuccess) {
+                                // retry: false prevents another refresh attempt for this queued request
                                 resolve(ApiCaller({
                                     requestType,
                                     paths,
                                     body,
                                     queryParams,
-                                    retry: true,
+                                    retry: false,
                                     _isRetry: true
                                 }));
                             } else {
@@ -137,30 +138,31 @@ async function ApiCaller<TBody, TResp>({
                 isRefreshing = true;
 
                 try {
-                    const refreshRes = await axios.post(`${BASE_URL}/api/v1/auth/refresh-access-token`, {}, {
+                    // axios throws on non-2xx, so a successful response here is always 200
+                    await axios.post(`${BASE_URL}/api/v1/auth/refresh-access-token`, {}, {
                         withCredentials: true
                     });
 
-                    if (refreshRes.status === 200) {
-                        isRefreshing = false;
-                        onRefreshed(true);
-                        return ApiCaller({
-                            requestType,
-                            paths,
-                            body,
-                            queryParams,
-                            retry: true,
-                            _isRetry: true
-                        });
-                    } else {
-                        isRefreshing = false;
-                        onRefreshed(false);
-                        return { ok: false, response: err.response?.data };
-                    }
-                } catch {
+                    isRefreshing = false;
+                    onRefreshed(true);
+                    // retry: false — we do not want to refresh again if this retry also gets a 401
+                    return ApiCaller({
+                        requestType,
+                        paths,
+                        body,
+                        queryParams,
+                        retry: false,
+                        _isRetry: true
+                    });
+                } catch (refreshErr: any) {
                     isRefreshing = false;
                     onRefreshed(false);
-                    return { ok: false, response: err.response?.data };
+                    // Refresh token is expired or invalid — redirect to login
+                    window.location.href = "/login";
+                    return {
+                        ok: false,
+                        response: refreshErr.response?.data || INVALID_ERROR
+                    };
                 }
             }
 

@@ -1,6 +1,6 @@
-import type { UserDetails, UserState, Employee } from "./slices/userSlices.types"
+import type { UserDetails, UserState } from "./slices/userSlices.types"
 
-export type { UserDetails, UserState, Employee }
+export type { UserDetails, UserState }
 
 
 export interface Department {
@@ -12,5 +12,23 @@ export interface Skill {
     _id: string;
     name: string;
 }
+
+export interface Employee {
+    _id: string;
+    id?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    profilePhoto?: string;
+    deptId?: string | { _id: string; name: string };
+    skills?: (string | { _id: string; name: string })[];
+    note?: string;
+    online?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+    syncState?: "unsynced" | "synced";
+}
+
 
 export type RequestType = "POST" | "GET" | "PUT" | "PATCH" | "DELETE"
