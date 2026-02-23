@@ -44,6 +44,8 @@ export function usePayroll() {
 
     const [usersPage, setUsersPage] = useState(1);
     const [usersTotal, setUsersTotal] = useState(0);
+    const [payrollPage, setPayrollPage] = useState(1);
+    const [payrollTotal, setPayrollTotal] = useState(0);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -52,6 +54,7 @@ export function usePayroll() {
     const [total, setTotal] = useState(0);
     const limit = 10;
     const usersLimit = 10;
+    const payrollLimit = 10;
 
     const fetchUsers = async (currentPage = 1) => {
         if (!isHR) return;
@@ -77,12 +80,17 @@ export function usePayroll() {
     const fetchSalaries = async () => {
         if (!isHR) return;
         try {
-            const { response } = await ApiCaller<any, Salary[]>({
+            const { response } = await ApiCaller<any, any>({
                 requestType: 'GET',
-                paths: ['api', 'v1', 'salaries']
+                paths: ['api', 'v1', 'salaries'],
+                queryParams: { limit: 'all' }
             });
-            if (response?.data && Array.isArray(response.data)) {
-                setSalaries(response.data);
+            if (response?.data) {
+                if (Array.isArray(response.data)) {
+                    setSalaries(response.data);
+                } else if (response.data.data && Array.isArray(response.data.data)) {
+                    setSalaries(response.data.data);
+                }
             }
         } catch (error) {
             console.error('Error fetching salaries:', error);
@@ -98,7 +106,7 @@ export function usePayroll() {
                 const { response } = await ApiCaller<any, any>({
                     requestType: 'GET',
                     paths: ['api', 'v1', 'payroll'],
-                    queryParams: { page: currentPage.toString(), limit: limit.toString() }
+                    queryParams: { page: currentPage.toString(), limit: payrollLimit.toString() }
                 });
                 if (response?.data) {
                     if (Array.isArray(response.data)) {
@@ -114,7 +122,7 @@ export function usePayroll() {
             }
 
             setPayrolls(apiPayrolls);
-            setTotal(apiTotal);
+            setPayrollTotal(apiTotal);
         } catch (error) {
             console.error('Error fetching payrolls:', error);
         }
@@ -140,8 +148,9 @@ export function usePayroll() {
     }, [userDetails]);
 
     useEffect(() => {
-        fetchPayrolls(page);
-    }, [page]);
+        console.log('payrollPage', payrollPage);
+        fetchPayrolls(payrollPage);
+    }, [payrollPage]);
 
     useEffect(() => {
         fetchUsers(usersPage);
@@ -222,6 +231,10 @@ export function usePayroll() {
         filteredUsers,
         filteredPayrolls,
         getUserName,
+        payrollPage,
+        setPayrollPage,
+        payrollTotal,
+        payrollLimit,
         calculateTotals
     };
 }

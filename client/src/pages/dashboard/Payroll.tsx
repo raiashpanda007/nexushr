@@ -65,7 +65,11 @@ const Payroll = () => {
         filteredUsers,
         filteredPayrolls,
         getUserName,
-        calculateTotals
+        calculateTotals,
+        payrollPage,
+        setPayrollPage,
+        payrollTotal,
+        payrollLimit,
     } = usePayroll();
 
     if (loading) {
@@ -138,10 +142,10 @@ const Payroll = () => {
                                                 )}
                                             </div>
                                             <div className="flex flex-wrap gap-2 text-sm mt-2">
-                                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">Base: ${baseSalary}</span>
-                                                <span className="bg-green-50 text-green-700 px-2 py-1 rounded">Bonuses: +${totalBonus}</span>
-                                                <span className="bg-red-50 text-red-700 px-2 py-1 rounded">Deductions: -${totalDeduction}</span>
-                                                <span className="bg-indigo-50 text-indigo-700 font-semibold px-2 py-1 rounded">Net: ${netSalary}</span>
+                                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">Base: ${baseSalary.toFixed(2)}</span>
+                                                <span className="bg-green-50 text-green-700 px-2 py-1 rounded">Bonuses: +${totalBonus.toFixed(2)}</span>
+                                                <span className="bg-red-50 text-red-700 px-2 py-1 rounded">Deductions: -${totalDeduction.toFixed(2)}</span>
+                                                <span className="bg-indigo-50 text-indigo-700 font-semibold px-2 py-1 rounded">Net: ${netSalary.toFixed(2)}</span>
                                             </div>
                                         </div>
                                         <Badge className="bg-green-100 text-green-800 hover:bg-green-200"><CheckCircle2 size={16} className="mr-1" /> Processed</Badge>
@@ -347,11 +351,6 @@ const Payroll = () => {
                                                 <TableCell className="font-medium text-gray-900">
                                                     <div className="flex items-center gap-2">
                                                         {getUserName(p.user)}
-                                                        {p.syncState === 'unsynced' && (
-                                                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 uppercase text-[10px] tracking-wider font-semibold">
-                                                                Unsynced
-                                                            </Badge>
-                                                        )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -375,6 +374,31 @@ const Payroll = () => {
                                 </TableBody>
                             </Table>
                         </div>
+                        {usersTotal > 0 && !userSearchTerm && (
+                            <div className="p-4 flex justify-between items-center border-t border-gray-100">
+                                <div className="text-sm text-gray-500">
+                                    Showing {(payrollPage - 1) * payrollLimit + 1} to {Math.min(payrollPage * payrollLimit, payrollTotal)} of {payrollTotal}
+                                </div>
+                                <div className="flex space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPayrollPage(p => Math.max(1, p - 1))}
+                                        disabled={payrollPage === 1}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPayrollPage(p => Math.min(Math.ceil(payrollTotal / payrollLimit), p + 1))}
+                                        disabled={payrollPage === Math.ceil(payrollTotal / payrollLimit) || Math.ceil(payrollTotal / payrollLimit) === 0}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

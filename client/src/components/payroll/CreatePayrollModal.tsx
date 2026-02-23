@@ -53,7 +53,7 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Create Payroll - {user?.firstName} {user?.lastName}</DialogTitle>
                     <DialogDescription>
@@ -72,7 +72,7 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
                                 <SelectContent>
                                     {userSalaries.map(s => (
                                         <SelectItem key={s._id} value={s._id}>
-                                            Base: {s.base} | HRA: {s.hra}
+                                            Base: {s.base.toFixed(2)} | HRA: {s.hra.toFixed(2)}
                                         </SelectItem>
                                     ))}
                                     {userSalaries.length === 0 && (
@@ -112,10 +112,10 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
                     {activeSalaryObj && (
                         <Card className="bg-gray-50 border-gray-100">
                             <CardContent className="p-4 flex justify-between">
-                                <div><span className="text-gray-500 font-medium">Base:</span> <span>${activeSalaryObj.base}</span></div>
-                                <div><span className="text-gray-500 font-medium">HRA:</span> <span>${activeSalaryObj.hra}</span></div>
-                                <div><span className="text-gray-500 font-medium">LTA:</span> <span>${activeSalaryObj.lta}</span></div>
-                                <div className="font-bold ">Gross: ${activeSalaryObj.base + activeSalaryObj.hra + activeSalaryObj.lta}</div>
+                                <div><span className="text-gray-500 font-medium">Base:</span> <span>${activeSalaryObj.base.toFixed(2)}</span></div>
+                                <div><span className="text-gray-500 font-medium">HRA:</span> <span>${activeSalaryObj.hra.toFixed(2)}</span></div>
+                                <div><span className="text-gray-500 font-medium">LTA:</span> <span>${activeSalaryObj.lta.toFixed(2)}</span></div>
+                                <div className="font-bold ">Gross: ${(activeSalaryObj.base + activeSalaryObj.hra + activeSalaryObj.lta).toFixed(2)}</div>
                             </CardContent>
                         </Card>
                     )}

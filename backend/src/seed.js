@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Cfg } from "./config/env.js";
-import { UserModel } from "./modules/Users/models/users.models.js";
-import { DepartmentModal } from "./modules/Departments/Models/departments.models.js";
+import UserModel from "./modules/Users/models/users.models.js";
+import DepartmentModal from "./modules/Departments/Models/departments.models.js";
 import SkillModal from "./modules/Skills/models/skills.models.js";
 import LeaveTypeModal from "./modules/Leaves/LeaveTypes/Models/leavetypes.model.js";
 import LeaveBalanceModel from "./modules/Leaves/LeavesBalances/Models/leavesBalances.model.js";
@@ -15,7 +15,7 @@ const seed = async () => {
         await mongoose.connect(Cfg.MONGO_DB_URL, { dbName: Cfg.DB_NAME });
         console.log("Connected to MongoDB for seeding...");
 
-        // Dummy Data Arrays
+
         const departments = [
             { name: "General Management", description: "Default department for administrative staff" },
             { name: "Human Resources", description: "Handles employee relations and benefits." },
