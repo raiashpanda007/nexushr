@@ -26,8 +26,9 @@ class SearchController {
         if (!modelInstance) {
             throw new ApiError(404, "Model not found")
         }
+        const SearchRegex = new RegExp(query.trim(), "i")
         const result = await modelInstance.find(
-            { $text: { $search: query } },
+            { $text: { $search: SearchRegex } },
             { score: { $meta: "textScore" } }
         ).sort({ score: { $meta: "textScore" } });
         return res.status(200).json(new ApiResponse(200, result, "Search results"))
