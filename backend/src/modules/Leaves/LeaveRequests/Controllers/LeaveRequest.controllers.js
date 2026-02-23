@@ -2,6 +2,7 @@ import LeaveRequestModel from "../Models/leaveRequests.model.js";
 import LeaveBalanceModel from "../../LeavesBalances/Models/leavesBalances.model.js";
 import { AsyncHandler, ApiResponse, ApiError } from "../../../../utils/index.js"
 import Types from "../../../../types/index.js";
+import mongoose from "mongoose";
 
 
 class LeaveRequestController {
@@ -16,22 +17,34 @@ class LeaveRequestController {
         }
         const { type, quantity, from, to } = parsedBody.data;
 
-        const leaveBalance = await LeaveBalanceModel.findOne({ user: req.user.id });
-        if (!leaveBalance) {
-            throw new ApiError(Types.Errors.Forbidden, "No leave balance found for this user");
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            const leaveBalance = await LeaveBalanceModel.findOne({ user: req.user.id }).session(session);
+            if (!leaveBalance) {
+                throw new ApiError(Types.Errors.Forbidden, "No leave balance found for this user");
+            }
+
+            const typeBalance = leaveBalance.leaves.find(l => String(l.type) === String(type));
+            if (!typeBalance || typeBalance.amount < quantity) {
+                throw new ApiError(Types.Errors.Forbidden, `Insufficient leave balance. You only have ${typeBalance?.amount || 0} days remaining.`);
+            }
+
+            typeBalance.amount -= quantity;
+            await leaveBalance.save({ session });
+
+            const leaveRequest = new this.repo({ requestedBy: req.user.id, type, quantity, from, to });
+            await leaveRequest.save({ session });
+
+            await session.commitTransaction();
+            session.endSession();
+
+            return res.status(201).json(new ApiResponse(201, leaveRequest, "Leave request created successfully"));
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
         }
-
-        const typeBalance = leaveBalance.leaves.find(l => String(l.type) === String(type));
-        if (!typeBalance || typeBalance.amount < quantity) {
-            throw new ApiError(Types.Errors.Forbidden, `Insufficient leave balance. You only have ${typeBalance?.amount || 0} days remaining.`);
-        }
-
-
-        typeBalance.amount -= quantity;
-        await leaveBalance.save();
-
-        const leaveRequest = await this.repo.create({ requestedBy: req.user.id, type, quantity, from, to });
-        return res.status(201).json(new ApiResponse(201, leaveRequest, "Leave request created successfully"));
     })
 
 
@@ -41,29 +54,40 @@ class LeaveRequestController {
             throw new ApiError(Types.Errors.BadRequest, "Leave request id is required");
         }
 
-        let leaveRequest;
-        if (req.user.role === "HR") {
-            leaveRequest = await this.repo.findByIdAndDelete(uid);
-        } else {
-            leaveRequest = await this.repo.findOneAndDelete({ _id: uid, requestedBy: req.user.id });
-        }
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            let leaveRequest;
+            if (req.user.role === "HR") {
+                leaveRequest = await this.repo.findByIdAndDelete(uid, { session });
+            } else {
+                leaveRequest = await this.repo.findOneAndDelete({ _id: uid, requestedBy: req.user.id }, { session });
+            }
 
-        if (!leaveRequest) {
-            throw new ApiError(Types.Errors.NotFound, "Leave request not found");
-        }
+            if (!leaveRequest) {
+                throw new ApiError(Types.Errors.NotFound, "Leave request not found");
+            }
 
-        if (leaveRequest.status === "PENDING") {
-            const leaveBalance = await LeaveBalanceModel.findOne({ user: leaveRequest.requestedBy });
-            if (leaveBalance) {
-                const typeBalance = leaveBalance.leaves.find(l => String(l.type) === String(leaveRequest.type));
-                if (typeBalance) {
-                    typeBalance.amount += leaveRequest.quantity;
-                    await leaveBalance.save();
+            if (leaveRequest.status === "PENDING") {
+                const leaveBalance = await LeaveBalanceModel.findOne({ user: leaveRequest.requestedBy }).session(session);
+                if (leaveBalance) {
+                    const typeBalance = leaveBalance.leaves.find(l => String(l.type) === String(leaveRequest.type));
+                    if (typeBalance) {
+                        typeBalance.amount += leaveRequest.quantity;
+                        await leaveBalance.save({ session });
+                    }
                 }
             }
-        }
 
-        return res.status(200).json(new ApiResponse(200, leaveRequest, "Leave request deleted successfully"));
+            await session.commitTransaction();
+            session.endSession();
+
+            return res.status(200).json(new ApiResponse(200, leaveRequest, "Leave request deleted successfully"));
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
+        }
     })
 
     Get = AsyncHandler(async (req, res) => {
@@ -114,33 +138,45 @@ class LeaveRequestController {
         if (!uid) {
             throw new ApiError(Types.Errors.BadRequest, "Leave request id is required");
         }
-        const leaveRequest = await this.repo.findById(uid);
-        if (!leaveRequest) {
-            throw new ApiError(Types.Errors.NotFound, "Leave request not found");
-        }
 
-        // If it was already responded to, return error to avoid double-deduct/refund
-        if (leaveRequest.status !== "PENDING") {
-            throw new ApiError(Types.Errors.BadRequest, "Leave request has already been responded to");
-        }
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            const leaveRequest = await this.repo.findById(uid).session(session);
+            if (!leaveRequest) {
+                throw new ApiError(Types.Errors.NotFound, "Leave request not found");
+            }
 
-        leaveRequest.respondedBy = req.user.id;
-        leaveRequest.status = req.body.status;
-        await leaveRequest.save();
+            // If it was already responded to, return error to avoid double-deduct/refund
+            if (leaveRequest.status !== "PENDING") {
+                throw new ApiError(Types.Errors.BadRequest, "Leave request has already been responded to");
+            }
 
-        // If rejected, refund the leave balance
-        if (req.body.status === "REJECTED") {
-            const leaveBalance = await LeaveBalanceModel.findOne({ user: leaveRequest.requestedBy });
-            if (leaveBalance) {
-                const typeBalance = leaveBalance.leaves.find(l => String(l.type) === String(leaveRequest.type));
-                if (typeBalance) {
-                    typeBalance.amount += leaveRequest.quantity;
-                    await leaveBalance.save();
+            leaveRequest.respondedBy = req.user.id;
+            leaveRequest.status = req.body.status;
+            await leaveRequest.save({ session });
+
+            // If rejected, refund the leave balance
+            if (req.body.status === "REJECTED") {
+                const leaveBalance = await LeaveBalanceModel.findOne({ user: leaveRequest.requestedBy }).session(session);
+                if (leaveBalance) {
+                    const typeBalance = leaveBalance.leaves.find(l => String(l.type) === String(leaveRequest.type));
+                    if (typeBalance) {
+                        typeBalance.amount += leaveRequest.quantity;
+                        await leaveBalance.save({ session });
+                    }
                 }
             }
-        }
 
-        return res.status(200).json(new ApiResponse(200, leaveRequest, "Leave request response updated successfully"));
+            await session.commitTransaction();
+            session.endSession();
+
+            return res.status(200).json(new ApiResponse(200, leaveRequest, "Leave request response updated successfully"));
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
+        }
     })
 
 
