@@ -189,11 +189,16 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
                             </div>
                             <div className="space-y-2 max-h-[150px] overflow-y-auto">
                                 {deductions.map((d, i) => (
-                                    <div key={i} className="flex justify-between items-center bg-red-50 p-2 rounded text-sm text-red-700">
-                                        <span>{d.reason}</span>
+                                    <div key={i} className={`flex justify-between items-center p-2 rounded text-sm ${d.isAuto ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-red-50 text-red-700'}`}>
+                                        <span className="flex items-center gap-2">
+                                            {d.reason}
+                                            {d.isAuto && <span className="text-[10px] bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded font-medium">Unpaid Leave</span>}
+                                        </span>
                                         <div className="flex items-center gap-3">
-                                            <span className="font-semibold">-${d.amount}</span>
-                                            <button onClick={() => removeDeduction(i)} className="text-red-500 hover:text-red-700"><Trash2 size={14} /></button>
+                                            <span className="font-semibold">-${d.amount.toFixed(2)}</span>
+                                            {!d.isAuto && (
+                                                <button onClick={() => removeDeduction(i)} className="text-red-500 hover:text-red-700"><Trash2 size={14} /></button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

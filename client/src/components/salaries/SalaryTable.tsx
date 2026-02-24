@@ -74,7 +74,7 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
             {/* Gradient Header */}
-            <CardHeader className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 text-white pb-5">
+            <CardHeader className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
@@ -85,7 +85,7 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                             <p className="text-slate-400 text-sm mt-0.5">{salaries.length} employee{salaries.length !== 1 ? 's' : ''} configured</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 ">
                         <div className="text-right bg-white/5 rounded-xl px-4 py-2.5 border border-white/10">
                             <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Total Monthly Payroll</p>
                             <p className="text-xl font-bold text-emerald-400 flex items-center gap-1">

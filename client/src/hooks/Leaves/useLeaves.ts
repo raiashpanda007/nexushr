@@ -24,7 +24,8 @@ interface RawLeaveBalanceDoc {
 
 function mapRawToUserLeaveBalance(doc: RawLeaveBalanceDoc): UserLeaveBalance {
     return {
-        userId: doc._id,
+        balanceId: doc._id,
+        userId: doc.userDetails?._id ?? doc.user,
         firstName: doc.userDetails?.firstName ?? "",
         lastName: doc.userDetails?.lastName ?? "",
         email: doc.userDetails?.email ?? "",

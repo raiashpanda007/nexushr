@@ -27,34 +27,37 @@ export default function Skills() {
     const totalPages = Math.ceil(total / limit);
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-amber-50/50 via-background to-rose-50/30 p-6 space-y-6">
+        <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
             {/* Header Card */}
-            <div className="rounded-2xl bg-linear-to-r from-amber-500 via-orange-500 to-rose-500 p-6 shadow-lg">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm">
-                            <Sparkles className="h-6 w-6 text-white" />
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+
+                <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
+                            <Sparkles className="h-7 w-7 text-white drop-shadow-sm" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white tracking-tight">Skills Management</h1>
-                            <p className="text-white/70 text-sm mt-0.5">Tag and categorize employee competencies</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Skills Management</h1>
+                            <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">Tag and categorize employee competencies</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        <div className="relative lg:w-72">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-white/60" />
                             <Input
                                 placeholder="Search skills..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-64 pl-9 bg-white/15 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-white/30"
+                                className="h-11 w-full pl-10 bg-black/10 border-white/10 text-white placeholder:text-white/60 focus-visible:ring-white/30 rounded-xl shadow-inner transition-colors hover:bg-black/20"
                             />
                         </div>
                         <Button
                             onClick={handleAddSkill}
-                            className="bg-white text-orange-700 hover:bg-white/90 font-semibold shadow-md gap-2"
+                            className="h-11 bg-white text-primary hover:bg-white/90 font-bold shadow-lg shadow-black/10 gap-2 whitespace-nowrap rounded-xl px-5 hover:scale-105 transition-all"
                         >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-5 w-5" />
                             Add Skill
                         </Button>
                     </div>
@@ -62,11 +65,11 @@ export default function Skills() {
             </div>
 
             {/* Content */}
-            <div className="rounded-xl overflow-hidden">
+            <div className="bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40 rounded-2xl shadow-xl shadow-primary/5 border border-border/40 overflow-hidden">
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground bg-card rounded-xl border">
-                        <Loader2 className="h-8 w-8 animate-spin text-orange-500 mb-3" />
-                        <p className="text-sm font-medium">Loading skills...</p>
+                    <div className="flex flex-col items-center justify-center py-24 text-muted-foreground w-full">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                        <p className="text-base font-medium animate-pulse">Loading skills directory...</p>
                     </div>
                 ) : (
                     <>

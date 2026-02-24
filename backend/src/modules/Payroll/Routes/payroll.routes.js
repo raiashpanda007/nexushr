@@ -12,8 +12,8 @@ class PayrollRoutes {
     routes() {
         this.router.post("/", VerifyMiddleware, this.controller.Create);
         this.router.get("/", VerifyMiddleware, this.controller.Get);
-        this.router.get("/:id", VerifyMiddleware, this.controller.Get);
         this.router.get("/deduction/:id", VerifyMiddleware, this.controller.GetLeaveDeductions);
+        this.router.get("/:id", VerifyMiddleware, this.controller.Get);
         return this.router;
     }
 }

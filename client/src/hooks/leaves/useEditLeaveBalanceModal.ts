@@ -81,7 +81,7 @@ export function useEditLeaveBalanceModal({ isOpen, onClose, onSuccess, userBalan
         try {
             const result = await ApiCaller({
                 requestType: "PUT",
-                paths: ["api", "v1", "leaves", "balances", userBalance.userId],
+                paths: ["api", "v1", "leaves", "balances", userBalance.balanceId],
                 body: payload
             });
 

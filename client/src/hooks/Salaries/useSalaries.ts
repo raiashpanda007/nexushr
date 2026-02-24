@@ -44,15 +44,11 @@ export function useSalaries() {
     const [total, setTotal] = useState(0);
     const limit = 10;
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isEditMode, setIsEditMode] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentSalaryId, setCurrentSalaryId] = useState<string | null>(null);
-    const [formData, setFormData] = useState<SalaryFormData>({
-        userId: '',
-        baseSalary: 0,
-        hra: 0,
-        lta: 0
-    });
+    const [editFormData, setEditFormData] = useState<{ baseSalary: number; hra: number; lta: number } | null>(null);
+    const [editEmployeeName, setEditEmployeeName] = useState('');
 
     const fetchSalaries = async (currentPage = 1) => {
         try {
@@ -117,56 +113,76 @@ export function useSalaries() {
         setSearchTerm(e.target.value);
     };
 
-    const handleOpenModal = (salary?: Salary) => {
-        if (salary) {
-            setIsEditMode(true);
-            setCurrentSalaryId(salary._id);
-            setFormData({
-                userId: salary.userId._id,
-                baseSalary: salary.base,
-                hra: salary.hra,
-                lta: salary.lta
-            });
-        } else {
-            setIsEditMode(false);
-            setCurrentSalaryId(null);
-            setFormData({
-                userId: '',
-                baseSalary: 0,
-                hra: 0,
-                lta: 0
-            });
-        }
-        setIsModalOpen(true);
+    const handleOpenCreateModal = () => {
+        setIsCreateModalOpen(true);
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setIsEditMode(false);
+    const handleCloseCreateModal = () => {
+        setIsCreateModalOpen(false);
+    };
+
+    const handleOpenEditModal = (salary: Salary) => {
+        setCurrentSalaryId(salary._id);
+        setEditFormData({
+            baseSalary: salary.base,
+            hra: salary.hra,
+            lta: salary.lta,
+        });
+        setEditEmployeeName(
+            `${salary.userId?.firstName || ''} ${salary.userId?.lastName || ''}`.trim()
+        );
+        setIsEditModalOpen(true);
+    };
+
+    const handleCloseEditModal = () => {
+        setIsEditModalOpen(false);
         setCurrentSalaryId(null);
+        setEditFormData(null);
+        setEditEmployeeName('');
     };
 
-    const handleSubmit = async (data: SalaryFormData) => {
+    const handleCreateSubmit = async (data: SalaryFormData) => {
         setActionLoading(true);
         try {
-            if (isEditMode && currentSalaryId) {
-                await ApiCaller({
-                    requestType: 'PUT',
-                    paths: ['api', 'v1', 'salaries', currentSalaryId],
-                    body: data
-                });
-            } else {
-                await ApiCaller({
-                    requestType: 'POST',
-                    paths: ['api', 'v1', 'salaries'],
-                    body: data
-                });
+            const result = await ApiCaller({
+                requestType: 'POST',
+                paths: ['api', 'v1', 'salaries'],
+                body: data,
+            });
+
+            if (!result.ok) {
+                throw new Error(result.response?.message || 'Failed to create salary');
             }
+
             await fetchSalaries();
-            handleCloseModal();
-        } catch (error) {
-            console.error('Error saving salary:', error);
-            alert('Failed to save salary. Please check your inputs.');
+            handleCloseCreateModal();
+        } catch (error: any) {
+            console.error('Error creating salary:', error);
+            throw error;
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleEditSubmit = async (data: { baseSalary: number; hra: number; lta: number }) => {
+        if (!currentSalaryId) return;
+        setActionLoading(true);
+        try {
+            const result = await ApiCaller({
+                requestType: 'PUT',
+                paths: ['api', 'v1', 'salaries', currentSalaryId],
+                body: data,
+            });
+
+            if (!result.ok) {
+                throw new Error(result.response?.message || 'Failed to update salary');
+            }
+
+            await fetchSalaries();
+            handleCloseEditModal();
+        } catch (error: any) {
+            console.error('Error updating salary:', error);
+            throw error;
         } finally {
             setActionLoading(false);
         }
@@ -209,12 +225,16 @@ export function useSalaries() {
         setPage,
         total,
         limit,
-        isModalOpen,
-        isEditMode,
-        formData,
-        handleOpenModal,
-        handleCloseModal,
-        handleSubmit,
+        isCreateModalOpen,
+        isEditModalOpen,
+        editFormData,
+        editEmployeeName,
+        handleOpenCreateModal,
+        handleCloseCreateModal,
+        handleOpenEditModal,
+        handleCloseEditModal,
+        handleCreateSubmit,
+        handleEditSubmit,
         handleDelete,
         filteredSalaries
     };

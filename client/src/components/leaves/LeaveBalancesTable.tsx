@@ -20,6 +20,7 @@ export interface LeaveBalanceEntry {
 }
 
 export interface UserLeaveBalance {
+    balanceId: string;
     userId: string;
     firstName: string;
     lastName: string;
@@ -60,13 +61,13 @@ export default function LeaveBalancesTable({ users, onEdit }: LeaveBalancesTable
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white pb-5">
+            <CardHeader className="bg-linear-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white py-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
                             <BarChart3 className="h-5 w-5" />
                         </div>
-                        <div className="pt-2">
+                        <div>
                             <CardTitle className="text-lg font-bold">Leave Balances</CardTitle>
                             <p className="text-white/70 text-sm mt-0.5">
                                 {users.length} employee{users.length !== 1 ? "s" : ""} with balances

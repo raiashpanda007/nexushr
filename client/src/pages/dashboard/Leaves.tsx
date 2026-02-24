@@ -58,26 +58,29 @@ export default function Leaves() {
     const requestsPages = Math.ceil(requestsTotal / requestsLimit);
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-teal-50/50 via-background to-emerald-50/30 p-6 space-y-6">
+        <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
             {/* Header Card */}
-            <div className="rounded-2xl bg-linear-to-r from-teal-600 via-emerald-600 to-green-600 p-6 shadow-lg">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm">
-                            <TreePalm className="h-6 w-6 text-white" />
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+
+                <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
+                            <TreePalm className="h-7 w-7 text-white drop-shadow-sm" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white tracking-tight">Leave Management</h1>
-                            <p className="text-white/70 text-sm mt-0.5">Manage leave types and employee leave balances</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Leave Management</h1>
+                            <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">Manage leave types and employee leave balances</p>
                         </div>
                     </div>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+                    <div className="relative lg:w-72">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-white/60" />
                         <Input
                             placeholder="Search leave types or employees..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-80 pl-9 bg-white/15 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-white/30"
+                            className="h-11 w-full pl-10 bg-black/10 border-white/10 text-white placeholder:text-white/60 focus-visible:ring-white/30 rounded-xl shadow-inner transition-colors hover:bg-black/20"
                         />
                     </div>
                 </div>
@@ -87,17 +90,17 @@ export default function Leaves() {
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <CalendarCheck className="h-5 w-5 text-teal-600" />
-                        <h2 className="text-lg font-semibold">Leave Types</h2>
+                        <CalendarCheck className="h-5 w-5 text-primary" />
+                        <h2 className="text-lg font-semibold tracking-tight">Leave Types</h2>
                     </div>
                     <Button
                         onClick={handleAddLeaveType}
-                        className="bg-linear-to-r from-teal-600 to-emerald-600 text-white hover:opacity-90 gap-2"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md shadow-primary/20 gap-2 rounded-xl"
                     >
                         <Plus className="h-4 w-4" /> Add Leave Type
                     </Button>
                 </div>
-                <div className="rounded-xl overflow-hidden">
+                <div className="bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40 rounded-2xl shadow-xl shadow-primary/5 border border-border/40 overflow-hidden">
                     {leaveTypesLoading ? (
                         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-card rounded-xl border">
                             <Loader2 className="h-7 w-7 animate-spin text-teal-500 mb-3" />
@@ -129,19 +132,19 @@ export default function Leaves() {
 
             {/* Employee Leave Balances Section */}
             <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-6">
                     <div className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-emerald-600" />
-                        <h2 className="text-lg font-semibold">Employee Leave Balances</h2>
+                        <Users className="h-5 w-5 text-primary" />
+                        <h2 className="text-lg font-semibold tracking-tight">Employee Leave Balances</h2>
                     </div>
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-linear-to-r from-emerald-600 to-green-600 text-white hover:opacity-90 gap-2"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md shadow-primary/20 gap-2 rounded-xl"
                     >
                         <Plus className="h-4 w-4" /> Create Leave Balance
                     </Button>
                 </div>
-                <div className="rounded-xl overflow-hidden">
+                <div className="bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40 rounded-2xl shadow-xl shadow-primary/5 border border-border/40 overflow-hidden">
                     {balancesLoading ? (
                         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-card rounded-xl border">
                             <Loader2 className="h-7 w-7 animate-spin text-emerald-500 mb-3" />
@@ -176,11 +179,11 @@ export default function Leaves() {
 
             {/* Leave Requests Section */}
             <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    <h2 className="text-lg font-semibold">Leave Requests</h2>
+                <div className="flex items-center gap-2 mt-6">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold tracking-tight">Leave Requests</h2>
                 </div>
-                <div className="rounded-xl overflow-hidden">
+                <div className="bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40 rounded-2xl shadow-xl shadow-primary/5 border border-border/40 overflow-hidden">
                     {requestsLoading ? (
                         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-card rounded-xl border">
                             <Loader2 className="h-7 w-7 animate-spin text-blue-500 mb-3" />

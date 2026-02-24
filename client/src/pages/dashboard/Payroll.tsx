@@ -88,17 +88,20 @@ const Payroll = () => {
 
     if (!isHR) {
         return (
-            <div className="min-h-screen bg-linear-to-br from-indigo-50/50 via-background to-blue-50/30 p-6 space-y-6">
+            <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
                 {/* Employee Header */}
-                <div className="rounded-2xl bg-linear-to-r from-indigo-600 via-blue-600 to-cyan-600 p-6 shadow-lg">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm">
-                                <Receipt className="h-6 w-6 text-white" />
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+
+                    <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
+                                <Receipt className="h-7 w-7 text-white drop-shadow-sm" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-white tracking-tight">My Payrolls</h1>
-                                <p className="text-white/70 text-sm mt-0.5">View your salary slips and payment history</p>
+                                <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">My Payrolls</h1>
+                                <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">View your salary slips and payment history</p>
                             </div>
                         </div>
                         <div className="flex gap-3">
@@ -213,16 +216,21 @@ const Payroll = () => {
     }
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-indigo-50/50 via-background to-emerald-50/30 p-6 space-y-6">
+        <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
             {/* HR Header */}
-            <div className="rounded-2xl bg-linear-to-r from-indigo-600 via-violet-600 to-purple-600 p-6 shadow-lg">
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm">
-                        <Receipt className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white tracking-tight">Payroll Processing</h1>
-                        <p className="text-white/70 text-sm mt-0.5">Generate and review payroll information across the organization</p>
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+
+                <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
+                            <Receipt className="h-7 w-7 text-white drop-shadow-sm" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Payroll Processing</h1>
+                            <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">Generate and review payroll information across the organization</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -231,7 +239,7 @@ const Payroll = () => {
                 {/* Employee List Section */}
                 <Card className="shadow-sm border-border overflow-hidden gap-0 py-0">
                     <CardHeader className="bg-linear-to-r from-indigo-50 to-violet-50 border-b border-indigo-100">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 pt-6">
                             <Users className="h-5 w-5 text-indigo-600" />
                             <CardTitle className="text-lg">Employees</CardTitle>
                         </div>
@@ -309,7 +317,7 @@ const Payroll = () => {
                 {/* Payrolls List Section */}
                 <Card className="shadow-sm border-border overflow-hidden gap-0 py-0">
                     <CardHeader className="bg-linear-to-r from-emerald-50 to-teal-50 border-b border-emerald-100">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 pt-6">
                             <DollarSign className="h-5 w-5 text-emerald-600" />
                             <CardTitle className="text-lg">Generated Payrolls</CardTitle>
                         </div>

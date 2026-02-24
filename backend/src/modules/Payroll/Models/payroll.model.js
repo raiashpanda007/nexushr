@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ApiError } from "../../../utils/index.js";
 
 const PayrollSchema = new mongoose.Schema(
   {

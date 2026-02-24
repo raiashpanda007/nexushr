@@ -51,7 +51,7 @@ export function usePayroll() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     const [page, setPage] = useState(1);
-    const [total, setTotal] = useState(0);
+    const [total] = useState(0);
     const limit = 10;
     const usersLimit = 10;
     const payrollLimit = 10;

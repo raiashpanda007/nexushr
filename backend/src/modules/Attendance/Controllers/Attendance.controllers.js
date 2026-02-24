@@ -15,8 +15,13 @@ class AttendanceController {
 
         const { userId, type } = parsedData.data;
 
-        // Since it's user doing it, verify they are doing it for themselves or if HR
-        if (req.user.role !== "HR" && req.user.id !== userId) {
+        // HR users cannot punch in/out
+        if (req.user.role === "HR") {
+            throw new ApiError(Types.Errors.Forbidden, "HR users cannot punch in/out");
+        }
+
+        // Verify employees are marking attendance for themselves only
+        if (req.user.id !== userId) {
             throw new ApiError(Types.Errors.Forbidden, "You can only mark attendance for yourself");
         }
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -10,78 +10,43 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
-import {
-    Check,
-    ChevronsUpDown,
     DollarSign,
     Wallet,
     Home,
     Plane,
-    UserCircle,
     Pencil,
-    Plus,
     Loader2,
     AlertCircle,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useSalaryModal } from '@/hooks/salaries/useSalaryModal';
+import { useEditSalaryModal } from '@/hooks/salaries/useEditSalaryModal';
 
-interface User {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    deptId?: {
-        _id: string;
-        name: string;
-    };
-}
-
-interface SalaryFormData {
-    userId: string;
+interface EditSalaryFormData {
     baseSalary: number;
     hra: number;
     lta: number;
 }
 
-interface SalaryModalProps {
+interface EditSalaryModalProps {
     isOpen: boolean;
     onClose: () => void;
-    users: User[];
-    salaryData?: SalaryFormData | null;
-    onSubmit: (data: SalaryFormData) => Promise<void>;
+    employeeName: string;
+    salaryData: EditSalaryFormData | null;
+    onSubmit: (data: EditSalaryFormData) => Promise<void>;
     loading: boolean;
-    isEditMode: boolean;
 }
 
-const SalaryModal: React.FC<SalaryModalProps> = ({
+const EditSalaryModal: React.FC<EditSalaryModalProps> = ({
     isOpen,
     onClose,
-    users,
+    employeeName,
     salaryData,
     onSubmit,
     loading,
-    isEditMode,
 }) => {
-    const { formData, error, fieldErrors, handleInputChange, handleUserChange, handleSubmit } = useSalaryModal({ isOpen, salaryData, onSubmit, isEditMode });
-    const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
-
-    const selectedUser = users.find(user => user._id === formData.userId);
+    const { formData, error, fieldErrors, handleInputChange, handleSubmit } =
+        useEditSalaryModal({ isOpen, salaryData, onSubmit });
 
     const totalSalary = useMemo(
         () => (formData.baseSalary || 0) + (formData.hra || 0) + (formData.lta || 0),
@@ -91,24 +56,19 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
             <DialogContent className="sm:max-w-135 p-0 overflow-hidden border-0 rounded-2xl shadow-2xl">
-                {/* Gradient Header */}
-                <div className={cn(
-                    "px-6 pt-6 pb-5",
-                  
-                )}>
+                {/* Header */}
+                <div className="px-6 pt-6 pb-5">
                     <DialogHeader className="space-y-2">
                         <div className="flex items-center gap-3">
                             <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/50 backdrop-blur-sm">
-                                {isEditMode ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                                <Pencil className="h-5 w-5" />
                             </div>
                             <div>
-                                <DialogTitle className="text-xl font-bold ">
-                                    {isEditMode ? 'Edit Salary Structure' : 'Create Salary Structure'}
+                                <DialogTitle className="text-xl font-bold">
+                                    Edit Salary Structure
                                 </DialogTitle>
                                 <DialogDescription className="text-sm mt-0.5">
-                                    {isEditMode
-                                        ? 'Update the salary details for this employee.'
-                                        : 'Assign salary structure to a new employee.'}
+                                    Update the salary details for {employeeName}.
                                 </DialogDescription>
                             </div>
                         </div>
@@ -123,105 +83,6 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
                             <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400">
                                 <AlertCircle className="h-4 w-4 shrink-0" />
                                 <p className="text-sm font-medium">{error}</p>
-                            </div>
-                        )}
-
-                        {/* Employee Selector */}
-                        {!isEditMode && (
-                            <div className="space-y-2">
-                                <Label htmlFor="userId" className="flex items-center gap-2 text-sm font-semibold">
-                                    <UserCircle className="h-4 w-4 text-indigo-500" />
-                                    Employee
-                                </Label>
-                                <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={employeeSearchOpen}
-                                            className={cn(
-                                                "w-full justify-between font-normal h-11 rounded-lg border-2 transition-colors",
-                                                selectedUser
-                                                    ? "border-indigo-200 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-950/30"
-                                                    : "hover:border-indigo-300",
-                                                fieldErrors.userId && "border-red-300 hover:border-red-400"
-                                            )}
-                                        >
-                                            {selectedUser ? (
-                                                <span className="flex items-center gap-2">
-                                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-500 text-white text-xs font-bold">
-                                                        {selectedUser.firstName[0]}{selectedUser.lastName[0]}
-                                                    </span>
-                                                    <span className="truncate">
-                                                        {selectedUser.firstName} {selectedUser.lastName}
-                                                    </span>
-                                                    {selectedUser.deptId && (
-                                                        <Badge variant="secondary" className="ml-1 text-[10px] px-1.5">
-                                                            {selectedUser.deptId.name}
-                                                        </Badge>
-                                                    )}
-                                                </span>
-                                            ) : (
-                                                <span className="text-muted-foreground">Search and select an employee...</span>
-                                            )}
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                        <Command>
-                                            <CommandInput placeholder="Search by name or email..." />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    <div className="flex flex-col items-center py-4 text-muted-foreground">
-                                                        <UserCircle className="h-8 w-8 mb-2 opacity-40" />
-                                                        <span className="text-sm">No employee found</span>
-                                                    </div>
-                                                </CommandEmpty>
-                                                <CommandGroup>
-                                                    {users.map((user) => (
-                                                        <CommandItem
-                                                            key={user._id}
-                                                            value={`${user.firstName} ${user.lastName} ${user.email}`}
-                                                            onSelect={() => {
-                                                                handleUserChange(user._id);
-                                                                setEmployeeSearchOpen(false);
-                                                            }}
-                                                            className="flex items-center gap-3 py-2.5"
-                                                        >
-                                                            <span className={cn(
-                                                                "flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold shrink-0",
-                                                                formData.userId === user._id
-                                                                    ? "bg-indigo-500 text-white"
-                                                                    : "bg-muted text-muted-foreground"
-                                                            )}>
-                                                                {user.firstName[0]}{user.lastName[0]}
-                                                            </span>
-                                                            <div className="flex flex-col min-w-0">
-                                                                <span className="font-medium truncate">
-                                                                    {user.firstName} {user.lastName}
-                                                                </span>
-                                                                <span className="text-xs text-muted-foreground truncate">
-                                                                    {user.email}
-                                                                </span>
-                                                            </div>
-                                                            <Check
-                                                                className={cn(
-                                                                    "ml-auto h-4 w-4 text-indigo-500 shrink-0",
-                                                                    formData.userId === user._id ? "opacity-100" : "opacity-0"
-                                                                )}
-                                                            />
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                {fieldErrors.userId && (
-                                    <p className="text-red-500 text-xs flex items-center gap-1">
-                                        <AlertCircle className="h-3 w-3" /> {fieldErrors.userId}
-                                    </p>
-                                )}
                             </div>
                         )}
 
@@ -240,7 +101,6 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
                                             <Wallet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                                         </div>
                                         Base Salary <b className="text-red-500">*</b>
-                                        
                                     </Label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500 font-semibold text-sm">$</span>
@@ -361,12 +221,7 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
                             <Button
                                 type="submit"
                                 disabled={loading}
-                                className={cn(
-                                    "rounded-lg px-6 font-semibold gap-2",
-                                    isEditMode
-                                        ? "bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-orange-500/25"
-                                        : "bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-lg shadow-indigo-500/25"
-                                )}
+                                className="rounded-lg px-6 font-semibold gap-2 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-orange-500/25"
                             >
                                 {loading ? (
                                     <>
@@ -375,8 +230,8 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
                                     </>
                                 ) : (
                                     <>
-                                        {isEditMode ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                                        {isEditMode ? 'Update Salary' : 'Create Salary'}
+                                        <Pencil className="h-4 w-4" />
+                                        Update Salary
                                     </>
                                 )}
                             </Button>
@@ -388,4 +243,4 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
     );
 };
 
-export default SalaryModal;
+export default EditSalaryModal;

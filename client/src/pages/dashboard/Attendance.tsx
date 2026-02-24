@@ -70,10 +70,10 @@ const Attendance = () => {
 
     if (loading && attendances.length === 0) {
         return (
-            <div className="min-h-screen bg-linear-to-br from-teal-50/50 via-background to-cyan-50/30 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
-                    <p className="text-sm font-medium text-muted-foreground">Loading attendance data...</p>
+            <div className="min-h-screen bg-transparent flex items-center justify-center animate-in fade-in duration-500">
+                <div className="flex flex-col items-center gap-3 bg-background/50 p-6 rounded-2xl backdrop-blur-sm border border-border/40 shadow-xl shadow-primary/5">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm font-medium text-muted-foreground animate-pulse">Synchronizing records...</p>
                 </div>
             </div>
         );
@@ -95,26 +95,30 @@ const Attendance = () => {
     const totalPages = Math.ceil(total / limit);
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-teal-50/50 via-background to-cyan-50/30 p-6 max-w-7xl mx-auto space-y-6">
+        <div className="min-h-screen flex flex-col gap-6 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
             {/* Header Card */}
-            <div className="rounded-2xl bg-linear-to-r from-teal-600 via-cyan-600 to-sky-600 p-6 shadow-lg">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm">
-                            <Fingerprint className="h-6 w-6 text-white" />
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
+                {/* Abstract background elements */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+
+                <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-5 z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
+                            <Fingerprint className="h-7 w-7 text-white drop-shadow-sm" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white tracking-tight">Attendance Workspace</h1>
-                            <p className="text-white/70 text-sm mt-0.5">Manage, punch, and analyze team working hours</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Attendance Workspace</h1>
+                            <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">Manage, punch, and analyze team working hours</p>
                         </div>
                     </div>
                     {isHR && (
-                        <div className="flex bg-white/15 backdrop-blur-sm p-1 rounded-lg border border-white/20">
+                        <div className="flex bg-black/20 backdrop-blur-md p-1.5 rounded-xl border border-white/10 shadow-inner">
                             {(["Records", "Analytics"] as const).map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-4 py-2 rounded-md text-sm font-semibold transition duration-150 ${activeTab === tab ? "bg-white text-teal-700 shadow-sm" : "text-white/80 hover:text-white hover:bg-white/10"}`}
+                                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === tab ? "bg-white text-primary shadow-lg scale-105" : "text-white/80 hover:text-white hover:bg-white/10 hover:scale-105"}`}
                                 >
                                     {tab}
                                 </button>
@@ -125,47 +129,51 @@ const Attendance = () => {
             </div>
 
             {activeTab === "Records" && (
-                <div className="grid gap-6 md:grid-cols-4">
-                    {/* Today's Hub */}
-                    <Card className="bg-linear-to-br col-span-1 shadow-sm border-border h-fit rounded-xl overflow-hidden">
-                        <CardHeader className=" from-teal-50 to-cyan-50 border-b border-teal-100">
-                            <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-teal-600" />
-                                <CardTitle className="text-lg">Today's Hub</CardTitle>
-                            </div>
-                            <CardDescription>{formatDateStr(new Date().toISOString())}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-6">
-                            <div className="flex flex-col gap-3">
-                                <Button
-                                    onClick={() => handlePunch("IN")}
-                                    disabled={!canPunchIn || actionLoading}
-                                    className="w-full justify-start gap-2 bg-linear-to-r from-emerald-500 to-green-500 text-white hover:opacity-90 disabled:opacity-50 shadow-md"
-                                >
-                                    <LogIn size={18} />
-                                    Punch IN
-                                </Button>
-                                <Button
-                                    onClick={() => handlePunch("OUT")}
-                                    disabled={!canPunchOut || actionLoading}
-                                    variant="outline"
-                                    className="w-full justify-start gap-2 border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                                >
-                                    <LogOut size={18} />
-                                    Punch OUT
-                                </Button>
-                            </div>
-
-                            {lastPunch && (
-                                <div className={`text-sm font-medium text-center p-3 rounded-lg border ${lastPunch.type === 'IN' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                                    Last: <span className="font-bold uppercase">{lastPunch.type}</span> at {formatTime(lastPunch.time)}
+                <div className={`grid gap-6 ${isHR ? '' : 'lg:grid-cols-4'} animate-in slide-in-from-bottom-2 fade-in duration-500`}>
+                    {/* Today's Hub — employees only */}
+                    {!isHR && (
+                        <Card className="col-span-1 shadow-xl shadow-primary/5 border-border/40 h-fit rounded-2xl overflow-hidden bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40">
+                            <CardHeader className="bg-muted/30 border-b border-border/40 pb-5">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                        <Calendar className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <CardTitle className="text-lg font-semibold tracking-tight">Today's Hub</CardTitle>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                <CardDescription>{formatDateStr(new Date().toISOString())}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-5 pt-6">
+                                <div className="flex flex-col gap-3">
+                                    <Button
+                                        onClick={() => handlePunch("IN")}
+                                        disabled={!canPunchIn || actionLoading}
+                                        className="w-full h-12 justify-start gap-3 bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 disabled:opacity-50 transition-all font-semibold rounded-xl"
+                                    >
+                                        <LogIn size={20} />
+                                        Punch IN
+                                    </Button>
+                                    <Button
+                                        onClick={() => handlePunch("OUT")}
+                                        disabled={!canPunchOut || actionLoading}
+                                        variant="outline"
+                                        className="w-full h-12 justify-start gap-3 border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-all font-semibold rounded-xl hover:border-red-300"
+                                    >
+                                        <LogOut size={20} />
+                                        Punch OUT
+                                    </Button>
+                                </div>
+
+                                {lastPunch && (
+                                    <div className={`text-sm font-medium text-center p-3.5 rounded-xl border shadow-sm ${lastPunch.type === 'IN' ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-red-50/50 border-red-200 text-red-700'}`}>
+                                        Last action: <span className="font-bold uppercase tracking-wide">{lastPunch.type}</span> at {formatTime(lastPunch.time)}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Logs Explorer */}
-                    <Card className="col-span-1 md:col-span-3 shadow-sm border-border rounded-xl overflow-hidden gap-0 py-0">
+                    <Card className={`${isHR ? 'col-span-1' : 'col-span-1 lg:col-span-3'} shadow-xl shadow-primary/5 border-border/40 rounded-2xl overflow-hidden bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40`}>
                         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between pb-4 bg-linear-to-r from-slate-50 to-teal-50/50 border-b border-border">
                             <div className="flex items-center gap-2">
                                 <Clock className="h-5 w-5 text-teal-600" />

@@ -20,6 +20,7 @@ interface Salary {
 interface BonusDeductionItem {
     reason: string;
     amount: number;
+    isAuto?: boolean;
 }
 
 interface CreatePayrollModalProps {
@@ -78,8 +79,12 @@ export function useCreatePayrollModal({ isOpen, user, salaries, onSuccess }: Cre
 
                 if (response?.data?.deductionsOnLeave) {
                     setDeductions(prev => {
-                        const customDeductions = prev.filter(p => !response.data.deductionsOnLeave.some((l: any) => l.reason === p.reason));
-                        return [...customDeductions, ...response.data.deductionsOnLeave];
+                        const customDeductions = prev.filter(p => !p.isAuto);
+                        const autoDeductions = response.data.deductionsOnLeave.map((l: any) => ({
+                            ...l,
+                            isAuto: true
+                        }));
+                        return [...autoDeductions, ...customDeductions];
                     });
                 }
             } catch (err) {
@@ -119,13 +124,15 @@ export function useCreatePayrollModal({ isOpen, user, salaries, onSuccess }: Cre
         setError(null);
         setFieldErrors({});
 
+        const cleanedDeductions = deductions.map(({ reason, amount }) => ({ reason, amount }));
+
         const payload = {
             user: user._id,
             salary: selectedSalary,
             month: Number(month),
             year: Number(year),
             bonus: bonuses.length > 0 ? bonuses : undefined,
-            deduction: deductions.length > 0 ? deductions : undefined
+            deduction: cleanedDeductions.length > 0 ? cleanedDeductions : undefined
         };
 
         // Validate with Zod

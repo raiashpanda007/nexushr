@@ -2,7 +2,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Building2, Edit2, Trash2, FolderOpen, Hash, FileText } from "lucide-react";
+import { Building2, Edit2, Trash2, Hash, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Department {
@@ -44,7 +44,7 @@ export default function DepartmentTable({ departments, onEdit, onDelete }: Depar
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-indigo-600 via-violet-600 to-purple-600 text-white pb-5">
+            <CardHeader className="bg-linear-to-r from-indigo-600 via-violet-600 to-purple-600 text-white py-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">

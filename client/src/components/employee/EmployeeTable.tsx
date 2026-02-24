@@ -54,7 +54,7 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-blue-600 via-cyan-600 to-teal-600 text-white pb-5">
+            <CardHeader className="bg-linear-to-r from-blue-600 via-cyan-600 to-teal-600 text-white py-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
@@ -67,7 +67,7 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className=" flex items-center gap-3">
                         <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2.5 border border-white/10">
                             <Wifi className="h-4 w-4 text-emerald-300" />
                             <div className="text-right">

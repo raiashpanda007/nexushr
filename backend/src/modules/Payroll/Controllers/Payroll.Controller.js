@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import PayrollModal from "../Models/payroll.model.js";
 import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
 import LeaveRequestModal from "../../Leaves/LeaveRequests/Models/leaveRequests.model.js";
@@ -110,18 +111,18 @@ class PayrollController {
         if (!user) {
             throw new ApiError(Types.Errors.NotFound, "User not found");
         }
-        if (month > 12 || month < 1 || month >= new Date().getMonth()) {
-            throw new ApiError(Types.Errors.NotFound, "Invalid month");
+        if (!month || month > 12 || month < 1) {
+            throw new ApiError(Types.Errors.UnprocessableData, "Invalid month");
         }
-        if (year > 2100 || year < 1900 || year <= new Date().getFullYear()) {
-            throw new ApiError(Types.Errors.NotFound, "Invalid year");
+        if (!year || year > 2100 || year < 1900) {
+            throw new ApiError(Types.Errors.UnprocessableData, "Invalid year");
         }
 
         const leaveRequests = await LeaveRequestModal.aggregate([
             {
                 $match: {
                     status: "ACCEPTED",
-                    requestedBy: user,
+                    requestedBy: new mongoose.Types.ObjectId(user),
                     from: {
                         $gte: new Date(year, month - 1, 1),
                         $lte: new Date(year, month, 0)
@@ -134,7 +135,7 @@ class PayrollController {
             },
             {
                 $lookup: {
-                    from: "LeaveTypes",
+                    from: "leavetypes",
                     localField: "type",
                     foreignField: "_id",
                     as: "type"
@@ -142,13 +143,15 @@ class PayrollController {
             },
             {
                 $match: {
-                    "type[0].isPaid": false
+                    "type.isPaid": false
                 }
             },
 
         ])
 
-        const selectedSalary = await SalaryModal.findOne({ user, month, year })
+        const selectedSalary = salary
+            ? await SalaryModal.findById(salary)
+            : await SalaryModal.findOne({ userId: user });
 
         if (!selectedSalary) {
             throw new ApiError(Types.Errors.NotFound, "Salary not found");

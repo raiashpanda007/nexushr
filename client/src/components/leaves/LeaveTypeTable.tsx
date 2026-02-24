@@ -37,8 +37,8 @@ export default function LeaveTypeTable({ leaveTypes, onEdit }: LeaveTypeTablePro
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-teal-600 via-emerald-600 to-green-600 text-white pb-5">
-                <div className="flex items-center justify-between">
+            <CardHeader className="bg-linear-to-r from-teal-600 via-emerald-600 to-green-600 text-white pm-5">
+                <div className="flex items-center justify-between py-5">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
                             <CalendarDays className="h-5 w-5" />

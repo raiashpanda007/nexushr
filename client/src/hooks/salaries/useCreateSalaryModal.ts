@@ -1,22 +1,20 @@
 import { useEffect, useState } from 'react';
-import { CreateSalarySchema, UpdateSalarySchema, formatZodErrors } from '@/validations/schemas';
+import { CreateSalarySchema, formatZodErrors } from '@/validations/schemas';
 
-interface SalaryFormData {
+interface CreateSalaryFormData {
     userId: string;
     baseSalary: number;
     hra: number;
     lta: number;
 }
 
-interface UseSalaryModalProps {
+interface UseCreateSalaryModalProps {
     isOpen: boolean;
-    salaryData?: SalaryFormData | null;
-    onSubmit: (data: SalaryFormData) => Promise<void>;
-    isEditMode?: boolean;
+    onSubmit: (data: CreateSalaryFormData) => Promise<void>;
 }
 
-export function useSalaryModal({ isOpen, salaryData, onSubmit, isEditMode }: UseSalaryModalProps) {
-    const [formData, setFormData] = useState<SalaryFormData>({
+export function useCreateSalaryModal({ isOpen, onSubmit }: UseCreateSalaryModalProps) {
+    const [formData, setFormData] = useState<CreateSalaryFormData>({
         userId: '',
         baseSalary: 0,
         hra: 0,
@@ -27,34 +25,19 @@ export function useSalaryModal({ isOpen, salaryData, onSubmit, isEditMode }: Use
 
     useEffect(() => {
         if (isOpen) {
-            if (salaryData) {
-                setFormData(salaryData);
-            } else {
-                setFormData({
-                    userId: '',
-                    baseSalary: 0,
-                    hra: 0,
-                    lta: 0,
-                });
-            }
+            setFormData({ userId: '', baseSalary: 0, hra: 0, lta: 0 });
             setError(null);
             setFieldErrors({});
         }
-    }, [isOpen, salaryData]);
+    }, [isOpen]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: Number(value),
-        }));
+        setFormData((prev) => ({ ...prev, [name]: Number(value) }));
     };
 
     const handleUserChange = (value: string) => {
-        setFormData((prev) => ({
-            ...prev,
-            userId: value,
-        }));
+        setFormData((prev) => ({ ...prev, userId: value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -62,9 +45,7 @@ export function useSalaryModal({ isOpen, salaryData, onSubmit, isEditMode }: Use
         setError(null);
         setFieldErrors({});
 
-        // Validate with Zod
-        const schema = isEditMode ? UpdateSalarySchema : CreateSalarySchema;
-        const validation = schema.safeParse(formData);
+        const validation = CreateSalarySchema.safeParse(formData);
         if (!validation.success) {
             setFieldErrors(formatZodErrors(validation.error));
             setError(validation.error.issues[0]?.message || "Validation failed");
@@ -74,7 +55,7 @@ export function useSalaryModal({ isOpen, salaryData, onSubmit, isEditMode }: Use
         try {
             await onSubmit(formData);
         } catch (err: any) {
-            setError(err?.message || 'Failed to save salary. Please check your inputs.');
+            setError(err?.message || 'Failed to create salary. Please check your inputs.');
         }
     };
 
@@ -84,6 +65,6 @@ export function useSalaryModal({ isOpen, salaryData, onSubmit, isEditMode }: Use
         fieldErrors,
         handleInputChange,
         handleUserChange,
-        handleSubmit
+        handleSubmit,
     };
 }
