@@ -96,6 +96,8 @@ class UserController {
       throw new ApiError(Types.Errors.Forbidden, "Invalid password");
     }
 
+    savedUserDetail.online = true;
+    await savedUserDetail.save();
     const refreshUniqueToken = uuid()
 
     const refreshTokenPayload = {

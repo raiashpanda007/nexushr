@@ -1,7 +1,6 @@
-import { Calendar, LogIn, LogOut, BarChart3, Search, Activity, Clock, Award, AlertTriangle } from 'lucide-react';
+import { Calendar, LogIn, LogOut, BarChart3, Search, Activity, Clock, Award, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Fingerprint } from 'lucide-react';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import Loader from '../../components/Loader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -70,7 +69,14 @@ const Attendance = () => {
     } = useAttendance();
 
     if (loading && attendances.length === 0) {
-        return <Loader />;
+        return (
+            <div className="min-h-screen bg-linear-to-br from-teal-50/50 via-background to-cyan-50/30 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
+                    <p className="text-sm font-medium text-muted-foreground">Loading attendance data...</p>
+                </div>
+            </div>
+        );
     }
 
     const today = new Date();
@@ -89,40 +95,52 @@ const Attendance = () => {
     const totalPages = Math.ceil(total / limit);
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6 text-gray-900 bg-white min-h-screen">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight">Attendance Workspace</h1>
-                    <p className="text-gray-500 mt-1">Manage, punch, and analyze team working hours seamlessly</p>
-                </div>
-                {isHR && (
-                    <div className="flex bg-gray-100 p-1 rounded-md border border-gray-200">
-                        {(["Records", "Analytics"] as const).map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-2 rounded-sm text-sm font-semibold transition duration-150 ${activeTab === tab ? "bg-white shadow-sm ring-1 ring-gray-900/5 text-black" : "text-gray-500 hover:text-black"}`}
-                            >
-                                {tab}
-                            </button>
-                        ))}
+        <div className="min-h-screen bg-linear-to-br from-teal-50/50 via-background to-cyan-50/30 p-6 max-w-7xl mx-auto space-y-6">
+            {/* Header Card */}
+            <div className="rounded-2xl bg-linear-to-r from-teal-600 via-cyan-600 to-sky-600 p-6 shadow-lg">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm">
+                            <Fingerprint className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-white tracking-tight">Attendance Workspace</h1>
+                            <p className="text-white/70 text-sm mt-0.5">Manage, punch, and analyze team working hours</p>
+                        </div>
                     </div>
-                )}
+                    {isHR && (
+                        <div className="flex bg-white/15 backdrop-blur-sm p-1 rounded-lg border border-white/20">
+                            {(["Records", "Analytics"] as const).map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-4 py-2 rounded-md text-sm font-semibold transition duration-150 ${activeTab === tab ? "bg-white text-teal-700 shadow-sm" : "text-white/80 hover:text-white hover:bg-white/10"}`}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {activeTab === "Records" && (
                 <div className="grid gap-6 md:grid-cols-4">
-                    <Card className="col-span-1 shadow-sm border-gray-200 h-fit rounded-xl">
-                        <CardHeader className="bg-gray-50/50 rounded-t-xl border-b border-gray-100">
-                            <CardTitle className="text-lg">Today's Hub</CardTitle>
-                            <CardDescription className="text-gray-500">{formatDateStr(new Date().toISOString())}</CardDescription>
+                    {/* Today's Hub */}
+                    <Card className="col-span-1 shadow-sm border-border h-fit rounded-xl overflow-hidden">
+                        <CardHeader className="bg-linear-to-br from-teal-50 to-cyan-50 border-b border-teal-100">
+                            <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-teal-600" />
+                                <CardTitle className="text-lg">Today's Hub</CardTitle>
+                            </div>
+                            <CardDescription>{formatDateStr(new Date().toISOString())}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-6">
                             <div className="flex flex-col gap-3">
                                 <Button
                                     onClick={() => handlePunch("IN")}
                                     disabled={!canPunchIn || actionLoading}
-                                    className="w-full justify-start gap-2 bg-black text-white hover:bg-gray-800 disabled:opacity-50"
+                                    className="w-full justify-start gap-2 bg-linear-to-r from-emerald-500 to-green-500 text-white hover:opacity-90 disabled:opacity-50 shadow-md"
                                 >
                                     <LogIn size={18} />
                                     Punch IN
@@ -131,7 +149,7 @@ const Attendance = () => {
                                     onClick={() => handlePunch("OUT")}
                                     disabled={!canPunchOut || actionLoading}
                                     variant="outline"
-                                    className="w-full justify-start gap-2 border-gray-300 text-black hover:bg-gray-50 disabled:opacity-50"
+                                    className="w-full justify-start gap-2 border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
                                 >
                                     <LogOut size={18} />
                                     Punch OUT
@@ -139,32 +157,34 @@ const Attendance = () => {
                             </div>
 
                             {lastPunch && (
-                                <div className="text-sm font-medium text-center text-gray-500 mt-4 p-3 bg-gray-50 rounded-md border border-gray-100">
-                                    Last action: <span className="text-black font-bold uppercase">{lastPunch.type}</span> at {formatTime(lastPunch.time)}
+                                <div className={`text-sm font-medium text-center p-3 rounded-lg border ${lastPunch.type === 'IN' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                                    Last: <span className="font-bold uppercase">{lastPunch.type}</span> at {formatTime(lastPunch.time)}
                                 </div>
                             )}
                         </CardContent>
                     </Card>
 
-                    <Card className="col-span-1 md:col-span-3 shadow-sm border-gray-200 rounded-xl">
-                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between pb-4 border-b border-gray-100">
-                            <div>
+                    {/* Logs Explorer */}
+                    <Card className="col-span-1 md:col-span-3 shadow-sm border-border rounded-xl overflow-hidden">
+                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between pb-4 bg-linear-to-r from-slate-50 to-teal-50/50 border-b border-border">
+                            <div className="flex items-center gap-2">
+                                <Clock className="h-5 w-5 text-teal-600" />
                                 <CardTitle className="text-xl">Logs Explorer</CardTitle>
                             </div>
                             <div className="flex items-center space-x-3 mt-4 md:mt-0 w-full md:w-auto">
                                 {isHR && (
                                     <div className="relative flex-1 md:w-64">
-                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-teal-400" />
                                         <Input
                                             placeholder="Search by ID or Name..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="pl-9 border-gray-300 focus:ring-black focus:border-black"
+                                            className="pl-9 border-teal-200 focus-visible:ring-teal-300"
                                         />
                                     </div>
                                 )}
-                                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-md px-2">
-                                    <Calendar className="text-gray-400 h-4 w-4 mr-2" />
+                                <div className="flex items-center bg-white border border-teal-200 rounded-lg px-2">
+                                    <Calendar className="text-teal-400 h-4 w-4 mr-2" />
                                     <Input
                                         type="date"
                                         value={filterDate}
@@ -176,7 +196,7 @@ const Attendance = () => {
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => setFilterDate('')}
-                                            className="h-7 px-2 text-gray-500 hover:text-black ml-1"
+                                            className="h-7 px-2 text-muted-foreground hover:text-foreground ml-1"
                                         >
                                             Clear
                                         </Button>
@@ -187,13 +207,13 @@ const Attendance = () => {
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <Table>
-                                    <TableHeader className="bg-gray-50/80 uppercase text-xs tracking-wider">
+                                    <TableHeader className="bg-teal-50/60 uppercase text-xs tracking-wider">
                                         <TableRow>
-                                            <TableHead className="font-semibold text-gray-600">Date</TableHead>
-                                            {isHR && <TableHead className="font-semibold text-gray-600">Employee Details</TableHead>}
-                                            <TableHead className="font-semibold text-gray-600">First In</TableHead>
-                                            <TableHead className="font-semibold text-gray-600">Last Out</TableHead>
-                                            <TableHead className="font-semibold text-gray-600 right-align text-right">Total Time</TableHead>
+                                            <TableHead className="font-semibold text-teal-700">Date</TableHead>
+                                            {isHR && <TableHead className="font-semibold text-teal-700">Employee Details</TableHead>}
+                                            <TableHead className="font-semibold text-teal-700">First In</TableHead>
+                                            <TableHead className="font-semibold text-teal-700">Last Out</TableHead>
+                                            <TableHead className="font-semibold text-teal-700 text-right">Total Time</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -202,36 +222,41 @@ const Attendance = () => {
                                             const lastOut = record.punches ? [...record.punches].reverse().find(p => p.type === "OUT") : null;
 
                                             return (
-                                                <TableRow key={record._id} className="hover:bg-gray-50/50 transition-colors">
-                                                    <TableCell className="font-medium whitespace-nowrap text-gray-900 border-b border-gray-100">
+                                                <TableRow key={record._id} className="hover:bg-teal-50/40 transition-colors">
+                                                    <TableCell className="font-medium whitespace-nowrap">
                                                         {formatDateStr(record.date)}
                                                     </TableCell>
                                                     {isHR && (
-                                                        <TableCell className="border-b border-gray-100">
-                                                            <div className="flex flex-col">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-semibold text-gray-900">{record.user?.firstName} {record.user?.lastName}</span>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-linear-to-br from-teal-500 to-cyan-600 text-white text-xs font-bold">
+                                                                    {record.user?.firstName?.[0]}{record.user?.lastName?.[0]}
                                                                 </div>
-                                                                <span className="text-xs text-gray-400">{record.user?._id.slice(-6).toUpperCase()} • {record.user?.deptId?.name || 'N/A'}</span>
+                                                                <div>
+                                                                    <span className="font-semibold">{record.user?.firstName} {record.user?.lastName}</span>
+                                                                    <div className="text-xs text-muted-foreground">{record.user?._id.slice(-6).toUpperCase()} • {record.user?.deptId?.name || 'N/A'}</div>
+                                                                </div>
                                                             </div>
                                                         </TableCell>
                                                     )}
-                                                    <TableCell className="whitespace-nowrap border-b border-gray-100">
-                                                        {firstIn ? <span className="bg-gray-100 px-2 py-1 rounded text-sm text-gray-700">{formatTime(firstIn.time)}</span> : '-'}
+                                                    <TableCell className="whitespace-nowrap">
+                                                        {firstIn ? <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md text-sm font-medium">{formatTime(firstIn.time)}</span> : <span className="text-muted-foreground">-</span>}
                                                     </TableCell>
-                                                    <TableCell className="whitespace-nowrap border-b border-gray-100">
-                                                        {lastOut ? <span className="bg-gray-100 px-2 py-1 rounded text-sm text-gray-700">{formatTime(lastOut.time)}</span> : '-'}
+                                                    <TableCell className="whitespace-nowrap">
+                                                        {lastOut ? <span className="bg-red-50 text-red-700 px-2 py-1 rounded-md text-sm font-medium">{formatTime(lastOut.time)}</span> : <span className="text-muted-foreground">-</span>}
                                                     </TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right font-medium border-b border-gray-100">
-                                                        {formatDuration(record.totalMinutes)}
+                                                    <TableCell className="whitespace-nowrap text-right">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 font-semibold text-sm">
+                                                            <Clock className="h-3.5 w-3.5" /> {formatDuration(record.totalMinutes)}
+                                                        </span>
                                                     </TableCell>
-
                                                 </TableRow>
                                             );
                                         })}
                                         {filteredAttendances.length === 0 && (
                                             <TableRow>
-                                                <TableCell colSpan={isHR ? 6 : 5} className="h-32 text-center text-gray-400">
+                                                <TableCell colSpan={isHR ? 5 : 4} className="h-32 text-center text-muted-foreground">
+                                                    <Fingerprint className="h-8 w-8 mx-auto mb-2 text-teal-300" />
                                                     No attendance records found. Try adjusting criteria.
                                                 </TableCell>
                                             </TableRow>
@@ -240,26 +265,17 @@ const Attendance = () => {
                                 </Table>
 
                                 {total > 0 && (
-                                    <div className="p-4 flex justify-between items-center border-t border-gray-100">
-                                        <div className="text-sm text-gray-500">
-                                            Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} records
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setPage(p => Math.max(1, p - 1))}
-                                                disabled={page === 1}
-                                            >
-                                                Previous
+                                    <div className="p-4 flex justify-between items-center border-t border-border">
+                                        <p className="text-sm text-muted-foreground">
+                                            Showing <span className="font-semibold text-foreground">{(page - 1) * limit + 1}</span> to <span className="font-semibold text-foreground">{Math.min(page * limit, total)}</span> of <span className="font-semibold text-foreground">{total}</span> records
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="gap-1">
+                                                <ChevronLeft className="h-4 w-4" /> Previous
                                             </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                                disabled={page === totalPages || totalPages === 0}
-                                            >
-                                                Next
+                                            <span className="text-sm font-medium text-muted-foreground px-2">{page} / {totalPages || 1}</span>
+                                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0} className="gap-1">
+                                                Next <ChevronRight className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     </div>
@@ -273,25 +289,27 @@ const Attendance = () => {
             {activeTab === "Analytics" && isHR && (
                 <div className="space-y-6 animate-in slide-in-from-bottom-2 fade-in duration-300">
                     {/* Filter Action Bar */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 p-5 bg-linear-to-r from-slate-50 to-teal-50 border border-teal-200 rounded-xl">
                         <div>
-                            <h3 className="text-lg font-bold">Analytics Engine Config</h3>
-                            <p className="text-sm text-gray-500">Refine dataset by target timeframe & segments.</p>
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <BarChart3 className="h-5 w-5 text-teal-600" /> Analytics Engine
+                            </h3>
+                            <p className="text-sm text-muted-foreground">Refine dataset by timeframe & segments</p>
                         </div>
                         <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Time Range</label>
+                                <label className="text-xs font-semibold text-teal-700 uppercase tracking-wider block">Time Range</label>
                                 <Input
                                     type="month"
                                     value={analyticsMonthFilter}
                                     onChange={(e) => setAnalyticsMonthFilter(e.target.value)}
-                                    className="bg-white border-gray-300 w-full md:w-48"
+                                    className="border-teal-200 w-full md:w-48 focus-visible:ring-teal-300"
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Target Line</label>
+                                <label className="text-xs font-semibold text-teal-700 uppercase tracking-wider block">Department</label>
                                 <Select value={analyticsDeptFilter} onValueChange={setAnalyticsDeptFilter}>
-                                    <SelectTrigger className="w-full md:w-56 bg-white border-gray-300 font-medium h-9">
+                                    <SelectTrigger className="w-full md:w-56 border-teal-200 font-medium h-9">
                                         <SelectValue placeholder="All Departments" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -307,51 +325,53 @@ const Attendance = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {bestDepartment ? (
-                            <Card className="border-gray-200 shadow-sm rounded-xl bg-gray-50 border-t-4 border-t-black">
+                            <Card className="border-border shadow-sm rounded-xl overflow-hidden bg-linear-to-br from-emerald-50/50 to-teal-50/50 border-t-4 border-t-emerald-500">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="flex items-center gap-2 text-lg">
-                                        <Award className="h-5 w-5 fill-black text-black" />
+                                        <Award className="h-5 w-5 text-emerald-500" />
                                         Leading Department
                                     </CardTitle>
-                                    <CardDescription>Highest average daily working hours for {format(parseISO(analyticsMonthFilter + '-01'), 'MMMM yyyy')}</CardDescription>
+                                    <CardDescription>Highest average hours for {format(parseISO(analyticsMonthFilter + '-01'), 'MMMM yyyy')}</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-black">{bestDepartment.name}</div>
-                                    <div className="mt-2 text-sm text-gray-600 font-medium">Avg {bestDepartment.avgHours.toFixed(2)} Hrs / employee block</div>
+                                    <div className="text-3xl font-black text-emerald-700">{bestDepartment.name}</div>
+                                    <div className="mt-2 text-sm text-emerald-600 font-medium">Avg {bestDepartment.avgHours.toFixed(2)} Hrs / employee</div>
                                 </CardContent>
                             </Card>
                         ) : (
-                            <Card className="border-gray-200 shadow-sm rounded-xl bg-gray-50">
-                                <CardHeader className="pb-2"><CardTitle>No Top Dept Data</CardTitle></CardHeader>
+                            <Card className="border-border shadow-sm rounded-xl bg-slate-50">
+                                <CardHeader className="pb-2"><CardTitle className="text-muted-foreground">No Top Dept Data</CardTitle></CardHeader>
                             </Card>
                         )}
 
                         {(worstDepartment && bestDepartment?._id !== worstDepartment?._id) ? (
-                            <Card className="border-gray-200 shadow-sm rounded-xl bg-gray-50 border-t-4 border-t-gray-400">
+                            <Card className="border-border shadow-sm rounded-xl overflow-hidden bg-linear-to-br from-amber-50/50 to-orange-50/50 border-t-4 border-t-amber-500">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="flex items-center gap-2 text-lg">
-                                        <AlertTriangle className="h-5 w-5 text-gray-500" />
+                                        <AlertTriangle className="h-5 w-5 text-amber-500" />
                                         Needs Review
                                     </CardTitle>
-                                    <CardDescription>Lowest average daily working hours for {format(parseISO(analyticsMonthFilter + '-01'), 'MMMM yyyy')}</CardDescription>
+                                    <CardDescription>Lowest average hours for {format(parseISO(analyticsMonthFilter + '-01'), 'MMMM yyyy')}</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-black">{worstDepartment.name}</div>
-                                    <div className="mt-2 text-sm text-gray-600 font-medium">Avg {worstDepartment.avgHours.toFixed(2)} Hrs / employee block</div>
+                                    <div className="text-3xl font-black text-amber-700">{worstDepartment.name}</div>
+                                    <div className="mt-2 text-sm text-amber-600 font-medium">Avg {worstDepartment.avgHours.toFixed(2)} Hrs / employee</div>
                                 </CardContent>
                             </Card>
                         ) : (
-                            <Card className="border-gray-200 shadow-sm rounded-xl bg-gray-50">
-                                <CardHeader className="pb-2"><CardTitle>No Low Dept Data</CardTitle></CardHeader>
+                            <Card className="border-border shadow-sm rounded-xl bg-slate-50">
+                                <CardHeader className="pb-2"><CardTitle className="text-muted-foreground">No Low Dept Data</CardTitle></CardHeader>
                             </Card>
                         )}
                     </div>
 
                     {analyticsDeptFilter === "ALL" ? (
-                        <Card className="border-gray-200 shadow-sm rounded-xl">
-                            <CardHeader>
-                                <CardTitle>Macro Comparative Analysis</CardTitle>
-                                <CardDescription>Tracking performance across segments for the selected period.</CardDescription>
+                        <Card className="border-border shadow-sm rounded-xl overflow-hidden">
+                            <CardHeader className="bg-linear-to-r from-teal-50 to-cyan-50 border-b border-teal-100">
+                                <CardTitle className="flex items-center gap-2">
+                                    <BarChart3 className="h-5 w-5 text-teal-600" /> Department Comparison
+                                </CardTitle>
+                                <CardDescription>Tracking performance across departments for the selected period</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {departmentStats.length > 0 ? (
@@ -359,57 +379,66 @@ const Attendance = () => {
                                         <ResponsiveContainer width="100%" height="100%">
                                             <BarChart data={departmentStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontWeight: 500 }} />
+                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#0F766E', fontWeight: 500 }} />
                                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280' }} />
                                                 <Tooltip
-                                                    cursor={{ fill: '#F3F4F6' }}
-                                                    contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', fontWeight: '500', color: '#000' }}
+                                                    cursor={{ fill: '#F0FDFA' }}
+                                                    contentStyle={{ borderRadius: '8px', border: '1px solid #99F6E4', fontWeight: '500', color: '#0F766E' }}
                                                 />
-                                                <Bar dataKey="avgHours" name="Average Hours" fill="#000000" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="avgHours" name="Average Hours" fill="#0D9488" radius={[6, 6, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
                                 ) : (
-                                    <div className="text-center py-12 text-gray-400">No attendance data discovered for the selected month window.</div>
+                                    <div className="text-center py-12 text-muted-foreground">
+                                        <BarChart3 className="h-8 w-8 mx-auto mb-2 text-teal-300" />
+                                        No attendance data for the selected month.
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>
                     ) : (
-                        <Card className="border-gray-200 shadow-sm rounded-xl overflow-hidden">
-                            <CardHeader className="bg-gray-50 border-b border-gray-200">
+                        <Card className="border-border shadow-sm rounded-xl overflow-hidden">
+                            <CardHeader className="bg-linear-to-r from-teal-50 to-cyan-50 border-b border-teal-100">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <CardTitle>Roster Insight</CardTitle>
-                                        <CardDescription>Individuals contributing to the selected operating line.</CardDescription>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Activity className="h-5 w-5 text-teal-600" /> Department Roster
+                                        </CardTitle>
+                                        <CardDescription>Individual contributions in the selected department</CardDescription>
                                     </div>
-                                    <Badge variant="outline" className="bg-white">{employeesInSelectedDept.length} Count</Badge>
+                                    <Badge className="bg-teal-100 text-teal-800 border-teal-200">{employeesInSelectedDept.length} Members</Badge>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
                                 {employeesInSelectedDept.length > 0 ? (
                                     <Table>
-                                        <TableHeader>
+                                        <TableHeader className="bg-teal-50/50">
                                             <TableRow>
-                                                <TableHead>Employee Name</TableHead>
-                                                <TableHead>System ID</TableHead>
-                                                <TableHead>Period Aggregation</TableHead>
-                                                <TableHead className="text-right">Deep Dive</TableHead>
+                                                <TableHead className="text-teal-700 font-semibold">Employee Name</TableHead>
+                                                <TableHead className="text-teal-700 font-semibold">System ID</TableHead>
+                                                <TableHead className="text-teal-700 font-semibold">Total Logged</TableHead>
+                                                <TableHead className="text-right text-teal-700 font-semibold">Deep Dive</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {employeesInSelectedDept.map(emp => (
-                                                <TableRow key={emp._id}>
+                                                <TableRow key={emp._id} className="hover:bg-teal-50/40 transition-colors">
                                                     <TableCell className="font-semibold">{emp.firstName} {emp.lastName}</TableCell>
-                                                    <TableCell className="text-gray-500 font-mono text-sm">{emp._id}</TableCell>
-                                                    <TableCell>{formatDuration(emp.totalLoggedMinutes)}</TableCell>
+                                                    <TableCell className="text-muted-foreground font-mono text-sm">{emp._id}</TableCell>
+                                                    <TableCell>
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-50 text-sky-700 font-medium text-sm">
+                                                            <Clock className="h-3.5 w-3.5" /> {formatDuration(emp.totalLoggedMinutes)}
+                                                        </span>
+                                                    </TableCell>
                                                     <TableCell className="text-right">
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            className="h-8 shadow-sm"
+                                                            className="h-8 gap-2 border-teal-200 text-teal-700 hover:bg-teal-50"
                                                             onClick={() => setSelectedEmpId(emp._id)}
                                                         >
-                                                            <BarChart3 className="h-4 w-4 mr-2" /> View Spec
+                                                            <BarChart3 className="h-4 w-4" /> View
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
@@ -417,7 +446,10 @@ const Attendance = () => {
                                         </TableBody>
                                     </Table>
                                 ) : (
-                                    <div className="text-center py-12 text-gray-400">No members accumulated records in this segment for the timeframe.</div>
+                                    <div className="text-center py-12 text-muted-foreground">
+                                        <Activity className="h-8 w-8 mx-auto mb-2 text-teal-300" />
+                                        No records for this department in the selected timeframe.
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>
@@ -427,50 +459,52 @@ const Attendance = () => {
 
             {/* Individual Employee Modal */}
             <Dialog open={!!selectedEmpId} onOpenChange={(open) => !open && setSelectedEmpId(null)}>
-                <DialogContent className="sm:max-w-5xl lg:max-w-6xl w-[95vw] md:w-[90vw] h-[85vh] overflow-y-auto bg-white border-gray-200 rounded-xl pr-2 md:p-6 p-4">
+                <DialogContent className="sm:max-w-5xl lg:max-w-6xl w-[95vw] md:w-[90vw] h-[85vh] overflow-y-auto border-border rounded-xl pr-2 md:p-6 p-4">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-2 leading-none">
-                            <Activity className="h-6 w-6" /> {selectedEmpName} Analytics
+                            <Activity className="h-6 w-6 text-teal-600" /> {selectedEmpName} Analytics
                         </DialogTitle>
                     </DialogHeader>
 
                     <div className="space-y-8 mt-4">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Charts Wrapper */}
-                            <Card className="col-span-1 lg:col-span-2 shadow-sm border-gray-100 bg-gray-50/50">
+                            {/* Charts */}
+                            <Card className="col-span-1 lg:col-span-2 shadow-sm border-border bg-linear-to-br from-teal-50/30 to-cyan-50/30">
                                 <CardHeader className="pb-0">
-                                    <CardTitle className="text-lg flex items-center gap-2"><Clock className="h-4 w-4" /> Working Hours History</CardTitle>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <Clock className="h-4 w-4 text-teal-600" /> Working Hours History
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-6">
                                     <div className="space-y-6">
                                         <div className="h-56">
-                                            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-widest">Daily Log</p>
+                                            <p className="text-xs font-semibold text-teal-700 mb-2 uppercase tracking-widest">Daily Log</p>
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <BarChart data={chartDaily}>
                                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
-                                                    <Tooltip cursor={{ fill: '#E5E7EB' }} contentStyle={{ border: 'none', borderRadius: '4px', background: '#000', color: '#fff' }} itemStyle={{ color: '#fff' }} />
-                                                    <Bar dataKey="Hours" fill="#000000" radius={[2, 2, 0, 0]} />
+                                                    <Tooltip cursor={{ fill: '#F0FDFA' }} contentStyle={{ border: '1px solid #99F6E4', borderRadius: '8px', background: '#fff' }} />
+                                                    <Bar dataKey="Hours" fill="#0D9488" radius={[4, 4, 0, 0]} />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="h-32">
-                                                <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-widest">Weekly Trends</p>
+                                                <p className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-widest">Weekly Trends</p>
                                                 <ResponsiveContainer width="100%" height="100%">
                                                     <BarChart data={chartWeekly}>
                                                         <XAxis dataKey="name" hide />
-                                                        <Tooltip cursor={{ fill: '#f0f0f0' }} />
-                                                        <Bar dataKey="Hours" fill="#555" radius={[2, 2, 0, 0]} />
+                                                        <Tooltip cursor={{ fill: '#EFF6FF' }} />
+                                                        <Bar dataKey="Hours" fill="#3B82F6" radius={[4, 4, 0, 0]} />
                                                     </BarChart>
                                                 </ResponsiveContainer>
                                             </div>
                                             <div className="h-32">
-                                                <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-widest">Monthly Aggregation</p>
+                                                <p className="text-xs font-semibold text-violet-700 mb-2 uppercase tracking-widest">Monthly Aggregation</p>
                                                 <ResponsiveContainer width="100%" height="100%">
                                                     <BarChart data={chartMonthly}>
                                                         <XAxis dataKey="name" hide />
-                                                        <Tooltip cursor={{ fill: '#f0f0f0' }} />
-                                                        <Bar dataKey="Hours" fill="#222" radius={[2, 2, 0, 0]} />
+                                                        <Tooltip cursor={{ fill: '#F5F3FF' }} />
+                                                        <Bar dataKey="Hours" fill="#7C3AED" radius={[4, 4, 0, 0]} />
                                                     </BarChart>
                                                 </ResponsiveContainer>
                                             </div>
@@ -479,29 +513,32 @@ const Attendance = () => {
                                 </CardContent>
                             </Card>
 
-                            <Card className="col-span-1 shadow-sm border-gray-100">
-                                <CardHeader className="border-b border-gray-100 bg-gray-50/80 rounded-t-xl pb-3">
-                                    <CardTitle className="text-lg">Detailed Punches</CardTitle>
+                            {/* Punches Detail */}
+                            <Card className="col-span-1 shadow-sm border-border overflow-hidden">
+                                <CardHeader className="border-b border-border bg-linear-to-r from-teal-50 to-cyan-50 rounded-t-xl pb-3">
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <Fingerprint className="h-4 w-4 text-teal-600" /> Detailed Punches
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-0 p-0">
-                                    <div className="h-[460px] overflow-y-auto w-full">
+                                    <div className="h-115 overflow-y-auto w-full">
                                         <Table>
-                                            <TableHeader className="bg-white sticky top-0 border-b border-gray-100 shadow-sm z-10 w-full">
+                                            <TableHeader className="bg-white sticky top-0 border-b border-border shadow-sm z-10 w-full">
                                                 <TableRow>
-                                                    <TableHead className="font-semibold text-xs text-gray-500">Date/Time</TableHead>
-                                                    <TableHead className="font-semibold text-xs text-gray-500 text-center">Trigger</TableHead>
+                                                    <TableHead className="font-semibold text-xs text-teal-700">Date/Time</TableHead>
+                                                    <TableHead className="font-semibold text-xs text-teal-700 text-center">Type</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {selectedEmpRecords.flatMap(record =>
                                                     record.punches.map((p, i) => (
-                                                        <TableRow key={`${record._id}-${i}`} className="hover:bg-gray-50 border-b border-gray-50">
+                                                        <TableRow key={`${record._id}-${i}`} className="hover:bg-teal-50/30 border-b border-border/50">
                                                             <TableCell className="text-sm">
                                                                 <span className="font-medium">{formatDateStr(record.date)}</span>
-                                                                <div className="text-xs text-gray-500">{formatTime(p.time)}</div>
+                                                                <div className="text-xs text-muted-foreground">{formatTime(p.time)}</div>
                                                             </TableCell>
                                                             <TableCell className="text-center w-24">
-                                                                <span className={`px-2 py-1 text-xs font-bold rounded ${p.type === 'IN' ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'}`}>
+                                                                <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${p.type === 'IN' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                                                                     {p.type}
                                                                 </span>
                                                             </TableCell>
@@ -510,7 +547,7 @@ const Attendance = () => {
                                                 ).reverse()}
                                                 {selectedEmpRecords.length === 0 && (
                                                     <TableRow>
-                                                        <TableCell colSpan={2} className="text-center text-gray-400 py-6">No punches found</TableCell>
+                                                        <TableCell colSpan={2} className="text-center text-muted-foreground py-6">No punches found</TableCell>
                                                     </TableRow>
                                                 )}
                                             </TableBody>
