@@ -127,8 +127,8 @@ const Attendance = () => {
             {activeTab === "Records" && (
                 <div className="grid gap-6 md:grid-cols-4">
                     {/* Today's Hub */}
-                    <Card className="col-span-1 shadow-sm border-border h-fit rounded-xl overflow-hidden">
-                        <CardHeader className="bg-linear-to-br from-teal-50 to-cyan-50 border-b border-teal-100">
+                    <Card className="bg-linear-to-br col-span-1 shadow-sm border-border h-fit rounded-xl overflow-hidden">
+                        <CardHeader className=" from-teal-50 to-cyan-50 border-b border-teal-100">
                             <div className="flex items-center gap-2">
                                 <Calendar className="h-4 w-4 text-teal-600" />
                                 <CardTitle className="text-lg">Today's Hub</CardTitle>
@@ -165,7 +165,7 @@ const Attendance = () => {
                     </Card>
 
                     {/* Logs Explorer */}
-                    <Card className="col-span-1 md:col-span-3 shadow-sm border-border rounded-xl overflow-hidden">
+                    <Card className="col-span-1 md:col-span-3 shadow-sm border-border rounded-xl overflow-hidden gap-0 py-0">
                         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between pb-4 bg-linear-to-r from-slate-50 to-teal-50/50 border-b border-border">
                             <div className="flex items-center gap-2">
                                 <Clock className="h-5 w-5 text-teal-600" />
@@ -366,7 +366,7 @@ const Attendance = () => {
                     </div>
 
                     {analyticsDeptFilter === "ALL" ? (
-                        <Card className="border-border shadow-sm rounded-xl overflow-hidden">
+                        <Card className="border-border shadow-sm rounded-xl overflow-hidden gap-0 py-0">
                             <CardHeader className="bg-linear-to-r from-teal-50 to-cyan-50 border-b border-teal-100">
                                 <CardTitle className="flex items-center gap-2">
                                     <BarChart3 className="h-5 w-5 text-teal-600" /> Department Comparison
@@ -398,7 +398,7 @@ const Attendance = () => {
                             </CardContent>
                         </Card>
                     ) : (
-                        <Card className="border-border shadow-sm rounded-xl overflow-hidden">
+                        <Card className="border-border shadow-sm rounded-xl overflow-hidden gap-0 py-0">
                             <CardHeader className="bg-linear-to-r from-teal-50 to-cyan-50 border-b border-teal-100">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -514,7 +514,7 @@ const Attendance = () => {
                             </Card>
 
                             {/* Punches Detail */}
-                            <Card className="col-span-1 shadow-sm border-border overflow-hidden">
+                            <Card className="col-span-1 shadow-sm border-border overflow-hidden gap-0 py-0">
                                 <CardHeader className="border-b border-border bg-linear-to-r from-teal-50 to-cyan-50 rounded-t-xl pb-3">
                                     <CardTitle className="text-lg flex items-center gap-2">
                                         <Fingerprint className="h-4 w-4 text-teal-600" /> Detailed Punches

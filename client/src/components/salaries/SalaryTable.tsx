@@ -72,7 +72,7 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
     );
 
     return (
-        <Card className="w-full overflow-hidden border-0 shadow-lg">
+        <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
             {/* Gradient Header */}
             <CardHeader className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 text-white pb-5">
                 <div className="flex items-center justify-between">

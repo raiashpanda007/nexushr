@@ -53,7 +53,7 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
     const onlineCount = employees.filter(e => e.online).length;
 
     return (
-        <Card className="w-full overflow-hidden border-0 shadow-lg">
+        <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
             <CardHeader className="bg-linear-to-r from-blue-600 via-cyan-600 to-teal-600 text-white pb-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

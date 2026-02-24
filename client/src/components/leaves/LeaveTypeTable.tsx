@@ -36,7 +36,7 @@ export default function LeaveTypeTable({ leaveTypes, onEdit }: LeaveTypeTablePro
     const paidCount = leaveTypes.filter(t => t.isPaid).length;
 
     return (
-        <Card className="w-full overflow-hidden border-0 shadow-lg">
+        <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
             <CardHeader className="bg-linear-to-r from-teal-600 via-emerald-600 to-green-600 text-white pb-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

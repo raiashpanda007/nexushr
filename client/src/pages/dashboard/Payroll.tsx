@@ -229,7 +229,7 @@ const Payroll = () => {
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Employee List Section */}
-                <Card className="shadow-sm border-border overflow-hidden">
+                <Card className="shadow-sm border-border overflow-hidden gap-0 py-0">
                     <CardHeader className="bg-linear-to-r from-indigo-50 to-violet-50 border-b border-indigo-100">
                         <div className="flex items-center gap-2">
                             <Users className="h-5 w-5 text-indigo-600" />
@@ -307,7 +307,7 @@ const Payroll = () => {
                 </Card>
 
                 {/* Payrolls List Section */}
-                <Card className="shadow-sm border-border overflow-hidden">
+                <Card className="shadow-sm border-border overflow-hidden gap-0 py-0">
                     <CardHeader className="bg-linear-to-r from-emerald-50 to-teal-50 border-b border-emerald-100">
                         <div className="flex items-center gap-2">
                             <DollarSign className="h-5 w-5 text-emerald-600" />

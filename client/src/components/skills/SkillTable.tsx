@@ -55,7 +55,7 @@ export default function SkillTable({ skills, onEdit, onDelete }: SkillTableProps
     const uniqueCategories = [...new Set(skills.map(s => s.category))];
 
     return (
-        <Card className="w-full overflow-hidden border-0 shadow-lg">
+        <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
             <CardHeader className="bg-linear-to-r from-amber-500 via-orange-500 to-rose-500 text-white pb-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

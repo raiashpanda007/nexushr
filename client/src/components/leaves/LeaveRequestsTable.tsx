@@ -100,7 +100,7 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
     const acceptedCount = requests.filter(r => r.status === "ACCEPTED").length;
 
     return (
-        <Card className="w-full overflow-hidden border-0 shadow-lg">
+        <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
             <CardHeader className="bg-linear-to-r from-sky-600 via-blue-600 to-indigo-600 text-white pb-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

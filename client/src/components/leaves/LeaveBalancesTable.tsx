@@ -46,7 +46,7 @@ const balanceColors = [
 export default function LeaveBalancesTable({ users, onEdit }: LeaveBalancesTableProps) {
     if (!users || users.length === 0) {
         return (
-            <Card className="w-full border-dashed border-2">
+            <Card className=" w-full border-dashed border-2">
                 <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                     <div className="flex items-center justify-center h-16 w-16 rounded-full bg-muted mb-4">
                         <Wallet className="h-8 w-8 opacity-40" />
@@ -59,14 +59,14 @@ export default function LeaveBalancesTable({ users, onEdit }: LeaveBalancesTable
     }
 
     return (
-        <Card className="w-full overflow-hidden border-0 shadow-lg">
+        <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
             <CardHeader className="bg-linear-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white pb-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
                             <BarChart3 className="h-5 w-5" />
                         </div>
-                        <div>
+                        <div className="pt-2">
                             <CardTitle className="text-lg font-bold">Leave Balances</CardTitle>
                             <p className="text-white/70 text-sm mt-0.5">
                                 {users.length} employee{users.length !== 1 ? "s" : ""} with balances
