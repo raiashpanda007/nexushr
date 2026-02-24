@@ -101,7 +101,7 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-sky-600 via-blue-600 to-indigo-600 text-white py-5">
+            <CardHeader className="bg-linear-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground py-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
@@ -138,22 +138,22 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                         <TableRow className="bg-muted/40 hover:bg-muted/40">
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <UserCircle className="h-3.5 w-3.5 text-blue-500" /> Employee
+                                    <UserCircle className="h-3.5 w-3.5 text-primary" /> Employee
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <CalendarDays className="h-3.5 w-3.5 text-teal-500" /> Leave Type
+                                    <CalendarDays className="h-3.5 w-3.5 text-primary" /> Leave Type
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <CalendarRange className="h-3.5 w-3.5 text-indigo-500" /> Period
+                                    <CalendarRange className="h-3.5 w-3.5 text-primary" /> Period
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold text-center">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Clock className="h-3.5 w-3.5 text-orange-500" /> Days
+                                    <Clock className="h-3.5 w-3.5 text-primary" /> Days
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">Status</TableHead>
@@ -173,7 +173,7 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                                 {/* Employee */}
                                 <TableCell>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center justify-center h-9 w-9 rounded-full bg-linear-to-br from-sky-500 to-indigo-600 text-white text-xs font-bold shrink-0 shadow-sm">
+                                        <div className="flex items-center justify-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 shadow-sm">
                                             {req.requestedBy?.firstName?.[0]}{req.requestedBy?.lastName?.[0]}
                                         </div>
                                         <div className="min-w-0">
@@ -187,7 +187,7 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
 
                                 {/* Leave Type */}
                                 <TableCell>
-                                    <span className="inline-flex items-center gap-1.5 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 px-2.5 py-1 rounded-full text-xs font-medium border border-teal-200/60 dark:border-teal-800/40">
+                                    <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full text-xs font-medium border border-primary/20">
                                         <CalendarDays className="h-3 w-3" />
                                         {leaveTypeName(req.type)}
                                     </span>
@@ -204,7 +204,7 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
 
                                 {/* Days */}
                                 <TableCell className="text-center">
-                                    <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 text-xs font-bold border border-orange-200/60 dark:border-orange-800/40">
+                                    <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-muted text-muted-foreground text-xs font-bold border border-border">
                                         {req.quantity}
                                     </span>
                                 </TableCell>
@@ -227,7 +227,7 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                                                 size="sm"
                                                 onClick={() => handleAction(req._id, "ACCEPTED")}
                                                 disabled={processingId === req._id}
-                                                className="h-8 bg-linear-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white rounded-lg text-xs font-semibold gap-1.5 shadow-sm"
+                                                className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold gap-1.5 shadow-sm"
                                             >
                                                 {processingId === req._id ? (
                                                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -240,7 +240,7 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                                                 size="sm"
                                                 onClick={() => handleAction(req._id, "REJECTED")}
                                                 disabled={processingId === req._id}
-                                                className="h-8 bg-linear-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white rounded-lg text-xs font-semibold gap-1.5 shadow-sm"
+                                                className="h-8 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold gap-1.5 shadow-sm"
                                             >
                                                 {processingId === req._id ? (
                                                     <Loader2 className="h-3 w-3 animate-spin" />

@@ -38,10 +38,13 @@ function mapRawToUserLeaveBalance(doc: RawLeaveBalanceDoc): UserLeaveBalance {
     };
 }
 
+export type LeaveTab = "types" | "balances" | "requests";
+
 export function useLeaves() {
     const { userDetails } = useAppSelector((state) => state.userState);
     const role = userDetails?.role?.toUpperCase();
 
+    const [activeTab, setActiveTab] = useState<LeaveTab>("types");
     const [search, setSearch] = useState("");
 
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
@@ -163,22 +166,22 @@ export function useLeaves() {
     };
 
     useEffect(() => {
-        if (role === "HR") {
+        if (role === "HR" && activeTab === "types") {
             fetchLeaveTypes(leaveTypesPage);
         }
-    }, [role, leaveTypesPage]);
+    }, [role, leaveTypesPage, activeTab]);
 
     useEffect(() => {
-        if (role === "HR") {
+        if (role === "HR" && activeTab === "balances") {
             fetchUserBalances(balancesPage);
         }
-    }, [role, balancesPage]);
+    }, [role, balancesPage, activeTab]);
 
     useEffect(() => {
-        if (role === "HR") {
+        if (role === "HR" && activeTab === "requests") {
             fetchLeaveRequests(requestsPage);
         }
-    }, [role, requestsPage]);
+    }, [role, requestsPage, activeTab]);
 
     const handleAddLeaveType = () => {
         setSelectedLeaveType(null);
@@ -260,6 +263,8 @@ export function useLeaves() {
 
     return {
         role,
+        activeTab,
+        setActiveTab,
         search,
         setSearch,
         leaveTypes,

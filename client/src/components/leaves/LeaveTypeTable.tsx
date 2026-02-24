@@ -37,8 +37,8 @@ export default function LeaveTypeTable({ leaveTypes, onEdit }: LeaveTypeTablePro
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-teal-600 via-emerald-600 to-green-600 text-white pm-5">
-                <div className="flex items-center justify-between py-5">
+            <CardHeader className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground py-5">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
                             <CalendarDays className="h-5 w-5" />
@@ -66,26 +66,26 @@ export default function LeaveTypeTable({ leaveTypes, onEdit }: LeaveTypeTablePro
                     <TableHeader>
                         <TableRow className="bg-muted/40 hover:bg-muted/40">
                             <TableHead className="w-12 font-semibold">
-                                <Hash className="h-3.5 w-3.5 text-emerald-500" />
+                                <Hash className="h-3.5 w-3.5 text-slate-500" />
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Code2 className="h-3.5 w-3.5 text-teal-500" /> Code
+                                    <Code2 className="h-3.5 w-3.5 text-primary" /> Code
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Type className="h-3.5 w-3.5 text-emerald-500" /> Name
+                                    <Type className="h-3.5 w-3.5 text-primary" /> Name
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Clock className="h-3.5 w-3.5 text-blue-500" /> Duration
+                                    <Clock className="h-3.5 w-3.5 text-primary" /> Duration
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <CircleDollarSign className="h-3.5 w-3.5 text-green-500" /> Status
+                                    <CircleDollarSign className="h-3.5 w-3.5 text-primary" /> Status
                                 </span>
                             </TableHead>
                             <TableHead className="text-right font-semibold">Actions</TableHead>
@@ -112,7 +112,7 @@ export default function LeaveTypeTable({ leaveTypes, onEdit }: LeaveTypeTablePro
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2.5">
-                                        <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-linear-to-br from-teal-400 to-emerald-500 text-white shadow-sm">
+                                        <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary text-primary-foreground shadow-sm">
                                             <CalendarDays className="h-3.5 w-3.5" />
                                         </div>
                                         <span className="font-semibold text-sm">{type.name}</span>
@@ -150,7 +150,7 @@ export default function LeaveTypeTable({ leaveTypes, onEdit }: LeaveTypeTablePro
                                             size="icon"
                                             onClick={() => onEdit(type)}
                                             title="Edit Leave Type"
-                                            className="h-8 w-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50"
+                                            className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary"
                                         >
                                             <Edit2 className="h-4 w-4" />
                                         </Button>
