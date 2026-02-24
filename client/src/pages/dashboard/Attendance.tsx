@@ -194,7 +194,6 @@ const Attendance = () => {
                                             <TableHead className="font-semibold text-gray-600">First In</TableHead>
                                             <TableHead className="font-semibold text-gray-600">Last Out</TableHead>
                                             <TableHead className="font-semibold text-gray-600 right-align text-right">Total Time</TableHead>
-                                            {isHR && <TableHead className="font-semibold text-gray-600 text-center">Analyze</TableHead>}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -226,13 +225,7 @@ const Attendance = () => {
                                                     <TableCell className="whitespace-nowrap text-right font-medium border-b border-gray-100">
                                                         {formatDuration(record.totalMinutes)}
                                                     </TableCell>
-                                                    {isHR && (
-                                                        <TableCell className="text-center border-b border-gray-100">
-                                                            <Button variant="ghost" size="sm" onClick={() => setSelectedEmpId(record.user._id)} className="w-8 h-8 p-0 rounded-full hover:bg-black hover:text-white transition">
-                                                                <BarChart3 className="h-4 w-4" />
-                                                            </Button>
-                                                        </TableCell>
-                                                    )}
+
                                                 </TableRow>
                                             );
                                         })}

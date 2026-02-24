@@ -29,6 +29,8 @@ export default function CreateLeaveBalanceModal({
         setSelectedUserId,
         allocations,
         saving,
+        error,
+        fieldErrors,
         handleAddAllocation,
         handleRemoveAllocation,
         handleAllocationChange,
@@ -46,13 +48,15 @@ export default function CreateLeaveBalanceModal({
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                    
                     <div className="space-y-2">
                         <Label>Employee</Label>
                         {loadingUsers ? (
                             <div className="text-sm text-muted-foreground">Loading users...</div>
                         ) : (
                             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                                <SelectTrigger>
+                                <SelectTrigger className={fieldErrors.user ? "border-red-500" : ""}>
                                     <SelectValue placeholder="Select an employee" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -68,10 +72,12 @@ export default function CreateLeaveBalanceModal({
                                 </SelectContent>
                             </Select>
                         )}
+                        {fieldErrors.user && <p className="text-red-500 text-xs">{fieldErrors.user}</p>}
                     </div>
 
                     <div className="space-y-2">
                         <Label>Leave Allocations</Label>
+                        {fieldErrors.leaves && <p className="text-red-500 text-xs">{fieldErrors.leaves}</p>}
                         {allocations.map((alloc, index) => (
                             <div key={index} className="flex gap-2 items-end">
                                 <div className="flex-1">
@@ -125,7 +131,7 @@ export default function CreateLeaveBalanceModal({
 
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-                    <Button onClick={handleSave} disabled={saving || !selectedUserId}>
+                    <Button onClick={handleSave} disabled={saving}>
                         {saving ? "Creating..." : "Create Balance"}
                     </Button>
                 </DialogFooter>

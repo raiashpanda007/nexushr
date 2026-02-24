@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ApiCaller from '@/utils/ApiCaller';
+import { CreatePayrollSchema, formatZodErrors } from '@/validations/schemas';
 
 interface User {
     _id: string;
@@ -42,6 +43,8 @@ export function useCreatePayrollModal({ isOpen, user, salaries, onSuccess }: Cre
 
     const [loadingDeductions, setLoadingDeductions] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     const userSalaries = user ? salaries.filter(s => {
         if (typeof s.userId === 'string') return s.userId === user._id;
@@ -57,6 +60,8 @@ export function useCreatePayrollModal({ isOpen, user, salaries, onSuccess }: Cre
             setDeductions([]);
             setMonth((new Date().getMonth() === 0 ? 12 : new Date().getMonth()).toString());
             setYear((new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear()).toString());
+            setError(null);
+            setFieldErrors({});
         }
     }, [isOpen]);
 
@@ -110,25 +115,43 @@ export function useCreatePayrollModal({ isOpen, user, salaries, onSuccess }: Cre
     };
 
     const handleSubmit = async () => {
-        if (!user || !selectedSalary || !month || !year) return;
+        if (!user) return;
+        setError(null);
+        setFieldErrors({});
+
+        const payload = {
+            user: user._id,
+            salary: selectedSalary,
+            month: Number(month),
+            year: Number(year),
+            bonus: bonuses.length > 0 ? bonuses : undefined,
+            deduction: deductions.length > 0 ? deductions : undefined
+        };
+
+        // Validate with Zod
+        const validation = CreatePayrollSchema.safeParse(payload);
+        if (!validation.success) {
+            setFieldErrors(formatZodErrors(validation.error));
+            setError(validation.error.issues[0]?.message || "Validation failed");
+            return;
+        }
+
         setSubmitting(true);
         try {
-            await ApiCaller({
+            const result = await ApiCaller({
                 requestType: 'POST',
                 paths: ['api', 'v1', 'payroll'],
-                body: {
-                    user: user._id,
-                    salary: selectedSalary,
-                    month: Number(month),
-                    year: Number(year),
-                    bonus: bonuses,
-                    deduction: deductions
-                }
+                body: payload
             });
-            onSuccess();
+
+            if (result.ok) {
+                onSuccess();
+            } else {
+                setError(result.response.message || "Failed to create payroll");
+            }
         } catch (err) {
             console.error(err);
-            alert("Failed to create payroll");
+            setError("Failed to create payroll");
         } finally {
             setSubmitting(false);
         }
@@ -144,6 +167,8 @@ export function useCreatePayrollModal({ isOpen, user, salaries, onSuccess }: Cre
         newDeduction, setNewDeduction,
         loadingDeductions,
         submitting,
+        error,
+        fieldErrors,
         userSalaries,
         activeSalaryObj,
         handleAddBonus,

@@ -42,23 +42,20 @@ export function useAttendance() {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
 
-    // Filters
     const [filterDate, setFilterDate] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Analytics Dashboard Specific Filters
+
     const [analyticsDeptFilter, setAnalyticsDeptFilter] = useState<string>("ALL");
     const [analyticsMonthFilter, setAnalyticsMonthFilter] = useState<string>(
         format(new Date(), 'yyyy-MM')
     );
 
-    // Tabs
     const [activeTab, setActiveTab] = useState<"Records" | "Analytics">("Records");
 
-    // Modal
     const [selectedEmpId, setSelectedEmpId] = useState<string | null>(null);
 
-    // Track available unique departments for HR filter dropdown
+
     const availableDepartments = useMemo(() => {
         const uniqueIds = new Set<string>();
         const depts: Department[] = [];
@@ -97,16 +94,13 @@ export function useAttendance() {
                 }
             }
 
-            // Sync with local offline queue punches
             const { default: OfflineQueue } = await import("@/utils/DbManger");
             const offlinePunches = await OfflineQueue.getAllPunches();
             let addedCount = 0;
 
             if (offlinePunches.length > 0) {
-                // Determine today's date for local punch grouping
                 const today = format(new Date(), 'yyyy-MM-dd');
 
-                // Check if today matches the currently filtered date
                 if (!dateStr || dateStr === today) {
                     const existingRecordIdx = apiAttendances.findIndex(a =>
                         a.user?._id === userDetails?.id && a.date === today
@@ -124,7 +118,6 @@ export function useAttendance() {
                             syncState: 'unsynced'
                         };
                     } else if (userDetails) {
-                        // Create a new phantom record for today
                         apiAttendances.unshift({
                             _id: `offline-${Date.now()}`,
                             user: {
@@ -152,7 +145,6 @@ export function useAttendance() {
         }
     };
 
-    // Spawn a Web Worker to flush the offline queue to the backend
     const workerRef = useRef<Worker | null>(null);
 
     const triggerSyncWorker = (onComplete?: () => void) => {
@@ -332,7 +324,7 @@ export function useAttendance() {
             const date = new Date(a.date);
             return {
                 name: isNaN(date.getTime()) ? 'Unknown' : format(date, 'MM/dd'),
-                Hours: parseFloat((a.totalMinutes / 60).toFixed(2))
+                Hours: parseFloat((a.totalMinutes / 60).toFixed(2)).toFixed(2)
             };
         });
     }, [selectedEmpRecords]);

@@ -84,12 +84,16 @@ export function useSalaries() {
 
     const fetchUsers = async () => {
         try {
-            const { response } = await ApiCaller<any, User[]>({
+            const { response } = await ApiCaller<any, any>({
                 requestType: 'GET',
                 paths: ['api', 'v1', 'user', 'get-users']
             });
-            if (response?.data && Array.isArray(response.data)) {
-                setUsers(response.data);
+            if (response?.data) {
+                // Backend returns { data: users[], total, page, limit }
+                const usersData = response.data.data || response.data;
+                if (Array.isArray(usersData)) {
+                    setUsers(usersData);
+                }
             }
         } catch (error) {
             console.error('Error fetching users:', error);

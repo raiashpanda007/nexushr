@@ -42,6 +42,8 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
         newDeduction, setNewDeduction,
         loadingDeductions,
         submitting,
+        error,
+        fieldErrors,
         userSalaries,
         activeSalaryObj,
         handleAddBonus,
@@ -61,12 +63,18 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
                     </DialogDescription>
                 </DialogHeader>
 
+                {error && (
+                    <div className="px-3 py-2.5 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive font-medium">
+                        {error}
+                    </div>
+                )}
+
                 <div className="space-y-6">
                     <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Label>Salary Profile</Label>
                             <Select value={selectedSalary} onValueChange={setSelectedSalary}>
-                                <SelectTrigger>
+                                <SelectTrigger className={fieldErrors.salary ? "border-red-500" : ""}>
                                     <SelectValue placeholder="Select Salary" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -80,11 +88,15 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
                                     )}
                                 </SelectContent>
                             </Select>
+                            {fieldErrors.salary && <p className="text-red-500 text-xs">{fieldErrors.salary}</p>}
+                            {userSalaries.length === 0 && (
+                                <p className="text-amber-600 text-xs">No salary exists for this employee. Please create a salary first.</p>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <Label>Year</Label>
                             <Select value={year} onValueChange={setYear}>
-                                <SelectTrigger>
+                                <SelectTrigger className={fieldErrors.year ? "border-red-500" : ""}>
                                     <SelectValue placeholder="Select Year" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -93,11 +105,12 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {fieldErrors.year && <p className="text-red-500 text-xs">{fieldErrors.year}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label>Month (1-12)</Label>
                             <Select value={month} onValueChange={setMonth}>
-                                <SelectTrigger>
+                                <SelectTrigger className={fieldErrors.month ? "border-red-500" : ""}>
                                     <SelectValue placeholder="Select Month" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -106,6 +119,7 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {fieldErrors.month && <p className="text-red-500 text-xs">{fieldErrors.month}</p>}
                         </div>
                     </div>
 
@@ -191,7 +205,7 @@ const CreatePayrollModal: React.FC<CreatePayrollModalProps> = ({ isOpen, onClose
 
                 <DialogFooter className="mt-6">
                     <Button variant="outline" onClick={onClose} disabled={submitting}>Cancel</Button>
-                    <Button onClick={handleSubmit} disabled={!selectedSalary || submitting}>
+                    <Button onClick={handleSubmit} disabled={submitting}>
                         {submitting ? 'Generating...' : 'Generate Payroll'}
                     </Button>
                 </DialogFooter>

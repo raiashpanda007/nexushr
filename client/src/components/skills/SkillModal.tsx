@@ -18,7 +18,7 @@ interface SkillModalProps {
 }
 
 export default function SkillModal({ isOpen, onClose, initialData, onSuccess }: SkillModalProps) {
-    const { formData, loading, error, handleChange, handleSubmit } = useSkillModal({ isOpen, onClose, initialData, onSuccess });
+    const { formData, loading, error, fieldErrors, handleChange, handleSubmit } = useSkillModal({ isOpen, onClose, initialData, onSuccess });
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -31,10 +31,12 @@ export default function SkillModal({ isOpen, onClose, initialData, onSuccess }: 
                     <div className="grid gap-2">
                         <Label htmlFor="name">Skill Name</Label>
                         <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
+                        {fieldErrors.name && <p className="text-red-500 text-xs">{fieldErrors.name}</p>}
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="category">Category</Label>
                         <Input id="category" name="category" value={formData.category} onChange={handleChange} required placeholder="e.g. Technical, Soft Skill" />
+                        {fieldErrors.category && <p className="text-red-500 text-xs">{fieldErrors.category}</p>}
                     </div>
                     <DialogFooter>
                         <Button type="submit" disabled={loading}>

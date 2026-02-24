@@ -19,7 +19,7 @@ interface DepartmentModalProps {
 }
 
 export default function DepartmentModal({ isOpen, onClose, initialData, onSuccess }: DepartmentModalProps) {
-    const { formData, loading, error, handleChange, handleSubmit } = useDepartmentModal({ isOpen, onClose, initialData, onSuccess });
+    const { formData, loading, error, fieldErrors, handleChange, handleSubmit } = useDepartmentModal({ isOpen, onClose, initialData, onSuccess });
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -32,10 +32,12 @@ export default function DepartmentModal({ isOpen, onClose, initialData, onSucces
                     <div className="grid gap-2">
                         <Label htmlFor="name">Department Name</Label>
                         <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
+                        {fieldErrors.name && <p className="text-red-500 text-xs">{fieldErrors.name}</p>}
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="description">Description</Label>
                         <Textarea id="description" name="description" value={formData.description} onChange={handleChange} required />
+                        {fieldErrors.description && <p className="text-red-500 text-xs">{fieldErrors.description}</p>}
                     </div>
                     <DialogFooter>
                         <Button type="submit" disabled={loading}>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -15,12 +15,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useSalaryModal } from '@/hooks/salaries/useSalaryModal';
 
 interface User {
@@ -60,7 +68,10 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
     loading,
     isEditMode,
 }) => {
-    const { formData, handleInputChange, handleUserChange, handleSubmit } = useSalaryModal({ isOpen, salaryData, onSubmit });
+    const { formData, error, fieldErrors, handleInputChange, handleUserChange, handleSubmit } = useSalaryModal({ isOpen, salaryData, onSubmit, isEditMode });
+    const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
+
+    const selectedUser = users.find(user => user._id === formData.userId);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -78,24 +89,54 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
                     </DialogHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {error && <p className="text-red-500 text-sm">{error}</p>}
                             {!isEditMode && (
                                 <div className="space-y-2">
                                     <Label htmlFor="userId">Employee</Label>
-                                    <Select
-                                        value={formData.userId}
-                                        onValueChange={handleUserChange}
-                                    >
-                                        <SelectTrigger id="userId">
-                                            <SelectValue placeholder="Select an employee" />
-                                        </SelectTrigger>
-                                        <SelectContent className="max-h-[200px]">
-                                            {users.map((user) => (
-                                                <SelectItem key={user._id} value={user._id}>
-                                                    {user.firstName} {user.lastName} ({user.email})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={employeeSearchOpen}
+                                                className="w-full justify-between font-normal"
+                                            >
+                                                {selectedUser
+                                                    ? `${selectedUser.firstName} ${selectedUser.lastName} (${selectedUser.email})`
+                                                    : "Select an employee..."}
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[400px] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search employee by name or email..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No employee found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {users.map((user) => (
+                                                            <CommandItem
+                                                                key={user._id}
+                                                                value={`${user.firstName} ${user.lastName} ${user.email}`}
+                                                                onSelect={() => {
+                                                                    handleUserChange(user._id);
+                                                                    setEmployeeSearchOpen(false);
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        formData.userId === user._id ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {user.firstName} {user.lastName} ({user.email})
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    {fieldErrors.userId && <p className="text-red-500 text-xs">{fieldErrors.userId}</p>}
                                 </div>
                             )}
 
@@ -114,6 +155,7 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
                                         required
                                     />
                                 </div>
+                                {fieldErrors.baseSalary && <p className="text-red-500 text-xs">{fieldErrors.baseSalary}</p>}
                             </div>
 
                             <div className="space-y-2">
@@ -130,6 +172,7 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
                                         className="pl-7"
                                     />
                                 </div>
+                                {fieldErrors.hra && <p className="text-red-500 text-xs">{fieldErrors.hra}</p>}
                             </div>
 
                             <div className="space-y-2">
@@ -146,6 +189,7 @@ const SalaryModal: React.FC<SalaryModalProps> = ({
                                         className="pl-7"
                                     />
                                 </div>
+                                {fieldErrors.lta && <p className="text-red-500 text-xs">{fieldErrors.lta}</p>}
                             </div>
 
                             <DialogFooter className="mt-6">

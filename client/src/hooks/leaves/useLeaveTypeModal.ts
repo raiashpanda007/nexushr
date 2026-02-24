@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ApiCaller from "@/utils/ApiCaller";
 import type { LeaveType } from "@/components/leaves/LeaveTypeTable";
+import { CreateLeaveTypeSchema, UpdateLeaveTypeSchema, formatZodErrors } from "@/validations/schemas";
 
 interface LeaveTypeModalProps {
     isOpen: boolean;
@@ -18,6 +19,7 @@ export function useLeaveTypeModal({ isOpen, onClose, initialData, onSuccess }: L
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (initialData) {
@@ -55,13 +57,24 @@ export function useLeaveTypeModal({ isOpen, onClose, initialData, onSuccess }: L
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setFieldErrors({});
 
         const payload = {
             name: formData.name,
             code: formData.code,
-            length: formData.length,
+            length: formData.length as "HALF" | "FULL",
             isPaid: formData.isPaid,
         };
+
+        // Validate with Zod
+        const schema = initialData ? UpdateLeaveTypeSchema : CreateLeaveTypeSchema;
+        const validation = schema.safeParse(payload);
+        if (!validation.success) {
+            setFieldErrors(formatZodErrors(validation.error));
+            setError(validation.error.issues[0]?.message || "Validation failed");
+            setLoading(false);
+            return;
+        }
 
         try {
             if (initialData) {
@@ -102,6 +115,7 @@ export function useLeaveTypeModal({ isOpen, onClose, initialData, onSuccess }: L
         formData,
         loading,
         error,
+        fieldErrors,
         handleChange,
         handleSelectChange,
         handleCheckboxChange,

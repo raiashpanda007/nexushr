@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import ApiCaller from "@/utils/ApiCaller";
 import type { LeaveType } from "@/components/leaves/LeaveTypeTable";
 import type { UserLeaveBalance } from "@/components/leaves/LeaveBalancesTable";
+import { UpdateLeaveBalanceSchema, formatZodErrors } from "@/validations/schemas";
 
 interface EditLeaveBalanceModalProps {
     isOpen: boolean;
@@ -19,6 +20,8 @@ interface AllocationState {
 export function useEditLeaveBalanceModal({ isOpen, onClose, onSuccess, userBalance }: Omit<EditLeaveBalanceModalProps, 'allLeaveTypes'>) {
     const [allocations, setAllocations] = useState<AllocationState[]>([]);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (isOpen && userBalance) {
@@ -27,6 +30,8 @@ export function useEditLeaveBalanceModal({ isOpen, onClose, onSuccess, userBalan
                 amount: b.balance
             }));
             setAllocations(initial);
+            setError(null);
+            setFieldErrors({});
         } else {
             setAllocations([]);
         }
@@ -51,19 +56,29 @@ export function useEditLeaveBalanceModal({ isOpen, onClose, onSuccess, userBalan
 
     const handleSave = async () => {
         if (!userBalance) return;
+        setError(null);
+        setFieldErrors({});
 
         const validAllocations = allocations.filter(a => a.leaveTypeId && a.amount >= 0);
 
+        const payload = {
+            user: userBalance.userId,
+            leaves: validAllocations.map(a => ({
+                type: a.leaveTypeId,
+                amount: a.amount
+            }))
+        };
+
+        // Validate with Zod
+        const validation = UpdateLeaveBalanceSchema.safeParse(payload);
+        if (!validation.success) {
+            setFieldErrors(formatZodErrors(validation.error));
+            setError(validation.error.issues[0]?.message || "Validation failed");
+            return;
+        }
+
         setSaving(true);
         try {
-            const payload = {
-                user: userBalance.userId,
-                leaves: validAllocations.map(a => ({
-                    type: a.leaveTypeId,
-                    amount: a.amount
-                }))
-            };
-
             const result = await ApiCaller({
                 requestType: "PUT",
                 paths: ["api", "v1", "leaves", "balances", userBalance.userId],
@@ -74,10 +89,11 @@ export function useEditLeaveBalanceModal({ isOpen, onClose, onSuccess, userBalan
                 onSuccess();
                 onClose();
             } else {
-                console.error("Failed to update leave balance:", result.response.message);
+                setError(result.response.message || "Failed to update leave balance");
             }
-        } catch (error) {
-            console.error("Error updating leave balance:", error);
+        } catch (err) {
+            console.error("Error updating leave balance:", err);
+            setError("An error occurred while updating leave balance");
         } finally {
             setSaving(false);
         }
@@ -87,6 +103,8 @@ export function useEditLeaveBalanceModal({ isOpen, onClose, onSuccess, userBalan
         allocations,
         setAllocations,
         saving,
+        error,
+        fieldErrors,
         handleRemoveAllocation,
         handleUpdateAllocation,
         handleSave

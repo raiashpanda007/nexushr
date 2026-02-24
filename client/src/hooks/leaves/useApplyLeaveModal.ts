@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ApiCaller from "@/utils/ApiCaller";
 import type { LeaveBalanceEntry } from "@/components/leaves/LeaveBalancesTable";
+import { CreateLeaveRequestSchema, formatZodErrors } from "@/validations/schemas";
 
 interface ApplyLeaveModalProps {
     isOpen: boolean;
@@ -30,6 +31,7 @@ export function useApplyLeaveModal({ isOpen, onClose, onSuccess, balances }: App
     const [to, setTo] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     const days = calcDays(from, to);
     const selectedBalance = balances.find(b => b.leaveTypeId === selectedTypeId);
@@ -40,25 +42,37 @@ export function useApplyLeaveModal({ isOpen, onClose, onSuccess, balances }: App
             setFrom("");
             setTo("");
             setError(null);
+            setFieldErrors({});
         }
     }, [isOpen, balances]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setFieldErrors({});
 
-        if (!selectedTypeId) return setError("Please select a leave type.");
-        if (!from || !to) return setError("Please select a date range.");
-        if (days < 1) return setError("'To' date must be on or after 'From' date.");
-        if (selectedBalance && days > selectedBalance.balance)
-            return setError(`Insufficient balance. You only have ${selectedBalance.balance} day(s) left.`);
+        const payload = { type: selectedTypeId, quantity: days, from, to };
+
+        // Validate with Zod
+        const validation = CreateLeaveRequestSchema.safeParse(payload);
+        if (!validation.success) {
+            setFieldErrors(formatZodErrors(validation.error));
+            setError(validation.error.issues[0]?.message || "Validation failed");
+            return;
+        }
+
+        // Additional business logic validation
+        if (selectedBalance && days > selectedBalance.balance) {
+            setError(`Insufficient balance. You only have ${selectedBalance.balance} day(s) left.`);
+            return;
+        }
 
         setLoading(true);
         try {
             const result = await ApiCaller<ApplyLeaveBody, unknown>({
                 requestType: "POST",
                 paths: ["api", "v1", "leaves", "requests"],
-                body: { type: selectedTypeId, quantity: days, from, to },
+                body: payload,
             });
 
             if (result.ok) {
@@ -83,6 +97,7 @@ export function useApplyLeaveModal({ isOpen, onClose, onSuccess, balances }: App
         setTo,
         loading,
         error,
+        fieldErrors,
         days,
         selectedBalance,
         handleSubmit

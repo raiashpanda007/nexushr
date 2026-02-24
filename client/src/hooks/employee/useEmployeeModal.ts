@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ApiCaller from "@/utils/ApiCaller";
 import type { Employee, Department, Skill } from "@/types";
+import { CreateEmployeeSchema, UpdateEmployeeSchema, formatZodErrors } from "@/validations/schemas";
 
 interface UseEmployeeModalProps {
     isOpen: boolean;
@@ -26,6 +27,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [skillsOpen, setSkillsOpen] = useState(false);
 
     // Fetch Departments and Skills
@@ -108,6 +110,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setFieldErrors({});
 
         try {
             const payload = {
@@ -115,9 +118,18 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
                 skills: selectedSkills,
             };
 
+            // Validate with Zod
             if (initialData) {
-                // Update
                 const { password, ...updatePayload } = payload;
+                const validation = UpdateEmployeeSchema.safeParse(updatePayload);
+                if (!validation.success) {
+                    setFieldErrors(formatZodErrors(validation.error));
+                    setError(validation.error.issues[0]?.message || "Validation failed");
+                    setLoading(false);
+                    return;
+                }
+
+                // Update
                 const userId = initialData._id || initialData.id || "";
 
                 const result = await ApiCaller({
@@ -133,6 +145,14 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
                     setError(result.response.message || "Failed to update employee");
                 }
             } else {
+                const validation = CreateEmployeeSchema.safeParse(payload);
+                if (!validation.success) {
+                    setFieldErrors(formatZodErrors(validation.error));
+                    setError(validation.error.issues[0]?.message || "Validation failed");
+                    setLoading(false);
+                    return;
+                }
+
                 // Create
                 const result = await ApiCaller({
                     requestType: "POST",
@@ -161,6 +181,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
         skills,
         loading,
         error,
+        fieldErrors,
         skillsOpen,
         setSkillsOpen,
         handleChange,

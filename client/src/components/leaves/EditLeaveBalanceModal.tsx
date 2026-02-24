@@ -26,6 +26,8 @@ export default function EditLeaveBalanceModal({
         allocations,
         setAllocations,
         saving,
+        error,
+        fieldErrors,
         handleRemoveAllocation,
         handleUpdateAllocation,
         handleSave
@@ -52,6 +54,9 @@ export default function EditLeaveBalanceModal({
                 </DialogHeader>
 
                 <div className="py-4 space-y-4">
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                    {fieldErrors.leaves && <p className="text-red-500 text-xs">{fieldErrors.leaves}</p>}
+                    
                     <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
                         <div className="flex-1">Leave Type</div>
                         <div className="w-24 text-right">Balance</div>

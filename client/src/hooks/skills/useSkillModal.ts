@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ApiCaller from "@/utils/ApiCaller";
+import { CreateSkillSchema, UpdateSkillSchema, formatZodErrors } from "@/validations/schemas";
 
 interface Skill {
     _id: string;
@@ -21,6 +22,7 @@ export function useSkillModal({ isOpen, onClose, initialData, onSuccess }: UseSk
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (initialData) {
@@ -46,8 +48,19 @@ export function useSkillModal({ isOpen, onClose, initialData, onSuccess }: UseSk
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setFieldErrors({});
 
         try {
+            // Validate with Zod
+            const schema = initialData ? UpdateSkillSchema : CreateSkillSchema;
+            const validation = schema.safeParse(formData);
+            if (!validation.success) {
+                setFieldErrors(formatZodErrors(validation.error));
+                setError(validation.error.issues[0]?.message || "Validation failed");
+                setLoading(false);
+                return;
+            }
+
             if (initialData) {
                 // Update
                 const result = await ApiCaller({
@@ -88,6 +101,7 @@ export function useSkillModal({ isOpen, onClose, initialData, onSuccess }: UseSk
         formData,
         loading,
         error,
+        fieldErrors,
         handleChange,
         handleSubmit
     };

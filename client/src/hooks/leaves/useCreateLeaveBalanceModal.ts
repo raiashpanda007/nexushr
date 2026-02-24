@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import ApiCaller from "@/utils/ApiCaller";
 import type { UserLeaveBalance } from "@/components/leaves/LeaveBalancesTable";
+import { CreateLeaveBalanceSchema, formatZodErrors } from "@/validations/schemas";
 
 interface CreateLeaveBalanceModalProps {
     isOpen: boolean;
@@ -26,6 +27,8 @@ export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existin
     ]);
 
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (isOpen) {
@@ -77,21 +80,29 @@ export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existin
     };
 
     const handleSave = async () => {
-        if (!selectedUserId) return;
+        setError(null);
+        setFieldErrors({});
 
         const validAllocations = allocations.filter(a => a.leaveTypeId && a.amount >= 0);
-        if (validAllocations.length === 0) return;
+        
+        const payload = {
+            user: selectedUserId,
+            leaves: validAllocations.map(a => ({
+                type: a.leaveTypeId,
+                amount: a.amount
+            }))
+        };
+
+        // Validate with Zod
+        const validation = CreateLeaveBalanceSchema.safeParse(payload);
+        if (!validation.success) {
+            setFieldErrors(formatZodErrors(validation.error));
+            setError(validation.error.issues[0]?.message || "Validation failed");
+            return;
+        }
 
         setSaving(true);
         try {
-            const payload = {
-                user: selectedUserId,
-                leaves: validAllocations.map(a => ({
-                    type: a.leaveTypeId,
-                    amount: a.amount
-                }))
-            };
-
             const result = await ApiCaller({
                 requestType: "POST",
                 paths: ["api", "v1", "leaves", "balances"],
@@ -102,10 +113,11 @@ export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existin
                 onSuccess();
                 onClose();
             } else {
-                console.error("Failed to create leave balance:", result.response.message);
+                setError(result.response.message || "Failed to create leave balance");
             }
-        } catch (error) {
-            console.error("Error creating leave balance:", error);
+        } catch (err) {
+            console.error("Error creating leave balance:", err);
+            setError("An error occurred while creating leave balance");
         } finally {
             setSaving(false);
         }
@@ -119,6 +131,8 @@ export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existin
         allocations,
         setAllocations,
         saving,
+        error,
+        fieldErrors,
         handleAddAllocation,
         handleRemoveAllocation,
         handleAllocationChange,

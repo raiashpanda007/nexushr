@@ -26,6 +26,7 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
         skills,
         loading,
         error,
+        fieldErrors,
         skillsOpen,
         setSkillsOpen,
         handleChange,
@@ -45,19 +46,23 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
                     <div className="grid gap-2">
                         <Label htmlFor="firstName">First Name</Label>
                         <Input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required />
+                        {fieldErrors.firstName && <p className="text-red-500 text-xs">{fieldErrors.firstName}</p>}
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="lastName">Last Name</Label>
                         <Input id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} required />
+                        {fieldErrors.lastName && <p className="text-red-500 text-xs">{fieldErrors.lastName}</p>}
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="email">Email</Label>
                         <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+                        {fieldErrors.email && <p className="text-red-500 text-xs">{fieldErrors.email}</p>}
                     </div>
                     {!initialData && (
                         <div className="grid gap-2">
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" name="password" type="password" value={formData.password} onChange={handleChange} required />
+                            {fieldErrors.password && <p className="text-red-500 text-xs">{fieldErrors.password}</p>}
                         </div>
                     )}
 
@@ -75,6 +80,7 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
                                 ))}
                             </SelectContent>
                         </Select>
+                        {fieldErrors.deptId && <p className="text-red-500 text-xs">{fieldErrors.deptId}</p>}
                     </div>
 
                     <div className="grid gap-2">

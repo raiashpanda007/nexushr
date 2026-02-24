@@ -19,6 +19,7 @@ export default function LeaveTypeModal({ isOpen, onClose, initialData, onSuccess
         formData,
         loading,
         error,
+        fieldErrors,
         handleChange,
         handleSelectChange,
         handleCheckboxChange,
@@ -37,11 +38,13 @@ export default function LeaveTypeModal({ isOpen, onClose, initialData, onSuccess
                     <div className="grid gap-2">
                         <Label htmlFor="name">Name</Label>
                         <Input id="name" name="name" value={formData.name} onChange={handleChange} required placeholder="e.g. Sick Leave" />
+                        {fieldErrors.name && <p className="text-red-500 text-xs">{fieldErrors.name}</p>}
                     </div>
 
                     <div className="grid gap-2">
                         <Label htmlFor="code">Code</Label>
                         <Input id="code" name="code" value={formData.code} onChange={handleChange} required placeholder="e.g. SL" />
+                        {fieldErrors.code && <p className="text-red-500 text-xs">{fieldErrors.code}</p>}
                     </div>
 
                     <div className="grid gap-2">
@@ -55,6 +58,7 @@ export default function LeaveTypeModal({ isOpen, onClose, initialData, onSuccess
                                 <SelectItem value="HALF">Half Day</SelectItem>
                             </SelectContent>
                         </Select>
+                        {fieldErrors.length && <p className="text-red-500 text-xs">{fieldErrors.length}</p>}
                     </div>
 
                     <div className="flex items-center space-x-2">
