@@ -7,6 +7,7 @@ import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
 const MAP = {
   users: {
     model: UserModel,
+    searchFields: ["firstName", "lastName", "email", "role"],
     lookups: [
       {
         $lookup: {
@@ -37,16 +38,19 @@ const MAP = {
   },
   departments: {
     model: DepartmentModal,
+    searchFields: ["name", "description"],
     lookups: [],
     project: null,
   },
   skills: {
     model: SkillModal,
+    searchFields: ["name", "category"],
     lookups: [],
     project: null,
   },
   leaveTypes: {
     model: LeaveTypeModal,
+    searchFields: ["name", "code"],
     lookups: [],
     project: null,
   },
@@ -69,18 +73,18 @@ class SearchController {
       throw new ApiError(404, "Model not found");
     }
 
-    const pipeline = [
-      {
-        $search: {
-          index: "default",
-          text: {
-            query: query,
-            path: { wildcard: "*" },
-          },
-        },
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(escapedQuery, "i");
+
+    const matchStage = {
+      $match: {
+        $or: config.searchFields.map((field) => ({
+          [field]: { $regex: regex },
+        })),
       },
-      ...config.lookups,
-    ];
+    };
+
+    const pipeline = [matchStage, ...config.lookups];
 
     if (config.project) {
       pipeline.push(config.project);
