@@ -4,6 +4,9 @@ import DB from "./config/Db.js";
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import Routes from "./routes.js";
+import dns from "dns";
+
+dns.setServers(["1.1.1.1", "8.8.8.8"])
 class App {
   constructor(DbUrl, DbName) {
     this.app = express();

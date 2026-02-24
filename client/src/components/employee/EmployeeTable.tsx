@@ -54,7 +54,7 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-blue-600 via-cyan-600 to-teal-600 text-white py-5">
+            <CardHeader className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground py-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
@@ -87,17 +87,17 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <UserCircle className="h-3.5 w-3.5 text-blue-500" /> Employee
+                                    <UserCircle className="h-3.5 w-3.5 text-primary" /> Employee
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Building2 className="h-3.5 w-3.5 text-violet-500" /> Department
+                                    <Building2 className="h-3.5 w-3.5 text-primary" /> Department
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Skills
+                                    <Sparkles className="h-3.5 w-3.5 text-primary" /> Skills
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
@@ -130,7 +130,7 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                                     {/* Employee - Combined name + email */}
                                     <TableCell>
                                         <div className="flex items-center gap-3">
-                                            <div className="flex items-center justify-center h-9 w-9 rounded-full bg-linear-to-br from-blue-500 to-cyan-600 text-white text-xs font-bold shrink-0 shadow-sm">
+                                            <div className="flex items-center justify-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 shadow-sm">
                                                 {employee.firstName?.[0]}{employee.lastName?.[0]}
                                             </div>
                                             <div className="min-w-0">
@@ -149,7 +149,7 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                                         {deptName ? (
                                             <Badge
                                                 variant="secondary"
-                                                className="bg-violet-50 text-violet-700 border border-violet-200/60 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800"
+                                                className="bg-primary/10 text-primary border border-primary/20"
                                             >
                                                 {deptName}
                                             </Badge>
@@ -167,7 +167,7 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                                                         <Badge
                                                             key={i}
                                                             variant="secondary"
-                                                            className="bg-amber-50 text-amber-700 border border-amber-200/60 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800 text-[11px] px-1.5"
+                                                            className="bg-secondary/50 text-secondary-foreground border border-border text-[11px] px-1.5"
                                                         >
                                                             {skill}
                                                         </Badge>
@@ -217,7 +217,7 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                                                 size="icon"
                                                 onClick={() => onEdit(employee)}
                                                 title="Edit Employee"
-                                                className="h-8 w-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50"
+                                                className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary"
                                             >
                                                 <Edit2 className="h-4 w-4" />
                                             </Button>

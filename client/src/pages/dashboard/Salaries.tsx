@@ -10,7 +10,6 @@ import { useSalaries } from '@/hooks/Salaries/useSalaries';
 const Salaries = () => {
     const {
         isHR,
-        salaries,
         users,
         loading,
         actionLoading,
@@ -39,7 +38,7 @@ const Salaries = () => {
     return (
         <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
             {/* Header Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 p-6 sm:p-8 shadow-xl shadow-emerald-500/20 border border-emerald-500/10">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
@@ -53,10 +52,10 @@ const Salaries = () => {
                             <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">Manage and view employee salary structures</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         {isHR && (
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
-                                <div className="relative lg:w-72 mt-4 sm:mt-0">
+                            <>
+                                <div className="relative lg:w-72">
                                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-white/60" />
                                     <Input
                                         type="text"
@@ -68,22 +67,22 @@ const Salaries = () => {
                                 </div>
                                 <Button
                                     onClick={handleOpenCreateModal}
-                                    className="h-11 bg-white text-primary hover:bg-white/90 font-bold shadow-lg shadow-black/10 gap-2 whitespace-nowrap rounded-xl px-5 hover:scale-105 transition-all w-full sm:w-auto mt-2 sm:mt-0"
+                                    className="h-11 bg-white text-emerald-700 hover:bg-white/90 font-bold shadow-lg shadow-black/10 gap-2 whitespace-nowrap rounded-xl px-5 hover:scale-105 transition-all w-full sm:w-auto mt-2 sm:mt-0"
                                 >
                                     <Plus className="h-5 w-5" />
                                     Add Salary
                                 </Button>
-                            </div>
+                            </>
                         )}
                     </div>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40 rounded-2xl shadow-xl shadow-primary/5 border border-border/40 overflow-hidden">
-                {loading && !salaries.length && !isCreateModalOpen && !isEditModalOpen ? (
+            <div className="bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40 rounded-2xl shadow-xl shadow-emerald-500/5 border border-border/40 overflow-hidden">
+                {loading ? (
                     <div className="flex flex-col items-center justify-center py-24 text-muted-foreground w-full">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                        <Loader2 className="h-10 w-10 animate-spin text-emerald-600 mb-4" />
                         <p className="text-base font-medium animate-pulse">Loading salary data...</p>
                     </div>
                 ) : (
@@ -95,7 +94,7 @@ const Salaries = () => {
                             onDelete={handleDelete}
                             loading={actionLoading}
                         />
-                        {!loading && total > 0 && (
+                        {total > 0 && (
                             <div className="p-4 flex justify-between items-center bg-card border-t border-border rounded-b-xl">
                                 <p className="text-sm text-muted-foreground">
                                     Showing <span className="font-semibold text-foreground">{(page - 1) * limit + 1}</span> to <span className="font-semibold text-foreground">{Math.min(page * limit, total)}</span> of <span className="font-semibold text-foreground">{total}</span>

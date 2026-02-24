@@ -56,7 +56,7 @@ export default function SkillTable({ skills, onEdit, onDelete }: SkillTableProps
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-amber-500 via-orange-500 to-rose-500 text-white py-5">
+            <CardHeader className="bg-linear-to-r from-indigo-600 via-violet-600 to-purple-600 text-white py-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
@@ -86,16 +86,16 @@ export default function SkillTable({ skills, onEdit, onDelete }: SkillTableProps
                     <TableHeader>
                         <TableRow className="bg-muted/40 hover:bg-muted/40">
                             <TableHead className="w-12 font-semibold">
-                                <Hash className="h-3.5 w-3.5 text-orange-500" />
+                                <Hash className="h-3.5 w-3.5 text-violet-500" />
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Tag className="h-3.5 w-3.5 text-amber-500" /> Skill Name
+                                    <Tag className="h-3.5 w-3.5 text-indigo-500" /> Skill Name
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Layers className="h-3.5 w-3.5 text-rose-500" /> Category
+                                    <Layers className="h-3.5 w-3.5 text-purple-500" /> Category
                                 </span>
                             </TableHead>
                             <TableHead className="text-right font-semibold">Actions</TableHead>
@@ -119,7 +119,7 @@ export default function SkillTable({ skills, onEdit, onDelete }: SkillTableProps
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2.5">
-                                            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-linear-to-br from-amber-400 to-orange-500 text-white shadow-sm">
+                                            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-linear-to-br from-violet-500 to-indigo-600 text-white shadow-sm">
                                                 <Sparkles className="h-3.5 w-3.5" />
                                             </div>
                                             <span className="font-semibold text-sm">{skill.name}</span>
