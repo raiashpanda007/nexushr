@@ -1,4 +1,4 @@
-import { Search, FileText, CheckCircle2, Receipt, ChevronLeft, ChevronRight, Loader2, Users, DollarSign, TrendingUp, Minus } from 'lucide-react';
+import { Search, FileText, CheckCircle2, Receipt, ChevronLeft, ChevronRight, Loader2, Users, DollarSign, TrendingUp, Minus, Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,28 +14,49 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { usePayroll } from "@/hooks/Payroll/usePayroll";
+import { useState, useCallback } from "react";
+import { pdf } from "@react-pdf/renderer";
+import { PayrollDocument } from "@/utils/PdfGenerator";
+import type { PayrollDocumentProps } from "@/utils/PdfGenerator";
 
 
 const Payroll = () => {
-    function GeneratePdf(data: {
-        BaseSalary: number; HRA: number; LTA: number; Bonus: { reason: string; amount: number }[]; deduction: { reason: string; amount: number }[];
-        createdAt: string;
-        syncState?: "unsynced" | "synced";
-    }) {
-        const worker = new Worker(new URL("../../workers/pdf.worker.tsx", import.meta.url));
+    const [pdfState, setPdfState] = useState<"idle" | "generating" | "ready" | "error">("idle");
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+    const [pdfFilename, setPdfFilename] = useState("payroll.pdf");
 
-        worker.postMessage(data);
-
-        worker.onmessage = (e) => {
-            const blob = e.data;
+    const GeneratePdf = useCallback(async (data: PayrollDocumentProps) => {
+        setPdfState("generating");
+        setPdfUrl(null);
+        try {
+            const blob = await pdf(<PayrollDocument {...data} />).toBlob();
             const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "payroll.pdf";
-            link.click();
-            URL.revokeObjectURL(url);
-        };
-    }
+            const date = new Date(data.createdAt);
+            const month = (date.getMonth() + 1).toString().padStart(2, "0");
+            const year = date.getFullYear();
+            const name = data.employeeName?.replace(/\s+/g, "_") || "payroll";
+            setPdfFilename(`${name}_payslip_${month}_${year}.pdf`);
+            setPdfUrl(url);
+            setPdfState("ready");
+        } catch (err) {
+            console.error("PDF generation failed:", err);
+            setPdfState("error");
+        }
+    }, []);
+
+    const handleDownload = useCallback(() => {
+        if (!pdfUrl) return;
+        const link = document.createElement("a");
+        link.href = pdfUrl;
+        link.download = pdfFilename;
+        link.click();
+    }, [pdfUrl, pdfFilename]);
+
+    const closePdfOverlay = useCallback(() => {
+        if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+        setPdfUrl(null);
+        setPdfState("idle");
+    }, [pdfUrl]);
 
 
     const {
@@ -86,8 +107,63 @@ const Payroll = () => {
     const usersPages = Math.ceil(usersTotal / usersLimit);
     const payrollPages = Math.ceil(payrollTotal / payrollLimit);
 
+    const pdfOverlay = pdfState !== "idle" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl border p-8 max-w-sm w-full mx-4 flex flex-col items-center gap-5 animate-in zoom-in-95 duration-300">
+                {pdfState === "generating" && (
+                    <>
+                        <div className="relative">
+                            <div className="h-16 w-16 rounded-full bg-indigo-50 flex items-center justify-center">
+                                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="font-semibold text-lg text-gray-900">Generating Payslip</h3>
+                            <p className="text-sm text-muted-foreground mt-1">Please wait while we prepare your PDF...</p>
+                        </div>
+                    </>
+                )}
+                {pdfState === "ready" && (
+                    <>
+                        <div className="h-16 w-16 rounded-full bg-emerald-50 flex items-center justify-center">
+                            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="font-semibold text-lg text-gray-900">Payslip Ready!</h3>
+                            <p className="text-sm text-muted-foreground mt-1">{pdfFilename}</p>
+                        </div>
+                        <div className="flex gap-3 w-full">
+                            <Button variant="outline" className="flex-1 gap-2" onClick={closePdfOverlay}>
+                                <X className="h-4 w-4" /> Close
+                            </Button>
+                            <Button className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={() => { handleDownload(); closePdfOverlay(); }}>
+                                <Download className="h-4 w-4" /> Download
+                            </Button>
+                        </div>
+                    </>
+                )}
+                {pdfState === "error" && (
+                    <>
+                        <div className="h-16 w-16 rounded-full bg-red-50 flex items-center justify-center">
+                            <X className="h-8 w-8 text-red-600" />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="font-semibold text-lg text-gray-900">Generation Failed</h3>
+                            <p className="text-sm text-muted-foreground mt-1">Something went wrong. Please try again.</p>
+                        </div>
+                        <Button variant="outline" className="w-full gap-2" onClick={closePdfOverlay}>
+                            <X className="h-4 w-4" /> Close
+                        </Button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+
     if (!isHR) {
         return (
+            <>
+            {pdfOverlay}
             <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
                 {/* Employee Header */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
@@ -182,8 +258,12 @@ const Payroll = () => {
                                                 <CheckCircle2 size={14} className="mr-1" /> Processed
                                             </Badge>
                                             <Button size="sm" variant="outline" className="gap-2 shadow-sm" onClick={() => GeneratePdf({
-                                                BaseSalary: baseSalary, HRA: p.salary.HRA, LTA: p.salary.LTA,
-                                                Bonus: p.bonus, deduction: p.deduction, createdAt: p.createdAt, syncState: p.syncState
+                                                base: Number(p.salary?.base) || 0,
+                                                hra: Number(p.salary?.hra) || 0,
+                                                lta: Number(p.salary?.lta) || 0,
+                                                bonus: p.bonus || [],
+                                                deduction: p.deduction || [],
+                                                createdAt: p.createdAt,
                                             })}>
                                                 <FileText size={14} /> Print
                                             </Button>
@@ -212,10 +292,13 @@ const Payroll = () => {
                     </div>
                 )}
             </div>
+            </>
         );
     }
 
     return (
+        <>
+        {pdfOverlay}
         <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
             {/* HR Header */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
@@ -434,6 +517,7 @@ const Payroll = () => {
                 />
             )}
         </div>
+        </>
     );
 };
 
