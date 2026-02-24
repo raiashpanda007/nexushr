@@ -154,7 +154,9 @@ export function useSalaries() {
                 throw new Error(result.response?.message || 'Failed to create salary');
             }
 
-            await fetchSalaries();
+            // Reset to page 1 so the new salary appears at the top
+            setPage(1);
+            await fetchSalaries(1);
             handleCloseCreateModal();
         } catch (error: any) {
             console.error('Error creating salary:', error);

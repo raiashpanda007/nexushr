@@ -100,7 +100,17 @@ export function useEmployee() {
     };
 
     const handleSuccess = () => {
-        fetchEmployees(page, searchQuery);
+        if (!selectedEmployee) {
+            // New employee created — go to page 1 so it appears at the top
+            if (page !== 1) {
+                setPage(1); // useEffect will trigger fetch for page 1
+            } else {
+                fetchEmployees(1, searchQuery);
+            }
+        } else {
+            // Existing employee edited — refresh current page
+            fetchEmployees(page, searchQuery);
+        }
     };
 
     const totalPages = Math.ceil(total / limit);

@@ -163,7 +163,12 @@ export function usePayroll() {
 
     const handleModalSuccess = () => {
         setIsModalOpen(false);
-        fetchPayrolls();
+        // Reset to page 1 so the new payroll appears at the top
+        if (payrollPage !== 1) {
+            setPayrollPage(1); // useEffect will trigger fetch for page 1
+        } else {
+            fetchPayrolls(1);
+        }
     };
 
     const filteredUsers = users.filter(user => {

@@ -114,7 +114,17 @@ export function useSkills() {
     };
 
     const handleSuccess = () => {
-        fetchSkills(page, searchQuery);
+        if (!selectedSkill) {
+            // New skill created — go to page 1 so it appears at the top
+            if (page !== 1) {
+                setPage(1); // useEffect will trigger fetch for page 1
+            } else {
+                fetchSkills(1, searchQuery);
+            }
+        } else {
+            // Existing skill edited — refresh current page
+            fetchSkills(page, searchQuery);
+        }
     };
 
     return {

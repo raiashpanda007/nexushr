@@ -114,7 +114,17 @@ export function useDepartments() {
     };
 
     const handleSuccess = () => {
-        fetchDepartments(page, searchQuery);
+        if (!selectedDept) {
+            // New department created — go to page 1 so it appears at the top
+            if (page !== 1) {
+                setPage(1); // useEffect will trigger fetch for page 1
+            } else {
+                fetchDepartments(1, searchQuery);
+            }
+        } else {
+            // Existing department edited — refresh current page
+            fetchDepartments(page, searchQuery);
+        }
     };
 
     return {

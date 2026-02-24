@@ -196,11 +196,26 @@ export function useLeaves() {
     };
 
     const handleLeaveTypeSuccess = () => {
-        fetchLeaveTypes(leaveTypesPage);
+        if (!selectedLeaveType) {
+            // New leave type created — go to page 1 so it appears at the top
+            if (leaveTypesPage !== 1) {
+                setLeaveTypesPage(1); // useEffect will trigger fetch for page 1
+            } else {
+                fetchLeaveTypes(1);
+            }
+        } else {
+            // Existing leave type edited — refresh current page
+            fetchLeaveTypes(leaveTypesPage);
+        }
     };
 
     const handleCreateBalanceSuccess = () => {
-        fetchUserBalances(balancesPage);
+        // New balance created — go to page 1 so it appears at the top
+        if (balancesPage !== 1) {
+            setBalancesPage(1); // useEffect will trigger fetch for page 1
+        } else {
+            fetchUserBalances(1);
+        }
     };
 
     const handleEditBalanceSuccess = () => {

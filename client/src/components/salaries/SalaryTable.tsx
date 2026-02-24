@@ -74,7 +74,7 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
             {/* Gradient Header */}
-            <CardHeader className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-5">
+            <CardHeader className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10 text-white py-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
