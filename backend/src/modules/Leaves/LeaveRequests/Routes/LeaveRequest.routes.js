@@ -10,10 +10,13 @@ class LeaveRequestRoutes {
 
     routes() {
         this.router.get("/", VerifyMiddleware, this.controller.Get);
+        this.router.get("/count", VerifyMiddleware, this.controller.Count);
+        this.router.get("/department", VerifyMiddleware, this.controller.DepartmentStats);
+        this.router.get("/department/:departmentId", VerifyMiddleware, this.controller.DepartmentStats);
         this.router.post("/", VerifyMiddleware, this.controller.Create);
         this.router.delete("/:uid", VerifyMiddleware, this.controller.Delete);
-        this.router.get("/:uid", VerifyMiddleware, this.controller.Get);
         this.router.put("/:uid", VerifyMiddleware, this.controller.ResponseLeaveRequest);
+        this.router.get("/:uid", VerifyMiddleware, this.controller.Get);
         return this.router;
     }
 

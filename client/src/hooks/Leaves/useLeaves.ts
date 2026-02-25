@@ -40,6 +40,35 @@ function mapRawToUserLeaveBalance(doc: RawLeaveBalanceDoc): UserLeaveBalance {
 
 export type LeaveTab = "types" | "balances" | "requests";
 
+type LeaveRequestStatusFilter = "ALL" | "PENDING" | "ACCEPTED" | "REJECTED";
+
+interface DepartmentLeaveSummary {
+    departmentId: string;
+    department: string;
+    totalLeaves: number;
+    leaveTypes?: Array<{ type: string; count: number }>;
+}
+
+interface DepartmentUserSummary {
+    userId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    totalLeaves: number;
+    leaveTypes?: Array<{ type: string; count: number }>;
+}
+
+interface LeaveRequestCounts {
+    pendingCount: number;
+    acceptedCount: number;
+    rejectedCount: number;
+}
+
+interface LeaveTypeSummary {
+    type: string;
+    count: number;
+}
+
 export function useLeaves() {
     const { userDetails } = useAppSelector((state) => state.userState);
     const role = userDetails?.role?.toUpperCase();
@@ -65,6 +94,44 @@ export function useLeaves() {
     const [requestsPage, setRequestsPage] = useState(1);
     const [requestsTotal, setRequestsTotal] = useState(0);
     const requestsLimit = 10;
+
+    const [leaveRequestCounts, setLeaveRequestCounts] = useState<LeaveRequestCounts>({
+        pendingCount: 0,
+        acceptedCount: 0,
+        rejectedCount: 0,
+    });
+
+    const [departmentStatusFilter, setDepartmentStatusFilter] = useState<LeaveRequestStatusFilter>("ALL");
+    const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("all");
+    const [departmentStatsLoading, setDepartmentStatsLoading] = useState(false);
+    const [departmentStats, setDepartmentStats] = useState<DepartmentLeaveSummary[]>([]);
+    const [departmentUsersLoading, setDepartmentUsersLoading] = useState(false);
+    const [departmentUsers, setDepartmentUsers] = useState<DepartmentUserSummary[]>([]);
+    const [departmentLeaveTypes, setDepartmentLeaveTypes] = useState<LeaveTypeSummary[]>([]);
+
+    const fetchLeaveRequestCounts = async () => {
+        try {
+            if (!navigator.onLine) return;
+
+            const result = await ApiCaller<null, any>({
+                requestType: "GET",
+                paths: ["api", "v1", "leaves", "requests", "count"],
+            });
+
+            if (result.ok) {
+                const data = result.response.data;
+                setLeaveRequestCounts({
+                    pendingCount: data?.pendingCount ?? 0,
+                    acceptedCount: data?.acceptedCount ?? 0,
+                    rejectedCount: data?.rejectedCount ?? 0,
+                });
+            } else {
+                console.error("Failed to fetch leave request counts:", result.response.message);
+            }
+        } catch (error) {
+            console.error("Error fetching leave request counts:", error);
+        }
+    };
 
     const [selectedUserForEdit, setSelectedUserForEdit] = useState<UserLeaveBalance | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -96,10 +163,104 @@ export function useLeaves() {
 
             setLeaveRequests(apiRequests);
             setRequestsTotal(apiTotal);
+
+            // Keep summary cards accurate (counts are not page-limited)
+            await fetchLeaveRequestCounts();
         } catch (error) {
             console.error("Error fetching leave requests:", error);
         } finally {
             setRequestsLoading(false);
+        }
+    };
+
+    const fetchDepartmentStats = async () => {
+        if (role !== "HR") return;
+        if (!navigator.onLine) return;
+
+        setDepartmentStatsLoading(true);
+        try {
+            const queryParams: Record<string, string> = {};
+            if (departmentStatusFilter !== "ALL") {
+                queryParams.status = departmentStatusFilter;
+            }
+
+            const result = await ApiCaller<null, any>({
+                requestType: "GET",
+                paths: ["api", "v1", "leaves", "requests", "department"],
+                queryParams,
+            });
+
+            if (result.ok) {
+                const data = Array.isArray(result.response.data) ? result.response.data : [];
+                setDepartmentStats(
+                    data.map((d: any) => ({
+                        departmentId: String(d.departmentId ?? ""),
+                        department: String(d.department ?? ""),
+                        totalLeaves: Number(d.totalLeaves ?? 0),
+                        leaveTypes: Array.isArray(d.leaveTypes) ? d.leaveTypes : [],
+                    }))
+                );
+            } else {
+                console.error("Failed to fetch department stats:", result.response.message);
+            }
+        } catch (error) {
+            console.error("Error fetching department stats:", error);
+        } finally {
+            setDepartmentStatsLoading(false);
+        }
+    };
+
+    const fetchDepartmentUsers = async (departmentId: string) => {
+        if (role !== "HR") return;
+        if (!navigator.onLine) return;
+        if (!departmentId || departmentId === "all") {
+            setDepartmentUsers([]);
+            setDepartmentLeaveTypes([]);
+            return;
+        }
+
+        setDepartmentUsersLoading(true);
+        try {
+            const queryParams: Record<string, string> = {};
+            if (departmentStatusFilter !== "ALL") {
+                queryParams.status = departmentStatusFilter;
+            }
+
+            const result = await ApiCaller<null, any>({
+                requestType: "GET",
+                paths: ["api", "v1", "leaves", "requests", "department", departmentId],
+                queryParams,
+            });
+
+            if (result.ok) {
+                const data = result.response.data;
+                const userSummary = Array.isArray(data?.userSummary) ? data.userSummary : [];
+                const typeSummary = Array.isArray(data?.leaveTypeSummary) ? data.leaveTypeSummary : [];
+
+                setDepartmentUsers(
+                    userSummary.map((u: any) => ({
+                        userId: String(u.userId ?? ""),
+                        firstName: String(u.firstName ?? ""),
+                        lastName: String(u.lastName ?? ""),
+                        email: String(u.email ?? ""),
+                        totalLeaves: Number(u.totalLeaves ?? 0),
+                        leaveTypes: Array.isArray(u.leaveTypes) ? u.leaveTypes : [],
+                    }))
+                );
+
+                setDepartmentLeaveTypes(
+                    typeSummary.map((t: any) => ({
+                        type: String(t.type ?? ""),
+                        count: Number(t.count ?? 0)
+                    }))
+                );
+            } else {
+                console.error("Failed to fetch department users:", result.response.message);
+            }
+        } catch (error) {
+            console.error("Error fetching department users:", error);
+        } finally {
+            setDepartmentUsersLoading(false);
         }
     };
 
@@ -182,6 +343,20 @@ export function useLeaves() {
             fetchLeaveRequests(requestsPage);
         }
     }, [role, requestsPage, activeTab]);
+
+    useEffect(() => {
+        if (role === "HR" && activeTab === "requests") {
+            fetchDepartmentStats();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [role, activeTab, departmentStatusFilter]);
+
+    useEffect(() => {
+        if (role === "HR" && activeTab === "requests") {
+            fetchDepartmentUsers(selectedDepartmentId);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [role, activeTab, selectedDepartmentId, departmentStatusFilter]);
 
     const handleAddLeaveType = () => {
         setSelectedLeaveType(null);
@@ -280,6 +455,7 @@ export function useLeaves() {
         setBalancesPage,
         balancesTotal,
         leaveRequests,
+        leaveRequestCounts,
         requestsLoading,
         requestsPage,
         setRequestsPage,
@@ -298,6 +474,18 @@ export function useLeaves() {
         filteredLeaveTypes,
         filteredUserBalances,
         filteredLeaveRequests,
-        fetchLeaveRequests
+        fetchLeaveRequests,
+        fetchLeaveRequestCounts,
+        departmentStatusFilter,
+        setDepartmentStatusFilter,
+        selectedDepartmentId,
+        setSelectedDepartmentId,
+        departmentStatsLoading,
+        departmentStats,
+        departmentUsersLoading,
+        departmentUsers,
+        departmentLeaveTypes,
+        fetchDepartmentStats,
+        fetchDepartmentUsers
     };
 }
