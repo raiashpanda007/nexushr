@@ -66,7 +66,7 @@ class SkillController {
         const skip = (page - 1) * limit;
 
         if (!skillId) {
-            let queryOptions = this.repo.find();
+            let queryOptions = this.repo.find().sort({ _id: -1 });
             if (limitQuery !== 'all') {
                 queryOptions = queryOptions.skip(skip).limit(limit);
             }

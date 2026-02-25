@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -36,9 +36,11 @@ import {
     Plus,
     Loader2,
     AlertCircle,
+    Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateSalaryModal } from '@/hooks/salaries/useCreateSalaryModal';
+import ApiCaller from '@/utils/ApiCaller';
 
 interface User {
     _id: string;
@@ -61,7 +63,6 @@ interface CreateSalaryFormData {
 interface CreateSalaryModalProps {
     isOpen: boolean;
     onClose: () => void;
-    users: User[];
     onSubmit: (data: CreateSalaryFormData) => Promise<void>;
     loading: boolean;
 }
@@ -69,7 +70,6 @@ interface CreateSalaryModalProps {
 const CreateSalaryModal: React.FC<CreateSalaryModalProps> = ({
     isOpen,
     onClose,
-    users,
     onSubmit,
     loading,
 }) => {
@@ -77,7 +77,59 @@ const CreateSalaryModal: React.FC<CreateSalaryModalProps> = ({
         useCreateSalaryModal({ isOpen, onSubmit });
     const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
 
-    const selectedUser = users.find(user => user._id === formData.userId);
+    // Search-based employee lookup
+    const [searchResults, setSearchResults] = useState<User[]>([]);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [searching, setSearching] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Reset state when modal closes/opens
+    useEffect(() => {
+        if (isOpen) {
+            setSearchResults([]);
+            setSelectedUser(null);
+            setSearching(false);
+            setSearchQuery('');
+        }
+    }, [isOpen]);
+
+    const searchEmployees = useCallback(async (query: string) => {
+        if (!query.trim() || query.trim().length < 2) {
+            setSearchResults([]);
+            setSearching(false);
+            return;
+        }
+        setSearching(true);
+        try {
+            const result = await ApiCaller<null, User[]>({
+                requestType: 'GET',
+                paths: ['api', 'v1', 'search', 'users'],
+                queryParams: { query: query.trim() },
+            });
+            if (result.ok && Array.isArray(result.response.data)) {
+                setSearchResults(result.response.data);
+            } else {
+                setSearchResults([]);
+            }
+        } catch {
+            setSearchResults([]);
+        } finally {
+            setSearching(false);
+        }
+    }, []);
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => searchEmployees(value), 400);
+    };
+
+    const handleSelectUser = (user: User) => {
+        setSelectedUser(user);
+        handleUserChange(user._id);
+        setEmployeeSearchOpen(false);
+    };
 
     const totalSalary = useMemo(
         () => (formData.baseSalary || 0) + (formData.hra || 0) + (formData.lta || 0),
@@ -152,57 +204,71 @@ const CreateSalaryModal: React.FC<CreateSalaryModalProps> = ({
                                                 )}
                                             </span>
                                         ) : (
-                                            <span className="text-muted-foreground">Search and select an employee...</span>
+                                            <span className="text-muted-foreground">Search employee by name...</span>
                                         )}
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                    <Command>
-                                        <CommandInput placeholder="Search by name or email..." />
+                                    <Command shouldFilter={false}>
+                                        <CommandInput
+                                            placeholder="Type a name to search..."
+                                            value={searchQuery}
+                                            onValueChange={handleSearchChange}
+                                        />
                                         <CommandList>
-                                            <CommandEmpty>
-                                                <div className="flex flex-col items-center py-4 text-muted-foreground">
-                                                    <UserCircle className="h-8 w-8 mb-2 opacity-40" />
-                                                    <span className="text-sm">No employee found</span>
+                                            {searching ? (
+                                                <div className="flex items-center justify-center py-6 text-muted-foreground">
+                                                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                                                    <span className="text-sm">Searching...</span>
                                                 </div>
-                                            </CommandEmpty>
-                                            <CommandGroup>
-                                                {users.map((user) => (
-                                                    <CommandItem
-                                                        key={user._id}
-                                                        value={`${user.firstName} ${user.lastName} ${user.email}`}
-                                                        onSelect={() => {
-                                                            handleUserChange(user._id);
-                                                            setEmployeeSearchOpen(false);
-                                                        }}
-                                                        className="flex items-center gap-3 py-2.5"
-                                                    >
-                                                        <span className={cn(
-                                                            "flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold shrink-0",
-                                                            formData.userId === user._id
-                                                                ? "bg-indigo-500 text-white"
-                                                                : "bg-muted text-muted-foreground"
-                                                        )}>
-                                                            {user.firstName[0]}{user.lastName[0]}
-                                                        </span>
-                                                        <div className="flex flex-col min-w-0">
-                                                            <span className="font-medium truncate">
-                                                                {user.firstName} {user.lastName}
+                                            ) : searchQuery.trim().length < 2 ? (
+                                                <div className="flex flex-col items-center py-6 text-muted-foreground">
+                                                    <Search className="h-8 w-8 mb-2 opacity-40" />
+                                                    <span className="text-sm">Type at least 2 characters to search</span>
+                                                </div>
+                                            ) : searchResults.length === 0 ? (
+                                                <CommandEmpty>
+                                                    <div className="flex flex-col items-center py-4 text-muted-foreground">
+                                                        <UserCircle className="h-8 w-8 mb-2 opacity-40" />
+                                                        <span className="text-sm">No employee found</span>
+                                                    </div>
+                                                </CommandEmpty>
+                                            ) : (
+                                                <CommandGroup>
+                                                    {searchResults.map((user) => (
+                                                        <CommandItem
+                                                            key={user._id}
+                                                            value={user._id}
+                                                            onSelect={() => handleSelectUser(user)}
+                                                            className="flex items-center gap-3 py-2.5"
+                                                        >
+                                                            <span className={cn(
+                                                                "flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold shrink-0",
+                                                                formData.userId === user._id
+                                                                    ? "bg-indigo-500 text-white"
+                                                                    : "bg-muted text-muted-foreground"
+                                                            )}>
+                                                                {user.firstName[0]}{user.lastName[0]}
                                                             </span>
-                                                            <span className="text-xs text-muted-foreground truncate">
-                                                                {user.email}
-                                                            </span>
-                                                        </div>
-                                                        <Check
-                                                            className={cn(
-                                                                "ml-auto h-4 w-4 text-indigo-500 shrink-0",
-                                                                formData.userId === user._id ? "opacity-100" : "opacity-0"
-                                                            )}
-                                                        />
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
+                                                            <div className="flex flex-col min-w-0">
+                                                                <span className="font-medium truncate">
+                                                                    {user.firstName} {user.lastName}
+                                                                </span>
+                                                                <span className="text-xs text-muted-foreground truncate">
+                                                                    {user.email}
+                                                                </span>
+                                                            </div>
+                                                            <Check
+                                                                className={cn(
+                                                                    "ml-auto h-4 w-4 text-indigo-500 shrink-0",
+                                                                    formData.userId === user._id ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            )}
                                         </CommandList>
                                     </Command>
                                 </PopoverContent>

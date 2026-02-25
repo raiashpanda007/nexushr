@@ -82,7 +82,7 @@ class PayrollController {
                 }
             }
 
-            let queryOptions = this.repo.find(filter).populate("salary").populate("user", "firstName lastName email profilePhoto");
+            let queryOptions = this.repo.find(filter).sort({ _id: -1 }).populate("salary").populate("user", "firstName lastName email profilePhoto");
             if (limitQuery !== 'all') {
                 queryOptions = queryOptions.skip(skip).limit(limit);
             }

@@ -78,7 +78,7 @@ class LeaveTypeController {
             query.isPaid = isPaid;
         }
 
-        let queryOptions = this.repo.find(query);
+        let queryOptions = this.repo.find(query).sort({ _id: -1 });
         if (limitQuery !== 'all') {
             queryOptions = queryOptions.skip(skip).limit(limit);
         }

@@ -65,6 +65,7 @@ const Payroll = () => {
         loading,
         userSearchTerm,
         setUserSearchTerm,
+        userSearching,
         filterYear,
         setFilterYear,
         filterMonth,
@@ -348,11 +349,32 @@ const Payroll = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredUsers.length === 0 ? (
+                                    {userSearching ? (
                                         <TableRow>
                                             <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
-                                                <Users className="h-8 w-8 mx-auto mb-2 text-indigo-300" />
+                                                <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin text-primary" />
+                                                Searching...
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : userSearchTerm.trim().length > 0 && userSearchTerm.trim().length < 2 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                                                <Search className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                                                Type at least 2 characters to search
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : filteredUsers.length === 0 && userSearchTerm.trim().length >= 2 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                                                <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
                                                 No employees found.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : filteredUsers.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                                                <Search className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                                                Search for an employee by name
                                             </TableCell>
                                         </TableRow>
                                     ) : filteredUsers.map((user) => (
@@ -378,7 +400,7 @@ const Payroll = () => {
                                 </TableBody>
                             </Table>
                         </div>
-                        {usersTotal > 0 && !userSearchTerm && (
+                        {usersTotal > 0 && !userSearchTerm.trim() && (
                             <div className="p-4 flex justify-between items-center border-t border-border">
                                 <p className="text-sm text-muted-foreground">
                                     Showing <span className="font-semibold text-foreground">{(usersPage - 1) * usersLimit + 1}</span> to <span className="font-semibold text-foreground">{Math.min(usersPage * usersLimit, usersTotal)}</span> of <span className="font-semibold text-foreground">{usersTotal}</span>

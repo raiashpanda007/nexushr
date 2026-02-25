@@ -132,7 +132,7 @@ export default function Leaves() {
                             </div>
                         ) : (
                             <>
-                                <LeaveTypeTable leaveTypes={filteredLeaveTypes} onEdit={handleEditLeaveType} />
+                                <LeaveTypeTable leaveTypes={filteredLeaveTypes} onEdit={handleEditLeaveType} startIndex={(leaveTypesPage - 1) * 10 + 1} />
                                 {leaveTypesTotal > 0 && (
                                     <div className="p-4 flex justify-between items-center bg-card border-t border-border rounded-b-xl">
                                         <p className="text-sm text-muted-foreground">

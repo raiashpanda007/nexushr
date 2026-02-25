@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import ApiCaller from '@/utils/ApiCaller';
 import type { RootState } from '@/store';
@@ -39,6 +39,9 @@ export function usePayroll() {
     const [loading, setLoading] = useState(true);
 
     const [userSearchTerm, setUserSearchTerm] = useState('');
+    const [searchedUsers, setSearchedUsers] = useState<User[]>([]);
+    const [userSearching, setUserSearching] = useState(false);
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [filterYear, setFilterYear] = useState<string>('');
     const [filterMonth, setFilterMonth] = useState<string>('');
 
@@ -55,6 +58,41 @@ export function usePayroll() {
     const limit = 10;
     const usersLimit = 10;
     const payrollLimit = 10;
+
+    const searchUsers = useCallback(async (query: string) => {
+        if (!query.trim() || query.trim().length < 2) {
+            setSearchedUsers([]);
+            setUserSearching(false);
+            return;
+        }
+        setUserSearching(true);
+        try {
+            const result = await ApiCaller<null, User[]>({
+                requestType: 'GET',
+                paths: ['api', 'v1', 'search', 'users'],
+                queryParams: { query: query.trim() },
+            });
+            if (result.ok && Array.isArray(result.response.data)) {
+                setSearchedUsers(result.response.data);
+            } else {
+                setSearchedUsers([]);
+            }
+        } catch {
+            setSearchedUsers([]);
+        } finally {
+            setUserSearching(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        if (!userSearchTerm.trim() || userSearchTerm.trim().length < 2) {
+            setSearchedUsers([]);
+            return;
+        }
+        searchDebounceRef.current = setTimeout(() => searchUsers(userSearchTerm), 400);
+        return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+    }, [userSearchTerm, searchUsers]);
 
     const fetchUsers = async (currentPage = 1) => {
         if (!isHR) return;
@@ -171,11 +209,7 @@ export function usePayroll() {
         }
     };
 
-    const filteredUsers = users.filter(user => {
-        if (!userSearchTerm) return true;
-        const search = userSearchTerm.toLowerCase();
-        return `${user.firstName} ${user.lastName}`.toLowerCase().includes(search) || user.email.toLowerCase().includes(search);
-    });
+    const filteredUsers = userSearchTerm.trim().length >= 2 ? searchedUsers : users;
 
     const filteredPayrolls = payrolls.filter(p => {
         if (!p.createdAt) return true;
@@ -216,6 +250,7 @@ export function usePayroll() {
         loading,
         userSearchTerm,
         setUserSearchTerm,
+        userSearching,
         filterYear,
         setFilterYear,
         filterMonth,

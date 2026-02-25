@@ -16,6 +16,7 @@ interface SkillTableProps {
     skills: Skill[];
     onEdit: (skill: Skill) => void;
     onDelete: (id: string) => void;
+    startIndex?: number;
 }
 
 const categoryColors: Record<string, string> = {};
@@ -37,7 +38,7 @@ function getCategoryColor(cat: string) {
     return JSON.parse(categoryColors[cat]) as typeof colorPalette[0];
 }
 
-export default function SkillTable({ skills, onEdit, onDelete }: SkillTableProps) {
+export default function SkillTable({ skills, onEdit, onDelete, startIndex = 1 }: SkillTableProps) {
     if (!skills || skills.length === 0) {
         return (
             <Card className="w-full border-dashed border-2">
@@ -114,7 +115,7 @@ export default function SkillTable({ skills, onEdit, onDelete }: SkillTableProps
                                 >
                                     <TableCell>
                                         <span className="text-xs font-mono text-muted-foreground bg-muted rounded-md px-2 py-1">
-                                            {index + 1}
+                                            {startIndex + index}
                                         </span>
                                     </TableCell>
                                     <TableCell>

@@ -16,9 +16,10 @@ export interface LeaveType {
 interface LeaveTypeTableProps {
     leaveTypes: LeaveType[];
     onEdit: (leaveType: LeaveType) => void;
+    startIndex?: number;
 }
 
-export default function LeaveTypeTable({ leaveTypes, onEdit }: LeaveTypeTableProps) {
+export default function LeaveTypeTable({ leaveTypes, onEdit, startIndex = 1 }: LeaveTypeTableProps) {
     if (!leaveTypes || leaveTypes.length === 0) {
         return (
             <Card className="w-full border-dashed border-2">
@@ -102,7 +103,7 @@ export default function LeaveTypeTable({ leaveTypes, onEdit }: LeaveTypeTablePro
                             >
                                 <TableCell>
                                     <span className="text-xs font-mono text-muted-foreground bg-muted rounded-md px-2 py-1">
-                                        {index + 1}
+                                        {startIndex + index}
                                     </span>
                                 </TableCell>
                                 <TableCell>

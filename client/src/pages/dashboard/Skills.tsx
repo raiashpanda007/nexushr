@@ -73,7 +73,7 @@ export default function Skills() {
                     </div>
                 ) : (
                     <>
-                        <SkillTable skills={skills} onEdit={handleEditSkill} onDelete={handleDeleteSkill} />
+                        <SkillTable skills={skills} onEdit={handleEditSkill} onDelete={handleDeleteSkill} startIndex={(page - 1) * limit + 1} />
                         {total > 0 && (
                             <div className="p-4 flex justify-between items-center bg-card border-t border-border rounded-b-xl">
                                 <p className="text-sm text-muted-foreground">

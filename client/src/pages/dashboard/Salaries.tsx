@@ -11,7 +11,6 @@ const Salaries = () => {
     const {
         isHR,
         salaries,
-        users,
         loading,
         actionLoading,
         searchTerm,
@@ -94,6 +93,7 @@ const Salaries = () => {
                             onEdit={handleOpenEditModal}
                             onDelete={handleDelete}
                             loading={actionLoading}
+                            startIndex={(page - 1) * limit + 1}
                         />
                         {total > 0 && (
                             <div className="p-4 flex justify-between items-center bg-card border-t border-border rounded-b-xl">
@@ -133,7 +133,6 @@ const Salaries = () => {
             <CreateSalaryModal
                 isOpen={isCreateModalOpen}
                 onClose={handleCloseCreateModal}
-                users={users}
                 onSubmit={handleCreateSubmit}
                 loading={actionLoading}
             />

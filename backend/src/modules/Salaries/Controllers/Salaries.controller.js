@@ -88,7 +88,7 @@ class SalariesController {
 
         if (!id) {
             if (req.user.role != "HR") {
-                let queryOptions = SalariesModel.find({ userId: req.user.id }).populate(populateOptions);
+                let queryOptions = SalariesModel.find({ userId: req.user.id }).sort({ _id: -1 }).populate(populateOptions);
                 if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
 
                 const salary = await queryOptions;
@@ -101,7 +101,7 @@ class SalariesController {
                 query.userId = req.query.userId;
             }
 
-            let queryOptions = SalariesModel.find(query).populate(populateOptions);
+            let queryOptions = SalariesModel.find(query).sort({ _id: -1 }).populate(populateOptions);
             if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
 
             const salaries = await queryOptions;

@@ -9,6 +9,7 @@ import {
     Home,
     Plane,
     TrendingUp,
+    Hash,
 } from 'lucide-react';
 import {
     Table,
@@ -49,9 +50,10 @@ interface SalaryTableProps {
     onEdit: (salary: Salary) => void;
     onDelete: (id: string) => void;
     loading?: boolean;
+    startIndex?: number;
 }
 
-const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDelete, loading }) => {
+const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDelete, loading, startIndex = 1 }) => {
     if (salaries.length === 0) {
         return (
             <Card className="w-full border-dashed border-2">
@@ -101,6 +103,9 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/40 hover:bg-muted/40">
+                            <TableHead className="w-12 font-semibold">
+                                <Hash className="h-3.5 w-3.5 text-slate-500" />
+                            </TableHead>
                             <TableHead className="font-semibold">Employee</TableHead>
                             <TableHead className="font-semibold">Department</TableHead>
                             <TableHead className="text-right font-semibold">
@@ -137,6 +142,13 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                                         index % 2 === 0 ? "bg-background" : "bg-muted/20"
                                     )}
                                 >
+                                    {/* Row Number */}
+                                    <TableCell>
+                                        <span className="text-xs font-mono text-muted-foreground bg-muted rounded-md px-2 py-1">
+                                            {startIndex + index}
+                                        </span>
+                                    </TableCell>
+
                                     {/* Employee Info - Combined name + email */}
                                     <TableCell>
                                         <div className="flex items-center gap-3">
