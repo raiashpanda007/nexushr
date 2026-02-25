@@ -52,15 +52,15 @@ export default function LeaveBalancesTable({ users, onEdit }: LeaveBalancesTable
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground py-5">
+            <CardHeader className="bg-muted/30 text-foreground py-5 border-b border-border">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
+                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-background/70 border border-border/50">
                             <Wallet className="h-5 w-5" />
                         </div>
                         <div>
                             <CardTitle className="text-lg font-bold">Leave Balances</CardTitle>
-                            <p className="text-white/70 text-sm mt-0.5">
+                            <p className="text-muted-foreground text-sm mt-0.5">
                                 {users.length} employee{users.length !== 1 ? "s" : ""} with balances
                             </p>
                         </div>

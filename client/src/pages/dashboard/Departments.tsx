@@ -29,33 +29,33 @@ export default function Departments() {
     return (
         <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
             {/* Header Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 p-6 sm:p-8 shadow-xl shadow-blue-500/20 border border-blue-500/10">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+            <div className="relative overflow-hidden rounded-2xl bg-card p-6 sm:p-8 shadow-sm border border-border/50">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-foreground/3 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
                 <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-10">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
-                            <Building2 className="h-7 w-7 text-white drop-shadow-sm" />
+                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-muted/50 backdrop-blur-md shadow-inner border border-border/50">
+                            <Building2 className="h-7 w-7 text-foreground" />
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Department Management</h1>
-                            <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">Organize your teams effectively</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Department Management</h1>
+                            <p className="text-muted-foreground text-sm sm:text-base mt-1 font-medium">Organize your teams effectively</p>
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         <div className="relative lg:w-72">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-white/60" />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-muted-foreground" />
                             <Input
                                 placeholder="Search departments..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-11 w-full pl-10 bg-black/10 border-white/10 text-white placeholder:text-white/60 focus-visible:ring-white/30 rounded-xl shadow-inner transition-colors hover:bg-black/20"
+                                className="h-11 w-full pl-10 bg-background/70 border-border/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-ring/30 rounded-xl shadow-inner transition-colors"
                             />
                         </div>
                         <Button
                             onClick={handleAddDept}
-                            className="h-11 bg-white text-blue-700 hover:bg-white/90 font-bold shadow-lg shadow-black/10 gap-2 whitespace-nowrap rounded-xl px-5 hover:scale-105 transition-all"
+                            className="h-11 font-semibold gap-2 whitespace-nowrap rounded-xl px-5"
                         >
                             <Plus className="h-5 w-5" />
                             Add Department
@@ -65,10 +65,10 @@ export default function Departments() {
             </div>
 
             {/* Content */}
-            <div className="bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40 rounded-2xl shadow-xl shadow-blue-500/5 border border-border/40 overflow-hidden">
+            <div className="bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40 rounded-2xl shadow-sm border border-border/40 overflow-hidden">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-24 text-muted-foreground w-full">
-                        <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
+                        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
                         <p className="text-base font-medium animate-pulse">Loading departments...</p>
                     </div>
                 ) : (

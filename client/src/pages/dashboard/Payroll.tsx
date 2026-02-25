@@ -167,25 +167,25 @@ const Payroll = () => {
             {pdfOverlay}
             <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
                 {/* Employee Header */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+                <div className="relative overflow-hidden rounded-2xl bg-card p-6 sm:p-8 shadow-sm border border-border/50">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-foreground/3 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
                     <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-10">
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
-                                <Receipt className="h-7 w-7 text-white drop-shadow-sm" />
+                            <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-muted/50 backdrop-blur-md shadow-inner border border-border/50">
+                                <Receipt className="h-7 w-7 text-foreground" />
                             </div>
                             <div>
-                                <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">My Payrolls</h1>
-                                <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">View your salary slips and payment history</p>
+                                <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">My Payrolls</h1>
+                                <p className="text-muted-foreground text-sm sm:text-base mt-1 font-medium">View your salary slips and payment history</p>
                             </div>
                         </div>
                         <div className="flex gap-3">
                             <Select value={filterYear || "all"} onValueChange={(val) => {
                                 if (val === "all") { setFilterYear(''); setFilterMonth(''); } else { setFilterYear(val); }
                             }}>
-                                <SelectTrigger className="w-32 bg-white/15 border-white/20 text-white">
+                                <SelectTrigger className="w-32 bg-background/70 border-border/60">
                                     <SelectValue placeholder="Year" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -198,7 +198,7 @@ const Payroll = () => {
                             <Select value={filterMonth || "all"} onValueChange={(val) => {
                                 if (val === "all") setFilterMonth(''); else setFilterMonth(val);
                             }} disabled={!filterYear}>
-                                <SelectTrigger className="w-36 bg-white/15 border-white/20 text-white">
+                                <SelectTrigger className="w-36 bg-background/70 border-border/60">
                                     <SelectValue placeholder="Month" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -302,18 +302,18 @@ const Payroll = () => {
         {pdfOverlay}
         <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
             {/* HR Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+            <div className="relative overflow-hidden rounded-2xl bg-card p-6 sm:p-8 shadow-sm border border-border/50">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-foreground/3 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
                 <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-10">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
-                            <Receipt className="h-7 w-7 text-white drop-shadow-sm" />
+                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-muted/50 backdrop-blur-md shadow-inner border border-border/50">
+                            <Receipt className="h-7 w-7 text-foreground" />
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Payroll Processing</h1>
-                            <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">Generate and review payroll information across the organization</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Payroll Processing</h1>
+                            <p className="text-muted-foreground text-sm sm:text-base mt-1 font-medium">Generate and review payroll information across the organization</p>
                         </div>
                     </div>
                 </div>
@@ -322,30 +322,30 @@ const Payroll = () => {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Employee List Section */}
                 <Card className="shadow-sm border-border overflow-hidden gap-0 py-0">
-                    <CardHeader className="bg-linear-to-r from-indigo-50 to-violet-50 border-b border-indigo-100">
+                    <CardHeader className="bg-muted/30 border-b border-border">
                         <div className="flex items-center gap-2 pt-6">
-                            <Users className="h-5 w-5 text-indigo-600" />
+                            <Users className="h-5 w-5 text-muted-foreground" />
                             <CardTitle className="text-lg">Employees</CardTitle>
                         </div>
                         <CardDescription>Select an employee to generate their payroll</CardDescription>
                         <div className="mt-3 relative max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="text"
                                 placeholder="Search employees..."
                                 value={userSearchTerm}
                                 onChange={(e) => setUserSearchTerm(e.target.value)}
-                                className="pl-9 border-indigo-200 focus-visible:ring-indigo-300"
+                                className="pl-9"
                             />
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="max-h-150 overflow-y-auto">
                             <Table>
-                                <TableHeader className="bg-indigo-50/50 sticky top-0">
+                                <TableHeader className="bg-muted/20 sticky top-0">
                                     <TableRow>
-                                        <TableHead className="text-indigo-700 font-semibold">Employee</TableHead>
-                                        <TableHead className="text-right text-indigo-700 font-semibold">Action</TableHead>
+                                        <TableHead className="font-semibold">Employee</TableHead>
+                                        <TableHead className="text-right font-semibold">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -378,10 +378,10 @@ const Payroll = () => {
                                             </TableCell>
                                         </TableRow>
                                     ) : filteredUsers.map((user) => (
-                                        <TableRow key={user._id} className="hover:bg-indigo-50/40 transition-colors">
+                                        <TableRow key={user._id} className="hover:bg-muted/20 transition-colors">
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex items-center justify-center h-9 w-9 rounded-full bg-linear-to-br from-indigo-500 to-violet-600 text-white text-xs font-bold">
+                                                    <div className="flex items-center justify-center h-9 w-9 rounded-full bg-muted text-foreground text-xs font-bold border border-border">
                                                         {user.firstName?.[0]}{user.lastName?.[0]}
                                                     </div>
                                                     <div>
@@ -391,7 +391,7 @@ const Payroll = () => {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button size="sm" onClick={() => handleOpenModal(user)} variant="outline" className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                                                <Button size="sm" onClick={() => handleOpenModal(user)} variant="outline" className="gap-2">
                                                     <FileText size={14} /> Create Payroll
                                                 </Button>
                                             </TableCell>
@@ -421,9 +421,9 @@ const Payroll = () => {
 
                 {/* Payrolls List Section */}
                 <Card className="shadow-sm border-border overflow-hidden gap-0 py-0">
-                    <CardHeader className="bg-linear-to-r from-emerald-50 to-teal-50 border-b border-emerald-100">
+                    <CardHeader className="bg-muted/30 border-b border-border">
                         <div className="flex items-center gap-2 pt-6">
-                            <DollarSign className="h-5 w-5 text-emerald-600" />
+                            <DollarSign className="h-5 w-5 text-muted-foreground" />
                             <CardTitle className="text-lg">Generated Payrolls</CardTitle>
                         </div>
                         <CardDescription>View and filter processed payrolls</CardDescription>
@@ -431,7 +431,7 @@ const Payroll = () => {
                             <Select value={filterYear || "all"} onValueChange={(val) => {
                                 if (val === "all") { setFilterYear(''); setFilterMonth(''); } else { setFilterYear(val); }
                             }}>
-                                <SelectTrigger className="w-32 border-emerald-200">
+                                <SelectTrigger className="w-32">
                                     <SelectValue placeholder="Year" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -444,7 +444,7 @@ const Payroll = () => {
                             <Select value={filterMonth || "all"} onValueChange={(val) => {
                                 if (val === "all") setFilterMonth(''); else setFilterMonth(val);
                             }} disabled={!filterYear}>
-                                <SelectTrigger className="w-36 border-emerald-200">
+                                <SelectTrigger className="w-36">
                                     <SelectValue placeholder="Month" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -461,11 +461,11 @@ const Payroll = () => {
                     <CardContent className="p-0">
                         <div className="max-h-150 overflow-y-auto">
                             <Table>
-                                <TableHeader className="bg-emerald-50/50 sticky top-0">
+                                <TableHeader className="bg-muted/20 sticky top-0">
                                     <TableRow>
-                                        <TableHead className="text-emerald-700 font-semibold">Employee</TableHead>
-                                        <TableHead className="text-emerald-700 font-semibold">Period</TableHead>
-                                        <TableHead className="text-right text-emerald-700 font-semibold">Net Salary</TableHead>
+                                        <TableHead className="font-semibold">Employee</TableHead>
+                                        <TableHead className="font-semibold">Period</TableHead>
+                                        <TableHead className="text-right font-semibold">Net Salary</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

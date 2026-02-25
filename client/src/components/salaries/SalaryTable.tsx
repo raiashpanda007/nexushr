@@ -76,21 +76,21 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
             {/* Gradient Header */}
-            <CardHeader className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10 text-white py-5">
+            <CardHeader className="bg-muted/30 p-6 sm:p-8 shadow-sm border-b border-border text-foreground py-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
+                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-background/70 border border-border/50">
                             <Users className="h-5 w-5" />
                         </div>
                         <div>
                             <CardTitle className="text-lg font-bold">Employee Salaries</CardTitle>
-                            <p className="text-slate-400 text-sm mt-0.5">{salaries.length} employee{salaries.length !== 1 ? 's' : ''} configured</p>
+                            <p className="text-muted-foreground text-sm mt-0.5">{salaries.length} employee{salaries.length !== 1 ? 's' : ''} configured</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3 ">
-                        <div className="text-right bg-white/5 rounded-xl px-4 py-2.5 border border-white/10">
-                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Total Monthly Payroll</p>
-                            <p className="text-xl font-bold text-emerald-400 flex items-center gap-1">
+                        <div className="text-right bg-background/70 rounded-xl px-4 py-2.5 border border-border/50">
+                            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Monthly Payroll</p>
+                            <p className="text-xl font-bold text-foreground flex items-center gap-1">
                                 <DollarSign className="h-4 w-4" />
                                 {totalPayroll.toLocaleString()}
                             </p>

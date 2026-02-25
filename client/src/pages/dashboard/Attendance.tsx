@@ -97,28 +97,28 @@ const Attendance = () => {
     return (
         <div className="min-h-screen flex flex-col gap-6 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
             {/* Header Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
+            <div className="relative overflow-hidden rounded-2xl bg-card p-6 sm:p-8 shadow-sm border border-border/50">
                 {/* Abstract background elements */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-foreground/3 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
                 <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-5 z-10">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
-                            <Fingerprint className="h-7 w-7 text-white drop-shadow-sm" />
+                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-muted/50 backdrop-blur-md shadow-inner border border-border/50">
+                            <Fingerprint className="h-7 w-7 text-foreground" />
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Attendance Workspace</h1>
-                            <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">Manage, punch, and analyze team working hours</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Attendance Workspace</h1>
+                            <p className="text-muted-foreground text-sm sm:text-base mt-1 font-medium">Manage, punch, and analyze team working hours</p>
                         </div>
                     </div>
                     {isHR && (
-                        <div className="flex bg-black/20 backdrop-blur-md p-1.5 rounded-xl border border-white/10 shadow-inner">
+                        <div className="flex bg-muted/50 backdrop-blur-md p-1.5 rounded-xl border border-border/50 shadow-inner">
                             {(["Records", "Analytics"] as const).map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === tab ? "bg-white text-primary shadow-lg scale-105" : "text-white/80 hover:text-white hover:bg-white/10 hover:scale-105"}`}
+                                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === tab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-background/60"}`}
                                 >
                                     {tab}
                                 </button>
@@ -375,9 +375,9 @@ const Attendance = () => {
 
                     {analyticsDeptFilter === "ALL" ? (
                         <Card className="border-border shadow-sm rounded-xl overflow-hidden gap-0 py-0">
-                            <CardHeader className="bg-linear-to-r from-teal-50 to-cyan-50 border-b border-teal-100">
+                            <CardHeader className="bg-muted/30 border-b border-border">
                                 <CardTitle className="flex items-center gap-2">
-                                    <BarChart3 className="h-5 w-5 text-teal-600" /> Department Comparison
+                                    <BarChart3 className="h-5 w-5 text-muted-foreground" /> Department Comparison
                                 </CardTitle>
                                 <CardDescription>Tracking performance across departments for the selected period</CardDescription>
                             </CardHeader>
@@ -386,20 +386,20 @@ const Attendance = () => {
                                     <div className="h-80 mt-4">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <BarChart data={departmentStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#0F766E', fontWeight: 500 }} />
-                                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280' }} />
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)', fontWeight: 500 }} />
+                                                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)' }} />
                                                 <Tooltip
-                                                    cursor={{ fill: '#F0FDFA' }}
-                                                    contentStyle={{ borderRadius: '8px', border: '1px solid #99F6E4', fontWeight: '500', color: '#0F766E' }}
+                                                    cursor={{ fill: 'var(--muted)' }}
+                                                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', fontWeight: '500', color: 'var(--foreground)' }}
                                                 />
-                                                <Bar dataKey="avgHours" name="Average Hours" fill="#0D9488" radius={[6, 6, 0, 0]} />
+                                                <Bar dataKey="avgHours" name="Average Hours" fill="var(--foreground)" radius={[6, 6, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
                                 ) : (
                                     <div className="text-center py-12 text-muted-foreground">
-                                        <BarChart3 className="h-8 w-8 mx-auto mb-2 text-teal-300" />
+                                        <BarChart3 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
                                         No attendance data for the selected month.
                                     </div>
                                 )}
@@ -407,35 +407,35 @@ const Attendance = () => {
                         </Card>
                     ) : (
                         <Card className="border-border shadow-sm rounded-xl overflow-hidden gap-0 py-0">
-                            <CardHeader className="bg-linear-to-r from-teal-50 to-cyan-50 border-b border-teal-100">
+                            <CardHeader className="bg-muted/30 border-b border-border">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <CardTitle className="flex items-center gap-2">
-                                            <Activity className="h-5 w-5 text-teal-600" /> Department Roster
+                                            <Activity className="h-5 w-5 text-muted-foreground" /> Department Roster
                                         </CardTitle>
                                         <CardDescription>Individual contributions in the selected department</CardDescription>
                                     </div>
-                                    <Badge className="bg-teal-100 text-teal-800 border-teal-200">{employeesInSelectedDept.length} Members</Badge>
+                                    <Badge variant="secondary">{employeesInSelectedDept.length} Members</Badge>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
                                 {employeesInSelectedDept.length > 0 ? (
                                     <Table>
-                                        <TableHeader className="bg-teal-50/50">
+                                        <TableHeader className="bg-muted/20">
                                             <TableRow>
-                                                <TableHead className="text-teal-700 font-semibold">Employee Name</TableHead>
-                                                <TableHead className="text-teal-700 font-semibold">System ID</TableHead>
-                                                <TableHead className="text-teal-700 font-semibold">Total Logged</TableHead>
-                                                <TableHead className="text-right text-teal-700 font-semibold">Deep Dive</TableHead>
+                                                <TableHead className="font-semibold">Employee Name</TableHead>
+                                                <TableHead className="font-semibold">System ID</TableHead>
+                                                <TableHead className="font-semibold">Total Logged</TableHead>
+                                                <TableHead className="text-right font-semibold">Deep Dive</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {employeesInSelectedDept.map(emp => (
-                                                <TableRow key={emp._id} className="hover:bg-teal-50/40 transition-colors">
+                                                <TableRow key={emp._id} className="hover:bg-muted/20 transition-colors">
                                                     <TableCell className="font-semibold">{emp.firstName} {emp.lastName}</TableCell>
                                                     <TableCell className="text-muted-foreground font-mono text-sm">{emp._id}</TableCell>
                                                     <TableCell>
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-50 text-sky-700 font-medium text-sm">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-muted text-foreground font-medium text-sm">
                                                             <Clock className="h-3.5 w-3.5" /> {formatDuration(emp.totalLoggedMinutes)}
                                                         </span>
                                                     </TableCell>
@@ -497,22 +497,22 @@ const Attendance = () => {
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="h-32">
-                                                <p className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-widest">Weekly Trends</p>
+                                                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-widest">Weekly Trends</p>
                                                 <ResponsiveContainer width="100%" height="100%">
                                                     <BarChart data={chartWeekly}>
                                                         <XAxis dataKey="name" hide />
-                                                        <Tooltip cursor={{ fill: '#EFF6FF' }} />
-                                                        <Bar dataKey="Hours" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                                                        <Tooltip cursor={{ fill: 'var(--muted)' }} />
+                                                        <Bar dataKey="Hours" fill="var(--foreground)" radius={[4, 4, 0, 0]} />
                                                     </BarChart>
                                                 </ResponsiveContainer>
                                             </div>
                                             <div className="h-32">
-                                                <p className="text-xs font-semibold text-violet-700 mb-2 uppercase tracking-widest">Monthly Aggregation</p>
+                                                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-widest">Monthly Aggregation</p>
                                                 <ResponsiveContainer width="100%" height="100%">
                                                     <BarChart data={chartMonthly}>
                                                         <XAxis dataKey="name" hide />
-                                                        <Tooltip cursor={{ fill: '#F5F3FF' }} />
-                                                        <Bar dataKey="Hours" fill="#7C3AED" radius={[4, 4, 0, 0]} />
+                                                        <Tooltip cursor={{ fill: 'var(--muted)' }} />
+                                                        <Bar dataKey="Hours" fill="var(--foreground)" radius={[4, 4, 0, 0]} />
                                                     </BarChart>
                                                 </ResponsiveContainer>
                                             </div>
@@ -523,9 +523,9 @@ const Attendance = () => {
 
                             {/* Punches Detail */}
                             <Card className="col-span-1 shadow-sm border-border overflow-hidden gap-0 py-0">
-                                <CardHeader className="border-b border-border bg-linear-to-r from-teal-50 to-cyan-50 rounded-t-xl pb-3">
+                                <CardHeader className="border-b border-border bg-muted/30 rounded-t-xl pb-3">
                                     <CardTitle className="text-lg flex items-center gap-2">
-                                        <Fingerprint className="h-4 w-4 text-teal-600" /> Detailed Punches
+                                        <Fingerprint className="h-4 w-4 text-muted-foreground" /> Detailed Punches
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-0 p-0">
@@ -533,14 +533,14 @@ const Attendance = () => {
                                         <Table>
                                             <TableHeader className="bg-white sticky top-0 border-b border-border shadow-sm z-10 w-full">
                                                 <TableRow>
-                                                    <TableHead className="font-semibold text-xs text-teal-700">Date/Time</TableHead>
-                                                    <TableHead className="font-semibold text-xs text-teal-700 text-center">Type</TableHead>
+                                                    <TableHead className="font-semibold text-xs">Date/Time</TableHead>
+                                                    <TableHead className="font-semibold text-xs text-center">Type</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {selectedEmpRecords.flatMap(record =>
                                                     record.punches.map((p, i) => (
-                                                        <TableRow key={`${record._id}-${i}`} className="hover:bg-teal-50/30 border-b border-border/50">
+                                                        <TableRow key={`${record._id}-${i}`} className="hover:bg-muted/20 border-b border-border/50">
                                                             <TableCell className="text-sm">
                                                                 <span className="font-medium">{formatDateStr(record.date)}</span>
                                                                 <div className="text-xs text-muted-foreground">{formatTime(p.time)}</div>

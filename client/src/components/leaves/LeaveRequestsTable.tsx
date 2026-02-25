@@ -101,32 +101,32 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground py-5">
+            <CardHeader className="bg-muted/30 text-foreground py-5 border-b border-border">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
+                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-background/70 border border-border/50">
                             <ClipboardList className="h-5 w-5" />
                         </div>
                         <div>
                             <CardTitle className="text-lg font-bold">Leave Requests</CardTitle>
-                            <p className="text-white/70 text-sm mt-0.5">
+                            <p className="text-muted-foreground text-sm mt-0.5">
                                 {requests.length} request{requests.length !== 1 ? "s" : ""} total
                             </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 border border-white/10">
-                            <Hourglass className="h-3.5 w-3.5 text-amber-300" />
+                        <div className="flex items-center gap-2 bg-background/70 rounded-xl px-3 py-2 border border-border/50">
+                            <Hourglass className="h-3.5 w-3.5 text-muted-foreground" />
                             <div className="text-right">
-                                <p className="text-[10px] font-medium text-white/60 uppercase tracking-wider">Pending</p>
-                                <p className="text-lg font-bold text-amber-300">{pendingCount}</p>
+                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pending</p>
+                                <p className="text-lg font-bold text-foreground">{pendingCount}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 border border-white/10">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+                        <div className="flex items-center gap-2 bg-background/70 rounded-xl px-3 py-2 border border-border/50">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
                             <div className="text-right">
-                                <p className="text-[10px] font-medium text-white/60 uppercase tracking-wider">Accepted</p>
-                                <p className="text-lg font-bold text-emerald-300">{acceptedCount}</p>
+                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Accepted</p>
+                                <p className="text-lg font-bold text-foreground">{acceptedCount}</p>
                             </div>
                         </div>
                     </div>

@@ -12,7 +12,7 @@ import LeaveRequestsTable from "@/components/leaves/LeaveRequestsTable";
 import { useLeaves } from "@/hooks/Leaves/useLeaves";
 import type { LeaveTab } from "@/hooks/Leaves/useLeaves";
 import { TreePalm, Search, Plus, CalendarDays, Wallet, FileText, ChevronLeft, ChevronRight, Loader2, Hourglass, CheckCircle2, XCircle } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 export default function Leaves() {
     const {
         role,
@@ -46,7 +46,6 @@ export default function Leaves() {
         departmentStats,
         departmentUsersLoading,
         departmentUsers,
-        departmentLeaveTypes,
         selectedUserForEdit,
         setSelectedUserForEdit,
         isCreateModalOpen,
@@ -75,35 +74,6 @@ export default function Leaves() {
     const requestsPending = leaveRequestCounts?.pendingCount ?? 0;
     const requestsAccepted = leaveRequestCounts?.acceptedCount ?? 0;
     const requestsRejected = leaveRequestCounts?.rejectedCount ?? 0;
-
-    const getLeaveTypeData = () => {
-        const typeMap: Record<string, number> = {};
-        if (selectedDepartmentId === "all") {
-            departmentStats.forEach(dept => {
-                dept.leaveTypes?.forEach(lt => {
-                    typeMap[lt.type] = (typeMap[lt.type] || 0) + lt.count;
-                });
-            });
-        } else {
-            departmentLeaveTypes?.forEach(lt => {
-                typeMap[lt.type] = (typeMap[lt.type] || 0) + lt.count;
-            });
-        }
-
-        // Use a stable set of colors for pie chart
-        const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6", "#f43f5e", "#6366f1"];
-
-        return Object.entries(typeMap)
-            .filter(([_, count]) => count > 0)
-            .map(([name, count], index) => ({
-                name,
-                value: count,
-                color: COLORS[index % COLORS.length]
-            }))
-            .sort((a, b) => b.value - a.value);
-    };
-
-    const pieData = getLeaveTypeData();
 
     const departmentOptions = departmentStats
         .map((d) => ({ id: d.departmentId, name: d.department }))
@@ -167,34 +137,34 @@ export default function Leaves() {
     return (
         <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
             {/* Header Card */}
-            <div className="rounded-2xl relative overflow-hidden  bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6 sm:p-8 shadow-xl shadow-primary/20 border border-primary/10">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+            <div className="rounded-2xl relative overflow-hidden bg-card p-6 sm:p-8 shadow-sm border border-border/50">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-foreground/3 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
                 <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-10">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md shadow-inner border border-white/20">
-                            <TreePalm className="h-7 w-7 text-white drop-shadow-sm" />
+                        <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-muted/50 backdrop-blur-md shadow-inner border border-border/50">
+                            <TreePalm className="h-7 w-7 text-foreground" />
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Leave Management</h1>
-                            <p className="text-primary-foreground/80 text-sm sm:text-base mt-1 font-medium">Manage leave types and employee leave balances</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Leave Management</h1>
+                            <p className="text-muted-foreground text-sm sm:text-base mt-1 font-medium">Manage leave types and employee leave balances</p>
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         <div className="relative lg:w-72">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-white/60" />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-muted-foreground" />
                             <Input
                                 placeholder="Search..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="h-11 w-full pl-10 bg-black/10 border-white/10 text-white placeholder:text-white/60 focus-visible:ring-white/30 rounded-xl shadow-inner transition-colors hover:bg-black/20"
+                                className="h-11 w-full pl-10 bg-background/70 border-border/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-ring/30 rounded-xl shadow-inner transition-colors"
                             />
                         </div>
                         {activeTab === "types" && (
                             <Button
                                 onClick={handleAddLeaveType}
-                                className="h-11 bg-white text-emerald-700 hover:bg-white/90 font-bold shadow-lg shadow-black/10 gap-2 whitespace-nowrap rounded-xl px-5 hover:scale-105 transition-all"
+                                className="h-11 font-semibold gap-2 whitespace-nowrap rounded-xl px-5"
                             >
                                 <Plus className="h-5 w-5" /> Add Leave Type
                             </Button>
@@ -202,7 +172,7 @@ export default function Leaves() {
                         {activeTab === "balances" && (
                             <Button
                                 onClick={() => setIsCreateModalOpen(true)}
-                                className="h-11 bg-white text-emerald-700 hover:bg-white/90 font-bold shadow-lg shadow-black/10 gap-2 whitespace-nowrap rounded-xl px-5 hover:scale-105 transition-all"
+                                className="h-11 font-semibold gap-2 whitespace-nowrap rounded-xl px-5"
                             >
                                 <Plus className="h-5 w-5" /> Create Balance
                             </Button>
@@ -461,63 +431,7 @@ export default function Leaves() {
                         </div>
                     )}
 
-                    {!requestsLoading && requestsTotal > 0 && (
-                        <div className="bg-background/60 backdrop-blur-xl border border-border/40 rounded-3xl p-8 sm:p-12 shadow-2xl shadow-primary/5 flex flex-col items-center justify-center animate-in slide-in-from-bottom-6 duration-700 mt-8 relative overflow-hidden">
-                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-                            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-
-                            <h3 className="font-bold text-xl sm:text-2xl w-full text-center mb-10 opacity-90 uppercase tracking-[0.2em] relative z-10 text-foreground">Leave Distribution Analysis</h3>
-                            {pieData.length > 0 ? (
-                                <div className="w-full max-w-3xl h-[350px] relative z-10">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={pieData}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={110}
-                                                outerRadius={150}
-                                                paddingAngle={6}
-                                                dataKey="value"
-                                                stroke="none"
-                                                cornerRadius={12}
-                                            >
-                                                {pieData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} style={{ filter: "drop-shadow(0px 10px 15px rgba(0,0,0,0.12))" }} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip
-                                                contentStyle={{
-                                                    backgroundColor: "hsl(var(--background))",
-                                                    borderRadius: "16px",
-                                                    border: "1px solid hsl(var(--border))",
-                                                    boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.25)",
-                                                    color: "hsl(var(--foreground))",
-                                                    padding: "16px 24px",
-                                                }}
-                                                itemStyle={{ color: "hsl(var(--foreground))", fontWeight: 700, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: "1px" }}
-                                                cursor={{ fill: "transparent" }}
-                                            />
-                                            <Legend
-                                                verticalAlign="bottom"
-                                                height={60}
-                                                iconType="circle"
-                                                wrapperStyle={{
-                                                    paddingTop: "30px",
-                                                    fontSize: "1.1rem",
-                                                    fontWeight: 600,
-                                                }}
-                                            />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            ) : (
-                                <div className="h-64 w-full flex items-center justify-center text-muted-foreground text-sm relative z-10">
-                                    No data to display
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    
                 </TabsContent>
             </Tabs>
 

@@ -11,10 +11,10 @@ function Header() {
             <div className="flex h-16 items-center justify-between px-6 lg:px-8">
                 {/* Brand */}
                 <div className="flex items-center gap-3 select-none hover:opacity-90 transition-opacity cursor-pointer">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 ring-1 ring-primary/10">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground shadow-sm ring-1 ring-border/50">
                         <Users className="w-5 h-5 drop-shadow-sm" />
                     </div>
-                    <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+                    <h1 className="text-xl font-bold tracking-tight text-foreground">
                         NexusHR
                     </h1>
                 </div>

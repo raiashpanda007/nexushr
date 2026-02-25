@@ -30,12 +30,10 @@ function leaveTypeName(type: LeaveRequest["type"]): string {
 }
 
 const balanceColors = [
-    { bg: "from-purple-500 to-fuchsia-500", light: "bg-purple-50", text: "text-purple-700", bar: "bg-purple-500" },
-    { bg: "from-blue-500 to-cyan-500", light: "bg-blue-50", text: "text-blue-700", bar: "bg-blue-500" },
-    { bg: "from-emerald-500 to-teal-500", light: "bg-emerald-50", text: "text-emerald-700", bar: "bg-emerald-500" },
-    { bg: "from-amber-500 to-orange-500", light: "bg-amber-50", text: "text-amber-700", bar: "bg-amber-500" },
-    { bg: "from-rose-500 to-pink-500", light: "bg-rose-50", text: "text-rose-700", bar: "bg-rose-500" },
-    { bg: "from-indigo-500 to-violet-500", light: "bg-indigo-50", text: "text-indigo-700", bar: "bg-indigo-500" },
+    { bg: "from-foreground/25 to-foreground/5", light: "bg-muted", text: "text-foreground", bar: "bg-foreground" },
+    { bg: "from-foreground/20 to-foreground/5", light: "bg-muted", text: "text-foreground", bar: "bg-foreground/90" },
+    { bg: "from-foreground/15 to-foreground/5", light: "bg-muted", text: "text-foreground", bar: "bg-foreground/80" },
+    { bg: "from-foreground/25 to-foreground/10", light: "bg-muted", text: "text-foreground", bar: "bg-foreground" },
 ];
 
 function BalanceCard({ entry, index }: { entry: LeaveBalanceEntry; index: number }) {
@@ -85,30 +83,30 @@ export default function EmployeeLeaves() {
     const requestsPages = Math.ceil(requestsTotal / requestsLimit);
 
     const statsConfig = [
-        { label: "Total Types", value: balances.length, icon: <List className="w-5 h-5" />, bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-200" },
-        { label: "Pending", value: pendingCount, icon: <Clock className="w-5 h-5" />, bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200" },
-        { label: "Accepted", value: leaveRequests.filter(r => r.status === "ACCEPTED").length, icon: <CheckCircle className="w-5 h-5" />, bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200" },
-        { label: "Rejected", value: leaveRequests.filter(r => r.status === "REJECTED").length, icon: <XCircle className="w-5 h-5" />, bg: "bg-red-50", text: "text-red-600", border: "border-red-200" },
+        { label: "Total Types", value: balances.length, icon: <List className="w-5 h-5" />, bg: "bg-muted/30", text: "text-foreground", border: "border-border" },
+        { label: "Pending", value: pendingCount, icon: <Clock className="w-5 h-5" />, bg: "bg-muted/30", text: "text-foreground", border: "border-border" },
+        { label: "Accepted", value: leaveRequests.filter(r => r.status === "ACCEPTED").length, icon: <CheckCircle className="w-5 h-5" />, bg: "bg-muted/30", text: "text-foreground", border: "border-border" },
+        { label: "Rejected", value: leaveRequests.filter(r => r.status === "REJECTED").length, icon: <XCircle className="w-5 h-5" />, bg: "bg-muted/30", text: "text-foreground", border: "border-border" },
     ];
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-purple-50/50 via-background to-fuchsia-50/30 p-6 space-y-6">
+        <div className="min-h-screen bg-background p-6 space-y-6">
             {/* Header Card */}
-            <div className="rounded-2xl bg-linear-to-r from-purple-600 via-fuchsia-600 to-pink-600 p-6 shadow-lg">
+            <div className="rounded-2xl bg-card p-6 shadow-sm border border-border/50">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm">
-                            <TreePalm className="h-6 w-6 text-white" />
+                        <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-muted/50 backdrop-blur-sm border border-border/50">
+                            <TreePalm className="h-6 w-6 text-foreground" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white tracking-tight">My Leaves</h1>
-                            <p className="text-white/70 text-sm mt-0.5">View your leave balances and manage requests</p>
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">My Leaves</h1>
+                            <p className="text-muted-foreground text-sm mt-0.5">View your leave balances and manage requests</p>
                         </div>
                     </div>
                     <Button
                         onClick={() => setIsApplyModalOpen(true)}
                         disabled={balances.length === 0}
-                        className="bg-white text-purple-700 hover:bg-white/90 font-semibold shadow-md gap-2"
+                        className="font-semibold gap-2 rounded-xl"
                     >
                         <Plus className="w-4 h-4" />
                         Apply for Leave
@@ -132,9 +130,9 @@ export default function EmployeeLeaves() {
             {/* Leave Balance Cards */}
             <section className="space-y-3">
                 <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-purple-600" />
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
                     <h2 className="text-lg font-semibold">Leave Balances</h2>
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{balances.length} types</span>
+                    <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full font-medium border border-border">{balances.length} types</span>
                 </div>
 
                 {balanceLoading ? (

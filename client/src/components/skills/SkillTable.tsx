@@ -21,12 +21,9 @@ interface SkillTableProps {
 
 const categoryColors: Record<string, string> = {};
 const colorPalette = [
-    { bg: "bg-violet-50 dark:bg-violet-950/40", text: "text-violet-700 dark:text-violet-300", border: "border-violet-200/60 dark:border-violet-800" },
-    { bg: "bg-emerald-50 dark:bg-emerald-950/40", text: "text-emerald-700 dark:text-emerald-300", border: "border-emerald-200/60 dark:border-emerald-800" },
-    { bg: "bg-blue-50 dark:bg-blue-950/40", text: "text-blue-700 dark:text-blue-300", border: "border-blue-200/60 dark:border-blue-800" },
-    { bg: "bg-rose-50 dark:bg-rose-950/40", text: "text-rose-700 dark:text-rose-300", border: "border-rose-200/60 dark:border-rose-800" },
-    { bg: "bg-amber-50 dark:bg-amber-950/40", text: "text-amber-700 dark:text-amber-300", border: "border-amber-200/60 dark:border-amber-800" },
-    { bg: "bg-cyan-50 dark:bg-cyan-950/40", text: "text-cyan-700 dark:text-cyan-300", border: "border-cyan-200/60 dark:border-cyan-800" },
+    { bg: "bg-muted/40", text: "text-foreground", border: "border-border" },
+    { bg: "bg-muted/30", text: "text-foreground", border: "border-border" },
+    { bg: "bg-muted/20", text: "text-foreground", border: "border-border" },
 ];
 let colorIndex = 0;
 
@@ -57,25 +54,25 @@ export default function SkillTable({ skills, onEdit, onDelete, startIndex = 1 }:
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-indigo-600 via-violet-600 to-purple-600 text-white py-5">
+            <CardHeader className="bg-muted/30 text-foreground py-5 border-b border-border">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
-                            <Sparkles className="h-5 w-5" />
+                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-background/60 border border-border">
+                            <Sparkles className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div>
                             <CardTitle className="text-lg font-bold">Skills</CardTitle>
-                            <p className="text-white/70 text-sm mt-0.5">{skills.length} skill{skills.length !== 1 ? "s" : ""} across {uniqueCategories.length} categor{uniqueCategories.length !== 1 ? "ies" : "y"}</p>
+                            <p className="text-muted-foreground text-sm mt-0.5">{skills.length} skill{skills.length !== 1 ? "s" : ""} across {uniqueCategories.length} categor{uniqueCategories.length !== 1 ? "ies" : "y"}</p>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5 max-w-xs">
                         {uniqueCategories.slice(0, 4).map((cat) => (
-                            <span key={cat} className="bg-white/15 backdrop-blur-sm text-white/90 text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/20">
+                            <span key={cat} className="bg-background/60 text-muted-foreground text-[10px] font-medium px-2 py-0.5 rounded-full border border-border">
                                 {cat}
                             </span>
                         ))}
                         {uniqueCategories.length > 4 && (
-                            <span className="bg-white/15 backdrop-blur-sm text-white/90 text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/20">
+                            <span className="bg-background/60 text-muted-foreground text-[10px] font-medium px-2 py-0.5 rounded-full border border-border">
                                 +{uniqueCategories.length - 4}
                             </span>
                         )}
@@ -87,16 +84,16 @@ export default function SkillTable({ skills, onEdit, onDelete, startIndex = 1 }:
                     <TableHeader>
                         <TableRow className="bg-muted/40 hover:bg-muted/40">
                             <TableHead className="w-12 font-semibold">
-                                <Hash className="h-3.5 w-3.5 text-violet-500" />
+                                <Hash className="h-3.5 w-3.5 text-muted-foreground" />
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Tag className="h-3.5 w-3.5 text-indigo-500" /> Skill Name
+                                    <Tag className="h-3.5 w-3.5 text-muted-foreground" /> Skill Name
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Layers className="h-3.5 w-3.5 text-purple-500" /> Category
+                                    <Layers className="h-3.5 w-3.5 text-muted-foreground" /> Category
                                 </span>
                             </TableHead>
                             <TableHead className="text-right font-semibold">Actions</TableHead>
@@ -120,8 +117,8 @@ export default function SkillTable({ skills, onEdit, onDelete, startIndex = 1 }:
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2.5">
-                                            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-linear-to-br from-violet-500 to-indigo-600 text-white shadow-sm">
-                                                <Sparkles className="h-3.5 w-3.5" />
+                                            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-muted border border-border text-foreground">
+                                                <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
                                             </div>
                                             <span className="font-semibold text-sm">{skill.name}</span>
                                         </div>
@@ -141,7 +138,7 @@ export default function SkillTable({ skills, onEdit, onDelete, startIndex = 1 }:
                                                 size="icon"
                                                 onClick={() => onEdit(skill)}
                                                 title="Edit Skill"
-                                                className="h-8 w-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50"
+                                                className="h-8 w-8 rounded-lg hover:bg-muted hover:text-foreground"
                                             >
                                                 <Edit2 className="h-4 w-4" />
                                             </Button>

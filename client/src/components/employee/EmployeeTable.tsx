@@ -54,25 +54,25 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground py-5">
+            <CardHeader className="bg-muted/30 text-foreground py-5 border-b border-border">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
+                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-background/70 border border-border/50">
                             <Users className="h-5 w-5" />
                         </div>
                         <div>
                             <CardTitle className="text-lg font-bold">Employees</CardTitle>
-                            <p className="text-white/70 text-sm mt-0.5">
+                            <p className="text-muted-foreground text-sm mt-0.5">
                                 {employees.length} employee{employees.length !== 1 ? "s" : ""} total
                             </p>
                         </div>
                     </div>
                     <div className=" flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2.5 border border-white/10">
-                            <Wifi className="h-4 w-4 text-emerald-300" />
+                        <div className="flex items-center gap-2 bg-background/70 rounded-xl px-4 py-2.5 border border-border/50">
+                            <Wifi className="h-4 w-4 text-muted-foreground" />
                             <div className="text-right">
-                                <p className="text-[10px] font-medium text-white/60 uppercase tracking-wider">Online</p>
-                                <p className="text-lg font-bold text-emerald-300">{onlineCount}</p>
+                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Online</p>
+                                <p className="text-lg font-bold text-foreground">{onlineCount}</p>
                             </div>
                         </div>
                     </div>
@@ -197,8 +197,8 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                                     {/* Status */}
                                     <TableCell>
                                         {employee.online ? (
-                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 text-xs font-semibold border border-emerald-200/60 dark:border-emerald-800/40">
-                                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-muted text-foreground px-2.5 py-1 text-xs font-semibold border border-border">
+                                                <span className="h-2 w-2 rounded-full bg-foreground animate-pulse" />
                                                 Online
                                             </span>
                                         ) : (

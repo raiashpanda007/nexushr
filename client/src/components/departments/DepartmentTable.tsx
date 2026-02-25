@@ -19,12 +19,10 @@ interface DepartmentTableProps {
 
 // Rotating color palette for department icons
 const deptColors = [
-    "from-violet-500 to-indigo-600",
-    "from-emerald-500 to-teal-600",
-    "from-rose-500 to-pink-600",
-    "from-amber-500 to-orange-600",
-    "from-cyan-500 to-blue-600",
-    "from-fuchsia-500 to-purple-600",
+    "from-foreground/25 to-foreground/5",
+    "from-foreground/20 to-foreground/5",
+    "from-foreground/15 to-foreground/5",
+    "from-foreground/10 to-foreground/5",
 ];
 
 export default function DepartmentTable({ departments, onEdit, onDelete }: DepartmentTableProps) {
@@ -44,15 +42,15 @@ export default function DepartmentTable({ departments, onEdit, onDelete }: Depar
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
-            <CardHeader className="bg-linear-to-r from-indigo-600 via-violet-600 to-purple-600 text-white py-5">
+            <CardHeader className="bg-muted/30 text-foreground py-5 border-b border-border">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm">
-                            <Building2 className="h-5 w-5" />
+                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-background/60 border border-border">
+                            <Building2 className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div>
                             <CardTitle className="text-lg font-bold">Departments</CardTitle>
-                            <p className="text-white/70 text-sm mt-0.5">
+                            <p className="text-muted-foreground text-sm mt-0.5">
                                 {departments.length} department{departments.length !== 1 ? "s" : ""} configured
                             </p>
                         </div>
@@ -65,17 +63,17 @@ export default function DepartmentTable({ departments, onEdit, onDelete }: Depar
                         <TableRow className="bg-muted/40 hover:bg-muted/40">
                             <TableHead className="w-12 font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Hash className="h-3.5 w-3.5 text-violet-500" />
+                                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <Building2 className="h-3.5 w-3.5 text-indigo-500" /> Name
+                                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" /> Name
                                 </span>
                             </TableHead>
                             <TableHead className="font-semibold">
                                 <span className="inline-flex items-center gap-1.5">
-                                    <FileText className="h-3.5 w-3.5 text-slate-500" /> Description
+                                    <FileText className="h-3.5 w-3.5 text-muted-foreground" /> Description
                                 </span>
                             </TableHead>
                             <TableHead className="text-right font-semibold">Actions</TableHead>
@@ -98,7 +96,7 @@ export default function DepartmentTable({ departments, onEdit, onDelete }: Depar
                                 <TableCell>
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
-                                            "flex items-center justify-center h-9 w-9 rounded-lg bg-linear-to-br text-white text-xs font-bold shrink-0 shadow-sm",
+                                            "flex items-center justify-center h-9 w-9 rounded-lg bg-linear-to-br text-foreground text-xs font-bold shrink-0 border border-border",
                                             deptColors[index % deptColors.length]
                                         )}>
                                             {dept.name.charAt(0).toUpperCase()}
@@ -118,7 +116,7 @@ export default function DepartmentTable({ departments, onEdit, onDelete }: Depar
                                             size="icon"
                                             onClick={() => onEdit(dept)}
                                             title="Edit Department"
-                                            className="h-8 w-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50"
+                                            className="h-8 w-8 rounded-lg hover:bg-muted hover:text-foreground"
                                         >
                                             <Edit2 className="h-4 w-4" />
                                         </Button>
