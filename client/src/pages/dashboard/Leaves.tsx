@@ -12,7 +12,7 @@ import LeaveRequestsTable from "@/components/leaves/LeaveRequestsTable";
 import { useLeaves } from "@/hooks/Leaves/useLeaves";
 import type { LeaveTab } from "@/hooks/Leaves/useLeaves";
 import { TreePalm, Search, Plus, CalendarDays, Wallet, FileText, ChevronLeft, ChevronRight, Loader2, Hourglass, CheckCircle2, XCircle } from "lucide-react";
-import { Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 export default function Leaves() {
     const {
         role,
@@ -392,11 +392,11 @@ export default function Leaves() {
                                                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                                                 <XAxis
                                                     dataKey="label"
-                                                    angle={-35}
+                                                    angle={0}
                                                     textAnchor="end"
-                                                    height={70}
-                                                    interval="preserveStartEnd"
-                                                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                                                    height={100}
+                                                    interval={0}
+                                                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, dy: 5 }}
                                                     axisLine={{ stroke: "hsl(var(--border))" }}
                                                     tickLine={{ stroke: "hsl(var(--border))" }}
                                                 />
@@ -405,7 +405,7 @@ export default function Leaves() {
                                                     axisLine={{ stroke: "hsl(var(--border))" }}
                                                     tickLine={{ stroke: "hsl(var(--border))" }}
                                                 />
-                                                <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }} />
+                                                <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }} />
                                                 {allLeaveTypesInBarData.map((type, index) => {
                                                     const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6", "#f43f5e", "#6366f1"];
                                                     return (
@@ -431,7 +431,7 @@ export default function Leaves() {
                         </div>
                     )}
 
-                    
+
                 </TabsContent>
             </Tabs>
 
