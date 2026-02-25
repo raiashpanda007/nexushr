@@ -89,7 +89,7 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                     </div>
                     <div className="flex items-center gap-3 ">
                         <div className="text-right bg-background/70 rounded-xl px-4 py-2.5 border border-border/50">
-                            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Monthly Payroll</p>
+                            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Salaries</p>
                             <p className="text-xl font-bold text-foreground flex items-center gap-1">
                                 <DollarSign className="h-4 w-4" />
                                 {totalPayroll.toLocaleString()}
@@ -152,7 +152,7 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                                     {/* Employee Info - Combined name + email */}
                                     <TableCell>
                                         <div className="flex items-center gap-3">
-                                            <div className="flex items-center justify-center h-9 w-9 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 text-white text-xs font-bold shrink-0 shadow-sm">
+                                            <div className="flex items-center justify-center h-9 w-9 rounded-full bg-black text-white text-xs font-bold shrink-0 shadow-sm">
                                                 {salary.userId?.firstName?.[0]}{salary.userId?.lastName?.[0]}
                                             </div>
                                             <div className="min-w-0">
@@ -171,7 +171,7 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                                         {salary.userId?.deptId ? (
                                             <Badge
                                                 variant="secondary"
-                                                className="bg-indigo-50 text-indigo-700 border border-indigo-200/60 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800"
+                                                className="border-black/40 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800"
                                             >
                                                 {salary.userId.deptId.name}
                                             </Badge>

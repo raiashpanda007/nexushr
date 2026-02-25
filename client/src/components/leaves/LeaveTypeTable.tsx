@@ -125,8 +125,8 @@ export default function LeaveTypeTable({ leaveTypes, onEdit, startIndex = 1 }: L
                                         className={cn(
                                             "border",
                                             type.length === "FULL"
-                                                ? "bg-blue-50 text-blue-700 border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
-                                                : "bg-orange-50 text-orange-700 border-orange-200/60 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800"
+                                                ? "bg-black text-white border-black/60 dark:bg-white/10 dark:text-white dark:border-white/60"
+                                                : "bg-white/50 text-black/80 border-black/30 dark:bg-white/20 dark:text-white/80 dark:border-white/30"
                                         )}
                                     >
                                         {type.length === "FULL" ? "Full Day" : "Half Day"}

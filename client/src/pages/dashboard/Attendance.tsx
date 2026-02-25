@@ -237,7 +237,7 @@ const Attendance = () => {
                                                     {isHR && (
                                                         <TableCell>
                                                             <div className="flex items-center gap-3">
-                                                                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-linear-to-br from-teal-500 to-cyan-600 text-white text-xs font-bold">
+                                                                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-black text-white text-xs font-bold">
                                                                     {record.user?.firstName?.[0]}{record.user?.lastName?.[0]}
                                                                 </div>
                                                                 <div>

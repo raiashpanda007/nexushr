@@ -181,14 +181,14 @@ export default function EmployeeLeaves() {
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="bg-linear-to-r from-purple-50 to-fuchsia-50 border-b border-border">
-                                        <th className="px-4 py-3 text-left font-semibold text-purple-700">#</th>
-                                        <th className="px-4 py-3 text-left font-semibold text-purple-700">Leave Type</th>
-                                        <th className="px-4 py-3 text-left font-semibold text-purple-700">From</th>
-                                        <th className="px-4 py-3 text-left font-semibold text-purple-700">To</th>
-                                        <th className="px-4 py-3 text-left font-semibold text-purple-700">Days</th>
-                                        <th className="px-4 py-3 text-left font-semibold text-purple-700">Applied On</th>
-                                        <th className="px-4 py-3 text-left font-semibold text-purple-700">Status</th>
+                                    <tr className="bg-black border-b border-border">
+                                        <th className="px-4 py-3 text-left font-semibold text-white">#</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-white">Leave Type</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-white">From</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-white">To</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-white">Days</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-white">Applied On</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-white">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border bg-card">
