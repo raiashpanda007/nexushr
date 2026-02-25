@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 import {
     Users,
     Edit2,
@@ -25,6 +26,8 @@ interface EmployeeTableProps {
 }
 
 export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: EmployeeTableProps) {
+    const navigate = useNavigate();
+
     if (!employees || employees.length === 0) {
         return (
             <Card className="w-full border-dashed border-2">
@@ -113,13 +116,18 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                         {employees.map((employee, index) => {
                             const deptName = getDepartmentName(employee.deptId);
                             const skills = getSkillsList(employee.skills);
+                            const employeeId = employee._id || employee.id;
                             return (
                                 <TableRow
-                                    key={employee._id || employee.id}
+                                    key={employeeId}
                                     className={cn(
-                                        "transition-colors group",
+                                        "transition-colors group cursor-pointer",
                                         index % 2 === 0 ? "bg-background" : "bg-muted/20"
                                     )}
+                                    onClick={() => {
+                                        if (!employeeId) return;
+                                        navigate(`/employee/${employeeId}`);
+                                    }}
                                 >
                                     <TableCell>
                                         <span className="text-xs font-mono text-muted-foreground bg-muted rounded-md px-2 py-1">
@@ -215,7 +223,10 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => onEdit(employee)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onEdit(employee);
+                                                }}
                                                 title="Edit Employee"
                                                 className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary"
                                             >

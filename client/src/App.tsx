@@ -9,6 +9,7 @@ import Skills from "./pages/dashboard/Skills"
 import Payroll from "./pages/dashboard/Payroll"
 import Attendance from "./pages/dashboard/Attendance"
 import Leaves from "./pages/dashboard/Leaves"
+import EmployeeDetails from "./pages/dashboard/EmployeeDetails"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { userDetails } = useAppSelector((state) => state.userState)
@@ -40,6 +41,7 @@ function App() {
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<RoleBasedRedirect />} />
         <Route path="employee" element={<Employee />} />
+        <Route path="employee/:id" element={<EmployeeDetails />} />
         <Route path="departments" element={<Departments />} />
         <Route path="salaries" element={<Salaries />} />
         <Route path="skills" element={<Skills />} />
