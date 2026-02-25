@@ -1,9 +1,9 @@
 import ApiError from "./Error";
 import AsyncHandler from "./AsyncHandler";
-import Response from "./Response";
+import ApiResponse from "./Response";
 
 export {
     ApiError,
     AsyncHandler,
-    Response
+    ApiResponse
 }

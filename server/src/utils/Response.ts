@@ -1,15 +1,17 @@
-class Response<T> {
+class ApiResponse {
     public statusCode: number;
     public message: string;
-    public data: T | null;
+    public data: any | null;
     public success: boolean;
+    public errors: any[];
   
-    constructor(statusCode: number, message: string = "Success", data: T | null = null) {
-      this.statusCode = statusCode;
-      this.message = message;
-      this.data = data;
-      this.success = statusCode < 400;
-    }
+    constructor(statusCode: number, data: any | null = null, message = "Success", errors = []) {
+    this.statusCode = statusCode
+    this.data = data
+    this.message = message
+    this.success = statusCode < 400
+    this.errors = errors
+  }
   }
   
-  export default Response;
+  export default ApiResponse;
