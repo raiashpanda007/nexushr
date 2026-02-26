@@ -16,6 +16,7 @@
   - [Running the Backend](#running-the-backend)
   - [Running the Client](#running-the-client)
   - [Seeding the Database](#seeding-the-database)
+- [Process Management (PM2)](#process-management-pm2)
 - [Backend](#backend)
   - [Entry Point & Clustering](#entry-point--clustering)
   - [Server Setup](#server-setup)
@@ -249,6 +250,34 @@ Populates all collections with 50+ realistic documents:
 ```bash
 cd backend
 npm run seed
+```
+
+---
+
+## Process Management (PM2)
+
+Use the root PM2 ecosystem file to run all services together.
+
+### Prerequisites
+
+- PM2 installed globally (`npm i -g pm2`)
+- Bun installed (required for the `server` app defined in PM2)
+
+### Start all services
+
+```bash
+cd NexusHR
+pm2 start ecosystem.config.js
+```
+
+### Useful PM2 commands
+
+```bash
+pm2 ls
+pm2 logs
+pm2 restart ecosystem.config.js
+pm2 stop ecosystem.config.js
+pm2 delete ecosystem.config.js
 ```
 
 ---
