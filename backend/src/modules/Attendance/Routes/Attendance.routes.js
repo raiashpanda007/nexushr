@@ -12,6 +12,7 @@ class AttendanceRoutes {
         this.router.post("/", VerifyMiddleware, this.controller.Create);
         this.router.get("/", VerifyMiddleware, this.controller.Get);
         this.router.get("/punch-photo-url", VerifyMiddleware, this.controller.GetPunchPhotoSignedUrl);
+        this.router.get("/punch-status", VerifyMiddleware, this.controller.StatusOfAttendance);
         return this.router;
     }
 }

@@ -1,7 +1,8 @@
 import AttendanceModel from "../Models/attendance.model.js";
 import { ApiResponse, ApiError, AsyncHandler, GenerateUploadUrl } from "../../../utils/index.js";
 import Types from "../../../types/index.js";
-
+import RedisClient from "../../../config/Redis.js";
+import { Cfg } from "../../../config/env.js";
 class AttendanceController {
     constructor() {
         this.repo = AttendanceModel;
@@ -14,7 +15,8 @@ class AttendanceController {
         }
 
         const { userId, type, photo } = parsedData.data;
-
+        
+        console.log("Attendance punch data", { userId, type, photo });
         // HR users cannot punch in/out
         if (req.user.role === "HR") {
             throw new ApiError(Types.Errors.Forbidden, "HR users cannot punch in/out");
@@ -118,6 +120,47 @@ class AttendanceController {
         }
         const signedUrl = await GenerateUploadUrl(fileName, contentType, "punch-photos");
         return res.status(200).json(new ApiResponse(200, { signedUrl }, "Signed URL generated successfully"));
+    });
+
+    StatusOfAttendance = AsyncHandler(async (req, res) => {
+        const { photoUrl } = req.query;
+
+        if (!photoUrl) {
+            throw new ApiError(Types.Errors.BadRequest, "photoUrl query parameter is required");
+        }
+
+        const redisInstance = RedisClient.GetInstance(Cfg.REDIS_URL);
+        const client = redisInstance.GetClient();
+
+        const MAX_WAIT_MS = 60_000; // 1 minute max wait
+        const POLL_INTERVAL_MS = 2_000; // check every 2 seconds
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < MAX_WAIT_MS) {
+            const result = await client.get(photoUrl);
+
+            if (result !== null) {
+                const parsed = JSON.parse(result);
+
+                if (parsed.match === true) {
+                    return res.status(200).json(
+                        new ApiResponse(200, { status: "verified", match: true }, "Face verified successfully")
+                    );
+                } else {
+                    return res.status(200).json(
+                        new ApiResponse(200, { status: "failed", match: false }, "Please use your own photo")
+                    );
+                }
+            }
+
+            // Wait before polling again
+            await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+        }
+
+        // Timed out — no result from worker within 1 minute
+        return res.status(200).json(
+            new ApiResponse(200, { status: "timeout", match: null }, "Please upload your selfie again")
+        );
     });
 }
 

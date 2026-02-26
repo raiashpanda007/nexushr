@@ -61,6 +61,12 @@ export function useAttendance() {
     const [showCamera, setShowCamera] = useState(false);
     const [punchOutUploading, setPunchOutUploading] = useState(false);
 
+    // Verification status after punch-out photo upload
+    const [verificationStatus, setVerificationStatus] = useState<
+        "idle" | "verifying" | "verified" | "failed" | "timeout"
+    >("idle");
+    const [verificationMessage, setVerificationMessage] = useState<string>("");
+
 
     const availableDepartments = useMemo(() => {
         const uniqueIds = new Set<string>();
@@ -262,6 +268,52 @@ export function useAttendance() {
         }
     };
 
+    const pollVerificationStatus = useCallback(async (photoUrl: string) => {
+        setVerificationStatus("verifying");
+        setVerificationMessage("Verifying your identity...");
+
+        const POLL_INTERVAL = 3000; // 3 seconds
+        const MAX_POLLS = 22; // ~66 seconds total (slightly longer than backend's 60s timeout)
+
+        for (let i = 0; i < MAX_POLLS; i++) {
+            try {
+                const result = await ApiCaller<null, { status: string; match: boolean | null }>({
+                    requestType: 'GET',
+                    paths: ['api', 'v1', 'attendance', 'punch-status'],
+                    queryParams: { photoUrl },
+                });
+
+                if (result.ok && result.response?.data) {
+                    const { status } = result.response.data;
+
+                    if (status === "verified") {
+                        setVerificationStatus("verified");
+                        setVerificationMessage("Face verified successfully! Punch out recorded.");
+                        await fetchAttendances(filterDate);
+                        return;
+                    } else if (status === "failed") {
+                        setVerificationStatus("failed");
+                        setVerificationMessage("Please use your own photo.");
+                        return;
+                    } else if (status === "timeout") {
+                        setVerificationStatus("timeout");
+                        setVerificationMessage("Please upload your selfie again.");
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error("Error polling verification status:", error);
+            }
+
+            // Wait before next poll
+            await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
+        }
+
+        // Frontend-side timeout
+        setVerificationStatus("timeout");
+        setVerificationMessage("Please upload your selfie again.");
+    }, [filterDate]);
+
     const handlePunchOutWithPhoto = useCallback(async (photoBlob: Blob) => {
         if (!userDetails) return;
 
@@ -308,7 +360,11 @@ export function useAttendance() {
 
             if (result.ok) {
                 setShowCamera(false);
-                await fetchAttendances(filterDate);
+                setPunchOutUploading(false);
+                setActionLoading(false);
+
+                // Start long-polling for face verification result
+                pollVerificationStatus(photoUrl);
             } else {
                 alert(result.response?.message || 'Failed to punch out');
             }
@@ -319,7 +375,7 @@ export function useAttendance() {
             setPunchOutUploading(false);
             setActionLoading(false);
         }
-    }, [userDetails, filterDate]);
+    }, [userDetails, filterDate, pollVerificationStatus]);
 
     const filteredAttendances = useMemo(() => {
         return attendances.filter(a => {
@@ -452,6 +508,9 @@ export function useAttendance() {
         showCamera,
         setShowCamera,
         punchOutUploading,
+        verificationStatus,
+        verificationMessage,
+        setVerificationStatus,
         filteredAttendances,
         departmentStats,
         bestDepartment,

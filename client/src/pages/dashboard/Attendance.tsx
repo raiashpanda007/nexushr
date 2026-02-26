@@ -1,4 +1,4 @@
-import { Calendar, LogIn, LogOut, BarChart3, Search, Activity, Clock, Award, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Fingerprint } from 'lucide-react';
+import { Calendar, LogIn, LogOut, BarChart3, Search, Activity, Clock, Award, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Fingerprint, ShieldCheck, ShieldX, RefreshCw } from 'lucide-react';
 import EmployeeAvatar from '@/components/employee/EmployeeAvatar';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -62,6 +62,9 @@ const Attendance = () => {
         showCamera,
         setShowCamera,
         punchOutUploading,
+        verificationStatus,
+        verificationMessage,
+        setVerificationStatus,
         filteredAttendances,
         departmentStats,
         bestDepartment,
@@ -172,6 +175,57 @@ const Attendance = () => {
                                 {lastPunch && (
                                     <div className={`text-sm font-medium text-center p-3.5 rounded-xl border shadow-sm ${lastPunch.type === 'IN' ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-red-50/50 border-red-200 text-red-700'}`}>
                                         Last action: <span className="font-bold uppercase tracking-wide">{lastPunch.type}</span> at {formatTime(lastPunch.time)}
+                                    </div>
+                                )}
+
+                                {/* Verification Status Banner */}
+                                {verificationStatus !== "idle" && (
+                                    <div className={`text-sm font-medium p-4 rounded-xl border shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+                                        verificationStatus === "verifying"
+                                            ? "bg-blue-50/50 border-blue-200 text-blue-700"
+                                            : verificationStatus === "verified"
+                                            ? "bg-emerald-50/50 border-emerald-200 text-emerald-700"
+                                            : verificationStatus === "failed"
+                                            ? "bg-red-50/50 border-red-200 text-red-700"
+                                            : "bg-amber-50/50 border-amber-200 text-amber-700"
+                                    }`}>
+                                        <div className="flex items-center gap-2.5">
+                                            {verificationStatus === "verifying" && (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            )}
+                                            {verificationStatus === "verified" && (
+                                                <ShieldCheck className="h-4 w-4" />
+                                            )}
+                                            {verificationStatus === "failed" && (
+                                                <ShieldX className="h-4 w-4" />
+                                            )}
+                                            {verificationStatus === "timeout" && (
+                                                <RefreshCw className="h-4 w-4" />
+                                            )}
+                                            <span>{verificationMessage}</span>
+                                        </div>
+                                        {(verificationStatus === "failed" || verificationStatus === "timeout") && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="mt-2 w-full text-xs font-semibold"
+                                                onClick={() => {
+                                                    setVerificationStatus("idle");
+                                                }}
+                                            >
+                                                Dismiss
+                                            </Button>
+                                        )}
+                                        {verificationStatus === "verified" && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="mt-2 w-full text-xs font-semibold"
+                                                onClick={() => setVerificationStatus("idle")}
+                                            >
+                                                Dismiss
+                                            </Button>
+                                        )}
                                     </div>
                                 )}
                             </CardContent>

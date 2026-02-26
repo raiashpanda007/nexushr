@@ -22,7 +22,7 @@ if (cluster.isPrimary) {
   });
 
 } else {
-  const app = new App(Cfg.MONGO_DB_URL, Cfg.DB_NAME);
+  const app = new App(Cfg.MONGO_DB_URL, Cfg.DB_NAME, Cfg.REDIS_URL);
   app.Listen(Cfg.PORT);
 }
 

@@ -3,6 +3,7 @@ import {
   ReceiveMessageCommand,
   DeleteMessageCommand,
 } from "@aws-sdk/client-sqs";
+import { createClient } from "redis";
 import ImageProcessor from "./utils/processor/Image/Image.js";
 import SysConf from "./conf/config.js";
 import DB from "./utils/Db.js";
@@ -24,6 +25,12 @@ const command = new ReceiveMessageCommand({
 const dbInstance = new DB(Config.MONGO_DB_URL, Config.DB_NAME);
 await dbInstance.Connect();
 
+// Connect to Redis
+const redisClient = createClient({ url: Config.REDIS_URL });
+redisClient.on("error", (err) => console.error("Redis error:", err));
+await redisClient.connect();
+console.log("Redis connected in worker");
+
 async function ProcessMessages() {
   while (true) {
     const { Messages } = await SQS_CLIENT.send(command);
@@ -42,6 +49,7 @@ async function ProcessMessages() {
           if (event.Service === "s3:TestEvent") continue;
         }
 
+
         for (const record of event.Records) {
           const bucketName = record.s3.bucket.name;
           const objectKey = decodeURIComponent(
@@ -56,6 +64,20 @@ async function ProcessMessages() {
           const response = await ImageProcessor(UserId,bucketName,objectKey,dbInstance);
 
           console.log("Processing result:", response);
+
+
+          const s3BaseUrl = Config.S3_ENDPOINT || "http://localhost:4566";
+          const photoUrl = `${s3BaseUrl}/${bucketName}/${objectKey}`;
+          
+          const redisValue = JSON.stringify({
+            match: response?.matchResult?.match ?? false,
+            distance: response?.matchResult?.distance ?? null,
+            processedAt: new Date().toISOString(),
+          });
+
+          // Store with 5 minute TTL so keys auto-expire
+          await redisClient.set(photoUrl, redisValue, { EX: 300 });
+          console.log(`Stored verification result in Redis: ${photoUrl} => ${redisValue}`);
           
         }
 

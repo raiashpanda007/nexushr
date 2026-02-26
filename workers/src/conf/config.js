@@ -11,6 +11,7 @@ const EnvSchema = zod.object({
   DB_NAME: zod.string().min(1),
   S3_ENDPOINT: zod.string().min(1),
   AWS_PROFILE_PHOTO_BUCKET: zod.string().min(1),
+  REDIS_URL: zod.string().min(1),
 });
 
 class Config {

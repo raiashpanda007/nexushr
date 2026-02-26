@@ -87,7 +87,15 @@ async function ImageProcessor(UserID, Bucket, ObjectKey, DbConnection) {
 
   const matchResult = await ImageMatcher(registeredPhotoPath, punchPhotoPath);
 
-  return { registeredPhotoPath, punchPhotoPath, matchResult };
+  // Clean up downloaded images after processing
+  for (const filePath of [registeredPhotoPath, punchPhotoPath]) {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`Deleted processed image: ${filePath}`);
+    }
+  }
+
+  return { matchResult };
 }
 
 export default ImageProcessor;
