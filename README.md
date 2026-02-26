@@ -261,7 +261,7 @@ Use the root PM2 ecosystem file to run all services together.
 ### Prerequisites
 
 - PM2 installed globally (`npm i -g pm2`)
-- Bun installed (required for the `server` app defined in PM2)
+- Dependencies installed in each app folder (`backend`, `workers`, `client`)
 
 ### Start all services
 
@@ -269,6 +269,18 @@ Use the root PM2 ecosystem file to run all services together.
 cd NexusHR
 pm2 start ecosystem.config.js
 ```
+
+### Start PM2 on system reboot
+
+Run this once to register PM2 with system startup, then save the current process list:
+
+```bash
+pm2 startup
+# run the command PM2 prints (usually with sudo)
+pm2 save
+```
+
+After reboot, PM2 restores and starts the app list saved by `pm2 save`.
 
 ### Useful PM2 commands
 
