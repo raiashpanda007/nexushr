@@ -51,29 +51,12 @@ async function ProcessMessages() {
           console.log("File uploaded:", objectKey);
           console.log("Bucket:", bucketName);
 
-          // Download file from S3
-          // const getObjectCommand = new GetObjectCommand({
-          //   Bucket: bucketName,
-          //   Key: objectKey,
-          // });
-
-          // const response = await S3_CLIENT.send(getObjectCommand);
-
-          // const chunks = [];
-          // for await (const chunk of response.Body) {
-          //   chunks.push(chunk);
-          // }
-
-          // const fileBuffer = Buffer.concat(chunks);
-
-          // fs.writeFileSync(
-          //   `./downloads/${objectKey.split("/").pop()}`,
-          //   fileBuffer,
-          // );
+          
           const UserId = objectKey.split("/")[1];
-          await ImageProcessor(UserId,bucketName,objectKey,dbInstance);
+          const response = await ImageProcessor(UserId,bucketName,objectKey,dbInstance);
 
-          // console.log("File downloaded successfully");
+          console.log("Processing result:", response);
+          
         }
 
         await SQS_CLIENT.send(

@@ -3,6 +3,10 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 import path from "path";
 import SysConf from "../../../conf/config.js";
+import ImageMatcher from "../ImageMatcher.js";
+
+
+
 const Config = new SysConf().MustLoad();
 const S3_CLIENT = new S3Client({
   region: Config.AWS_REGION || "ap-south-1",
@@ -81,7 +85,9 @@ async function ImageProcessor(UserID, Bucket, ObjectKey, DbConnection) {
   
   punchPhotoPath = await DownloadImage(Bucket, ObjectKey, UserID, "./punched");
 
-  return { registeredPhotoPath, punchPhotoPath };
+  const matchResult = await ImageMatcher(registeredPhotoPath, punchPhotoPath);
+
+  return { registeredPhotoPath, punchPhotoPath, matchResult };
 }
 
 export default ImageProcessor;
