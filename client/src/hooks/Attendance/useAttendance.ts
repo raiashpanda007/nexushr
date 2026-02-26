@@ -1,7 +1,8 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { format, startOfWeek, startOfMonth } from 'date-fns';
 import ApiCaller from '@/utils/ApiCaller';
+import axios from 'axios';
 import type { RootState } from '@/store';
 
 interface Punch {
@@ -55,6 +56,10 @@ export function useAttendance() {
     const [activeTab, setActiveTab] = useState<"Records" | "Analytics">("Records");
 
     const [selectedEmpId, setSelectedEmpId] = useState<string | null>(null);
+
+    // Camera capture state for punch-out
+    const [showCamera, setShowCamera] = useState(false);
+    const [punchOutUploading, setPunchOutUploading] = useState(false);
 
 
     const availableDepartments = useMemo(() => {
@@ -222,6 +227,12 @@ export function useAttendance() {
     const handlePunch = async (type: "IN" | "OUT") => {
         if (!userDetails) return;
 
+        // For OUT punches, open camera instead of punching directly
+        if (type === "OUT") {
+            setShowCamera(true);
+            return;
+        }
+
         setActionLoading(true);
         try {
             if (!navigator.onLine) {
@@ -250,6 +261,65 @@ export function useAttendance() {
             setActionLoading(false);
         }
     };
+
+    const handlePunchOutWithPhoto = useCallback(async (photoBlob: Blob) => {
+        if (!userDetails) return;
+
+        setPunchOutUploading(true);
+        setActionLoading(true);
+
+        try {
+            const fileName = `punches/${userDetails.id}/${Date.now()}.jpg`;
+
+            // Step 1: Get signed URL from backend for punch-photos bucket
+            const signedUrlResult = await ApiCaller<null, { signedUrl: string }>({
+                requestType: 'GET',
+                paths: ['api', 'v1', 'attendance', 'punch-photo-url'],
+                queryParams: {
+                    fileName,
+                    contentType: 'image/jpeg',
+                },
+            });
+
+            if (!signedUrlResult.ok || !signedUrlResult.response.data?.signedUrl) {
+                throw new Error('Failed to get upload URL');
+            }
+
+            const { signedUrl } = signedUrlResult.response.data;
+
+            // Step 2: Upload photo to S3 via signed URL
+            await axios.put(signedUrl, photoBlob, {
+                headers: { 'Content-Type': 'image/jpeg' },
+            });
+
+            // Step 3: Get the public URL (strip query params)
+            const photoUrl = signedUrl.split('?')[0];
+
+            // Step 4: Punch OUT with photo URL
+            const result = await ApiCaller<{ userId: string; type: string; photo: string }, any>({
+                requestType: 'POST',
+                paths: ['api', 'v1', 'attendance'],
+                body: {
+                    userId: userDetails.id,
+                    type: 'OUT',
+                    photo: photoUrl,
+                },
+            });
+
+            if (result.ok) {
+                setShowCamera(false);
+                await fetchAttendances(filterDate);
+            } else {
+                alert(result.response?.message || 'Failed to punch out');
+            }
+        } catch (error) {
+            console.error('Error during punch out with photo:', error);
+            alert('Failed to upload photo and punch out. Please try again.');
+        } finally {
+            setPunchOutUploading(false);
+            setActionLoading(false);
+        }
+    }, [userDetails, filterDate]);
 
     const filteredAttendances = useMemo(() => {
         return attendances.filter(a => {
@@ -378,6 +448,10 @@ export function useAttendance() {
         setSelectedEmpId,
         availableDepartments,
         handlePunch,
+        handlePunchOutWithPhoto,
+        showCamera,
+        setShowCamera,
+        punchOutUploading,
         filteredAttendances,
         departmentStats,
         bestDepartment,

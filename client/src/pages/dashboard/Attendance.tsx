@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAttendance } from '@/hooks/Attendance/useAttendance';
+import CameraCapture from '@/components/attendance/CameraCapture';
 
 const formatTime = (timeStr: string) => {
     if (!timeStr) return '-';
@@ -57,6 +58,10 @@ const Attendance = () => {
         setSelectedEmpId,
         availableDepartments,
         handlePunch,
+        handlePunchOutWithPhoto,
+        showCamera,
+        setShowCamera,
+        punchOutUploading,
         filteredAttendances,
         departmentStats,
         bestDepartment,
@@ -572,6 +577,14 @@ const Attendance = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Camera Capture Dialog for Punch Out */}
+            <CameraCapture
+                open={showCamera}
+                onClose={() => setShowCamera(false)}
+                onCapture={handlePunchOutWithPhoto}
+                uploading={punchOutUploading}
+            />
         </div>
     );
 };

@@ -1,10 +1,18 @@
 #!/bin/bash
 
-echo "Creating S3 bucket..."
-awslocal s3 mb s3://my-local-bucket || true
+REGION="ap-south-1"
+ACCOUNT_ID="000000000000"
+QUEUE_NAME="punch-processor"
+QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$QUEUE_NAME"
+QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$QUEUE_NAME"
 
-echo "Setting CORS policy on S3 bucket..."
-awslocal s3api put-bucket-cors --bucket my-local-bucket --cors-configuration '{
+echo "Creating S3 buckets..."
+awslocal --region $REGION s3 mb s3://register-photos || true
+awslocal --region $REGION s3 mb s3://punch-photos || true
+
+echo "Setting CORS policy..."
+
+CORS_CONFIG='{
   "CORSRules": [
     {
       "AllowedOrigins": ["*"],
@@ -16,8 +24,54 @@ awslocal s3api put-bucket-cors --bucket my-local-bucket --cors-configuration '{
   ]
 }'
 
+awslocal --region $REGION s3api put-bucket-cors \
+  --bucket register-photos \
+  --cors-configuration "$CORS_CONFIG"
+
+awslocal --region $REGION s3api put-bucket-cors \
+  --bucket punch-photos \
+  --cors-configuration "$CORS_CONFIG"
+
+echo "Creating SQS queue..."
+awslocal --region $REGION sqs create-queue \
+  --queue-name $QUEUE_NAME || true
+
+echo "Attaching SQS policy to allow S3 to publish..."
+
+awslocal --region $REGION sqs set-queue-attributes \
+  --queue-url $QUEUE_URL \
+  --attributes Policy="{
+    \"Version\": \"2012-10-17\",
+    \"Statement\": [
+      {
+        \"Effect\": \"Allow\",
+        \"Principal\": { \"Service\": \"s3.amazonaws.com\" },
+        \"Action\": \"sqs:SendMessage\",
+        \"Resource\": \"$QUEUE_ARN\"
+      }
+    ]
+  }"
+
+echo "Configuring S3 -> SQS notification for punch-photos..."
+
+awslocal --region $REGION s3api put-bucket-notification-configuration \
+  --bucket punch-photos \
+  --notification-configuration "{
+    \"QueueConfigurations\": [
+      {
+        \"QueueArn\": \"$QUEUE_ARN\",
+        \"Events\": [\"s3:ObjectCreated:*\"]
+
+      }
+    ]
+  }"
+
 echo "Creating ECR repo..."
-awslocal ecr create-repository --repository-name my-repo || true
+awslocal --region $REGION ecr create-repository \
+  --repository-name my-repo || true
 
 echo "Creating ECS cluster..."
-awslocal ecs create-cluster --cluster-name my-cluster || true
+awslocal --region $REGION ecs create-cluster \
+  --cluster-name my-cluster || true
+
+echo "LocalStack setup complete."

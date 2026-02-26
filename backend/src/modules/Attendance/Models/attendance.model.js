@@ -13,6 +13,10 @@ const PunchSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    photo: {
+      type: String,
+      default: null,
+    },
   },
   { _id: false }
 );

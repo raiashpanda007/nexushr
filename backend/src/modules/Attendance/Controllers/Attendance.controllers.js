@@ -1,5 +1,5 @@
 import AttendanceModel from "../Models/attendance.model.js";
-import { ApiResponse, ApiError, AsyncHandler } from "../../../utils/index.js";
+import { ApiResponse, ApiError, AsyncHandler, GenerateUploadUrl } from "../../../utils/index.js";
 import Types from "../../../types/index.js";
 
 class AttendanceController {
@@ -13,7 +13,7 @@ class AttendanceController {
             throw new ApiError(Types.Errors.UnprocessableData, "Please provide valid data", parsedData.error.errors);
         }
 
-        const { userId, type } = parsedData.data;
+        const { userId, type, photo } = parsedData.data;
 
         // HR users cannot punch in/out
         if (req.user.role === "HR") {
@@ -39,7 +39,7 @@ class AttendanceController {
             attendance = new this.repo({
                 user: userId,
                 date: startOfDay,
-                punches: [{ type, time: now }]
+                punches: [{ type, time: now, photo: photo || null }]
             });
             await attendance.save();
             return res.status(201).json(new ApiResponse(201, attendance, `Punched ${type} successfully`));
@@ -52,7 +52,12 @@ class AttendanceController {
             throw new ApiError(Types.Errors.BadRequest, `Cannot punch ${type} again without punching ${type === 'IN' ? 'OUT' : 'IN'}`);
         }
 
-        attendance.punches.push({ type, time: now });
+        // Require photo for OUT punches
+        if (type === 'OUT' && !photo) {
+            throw new ApiError(Types.Errors.BadRequest, "Photo is required when punching OUT");
+        }
+
+        attendance.punches.push({ type, time: now, photo: photo || null });
         await attendance.save();
 
         return res.status(200).json(new ApiResponse(200, attendance, `Punched ${type} successfully`));
@@ -104,6 +109,15 @@ class AttendanceController {
         const total = await this.repo.countDocuments(query);
 
         return res.status(200).json(new ApiResponse(200, { data: attendances, total, page, limit: limitQuery === 'all' ? total : limit }, "Attendances fetched successfully"));
+    });
+
+    GetPunchPhotoSignedUrl = AsyncHandler(async (req, res) => {
+        const { fileName, contentType } = req.query;
+        if (!fileName || !contentType) {
+            throw new ApiError(Types.Errors.BadRequest, "fileName and contentType are required");
+        }
+        const signedUrl = await GenerateUploadUrl(fileName, contentType, "punch-photos");
+        return res.status(200).json(new ApiResponse(200, { signedUrl }, "Signed URL generated successfully"));
     });
 }
 
