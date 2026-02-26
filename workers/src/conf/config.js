@@ -9,7 +9,8 @@ const EnvSchema = zod.object({
   AWS_REGION: zod.string().min(1),
   MONGO_DB_URL: zod.string().min(1),
   DB_NAME: zod.string().min(1),
-
+  S3_ENDPOINT: zod.string().min(1),
+  AWS_PROFILE_PHOTO_BUCKET: zod.string().min(1),
 });
 
 class Config {

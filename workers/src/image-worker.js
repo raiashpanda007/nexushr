@@ -3,7 +3,7 @@ import {
   ReceiveMessageCommand,
   DeleteMessageCommand,
 } from "@aws-sdk/client-sqs";
-import ImageProcessor from "./utils/processor/DownloadImage.js";
+import ImageProcessor from "./utils/processor/Image/Image.js";
 import SysConf from "./conf/config.js";
 import DB from "./utils/Db.js";
 const Config = new SysConf().MustLoad();
@@ -22,7 +22,7 @@ const command = new ReceiveMessageCommand({
 });
 
 const dbInstance = new DB(Config.MONGO_DB_URL, Config.DB_NAME);
-const db = await dbInstance.Connect();
+await dbInstance.Connect();
 
 async function ProcessMessages() {
   while (true) {
