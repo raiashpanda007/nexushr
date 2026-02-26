@@ -1,4 +1,5 @@
 import { Search, FileText, CheckCircle2, Receipt, ChevronLeft, ChevronRight, Loader2, Users, DollarSign, TrendingUp, Minus, Download, X } from 'lucide-react';
+import EmployeeAvatar from '@/components/employee/EmployeeAvatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -390,9 +391,12 @@ const Payroll = () => {
                                             <TableRow key={user._id} className="hover:bg-muted/20 transition-colors">
                                                 <TableCell>
                                                     <div className="flex items-center gap-3">
-                                                        <div className="flex items-center justify-center h-9 w-9 rounded-full bg-muted text-foreground text-xs font-bold border border-border">
-                                                            {user.firstName?.[0]}{user.lastName?.[0]}
-                                                        </div>
+                                                        <EmployeeAvatar
+                                                            firstName={user.firstName}
+                                                            lastName={user.lastName}
+                                                            profilePhoto={user.profilePhoto}
+                                                            className="h-9 w-9"
+                                                        />
                                                         <div>
                                                             <div className="font-medium">{user.firstName} {user.lastName}</div>
                                                             <div className="text-xs text-muted-foreground">{user.email}</div>

@@ -1,10 +1,11 @@
-import { ApiError, ApiResponse, AsyncHandler } from "../../../utils/index.js";
+import { ApiError, ApiResponse, AsyncHandler, GenerateUploadUrl } from "../../../utils/index.js";
 import UserModel from "../models/users.models.js";
 import { SessionModel } from "../models/session.model.js";
 import Types from "../../../types/index.js"
 import { GenerateAccessToken, GenerateRefreshToken, VerifyRefreshToken } from "../Encrypts.js"
 import bcrypt from "bcrypt";
 import { v7 as uuid } from "uuid";
+
 
 class UserController {
   constructor() {
@@ -347,6 +348,18 @@ class UserController {
 
     return res.status(200).json(new ApiResponse(200, {}, "User deleted successfully"));
   })
+
+  GetSignedURL = AsyncHandler(async (req, res) => {
+    const {fileName, contentType} = req.query;
+    if (!fileName || !contentType) {
+      throw new ApiError(Types.Errors.BadRequest, "fileName and contentType are required");
+    }
+
+    const signedUrl = await GenerateUploadUrl(fileName, contentType);
+
+    return res.status(200).json(new ApiResponse(200, {signedUrl}, "Signed URL generated successfully"));
+  })
+    
 }
 
 export default UserController;

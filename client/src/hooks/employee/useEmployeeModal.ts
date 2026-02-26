@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ApiCaller from "@/utils/ApiCaller";
 import type { Employee, Department, Skill } from "@/types";
 import { CreateEmployeeSchema, UpdateEmployeeSchema, formatZodErrors } from "@/validations/schemas";
+import { useImageUpload } from "./useImageUpload";
 
 interface UseEmployeeModalProps {
     isOpen: boolean;
@@ -20,6 +21,16 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
         note: "",
     });
     const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+
+    // Image upload
+    const {
+        previewUrl,
+        photoUrl,
+        uploading,
+        uploadError,
+        handleFileSelect,
+        reset: resetImage,
+    } = useImageUpload({ initialUrl: initialData?.profilePhoto });
 
     // Data for selects
     const [departments, setDepartments] = useState<Department[]>([]);
@@ -75,6 +86,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
                 note: initialData.note || "",
             });
             setSelectedSkills(initialSkills);
+            resetImage(initialData.profilePhoto);
         } else {
             setFormData({
                 firstName: "",
@@ -85,6 +97,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
                 note: "",
             });
             setSelectedSkills([]);
+            resetImage();
         }
         setError(null);
     }, [initialData, isOpen]);
@@ -116,6 +129,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
             const payload = {
                 ...formData,
                 skills: selectedSkills,
+                profilePhoto: photoUrl || "",
             };
 
             // Validate with Zod
@@ -187,6 +201,10 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
         handleChange,
         handleDeptChange,
         toggleSkill,
-        handleSubmit
+        handleSubmit,
+        previewUrl,
+        uploading,
+        uploadError,
+        handleFileSelect,
     };
 }

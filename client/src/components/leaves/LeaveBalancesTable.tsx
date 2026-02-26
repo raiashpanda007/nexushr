@@ -11,6 +11,7 @@ import {
     Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import EmployeeAvatar from "@/components/employee/EmployeeAvatar";
 
 export interface LeaveBalanceEntry {
     leaveTypeId: string;
@@ -24,6 +25,7 @@ export interface UserLeaveBalance {
     firstName: string;
     lastName: string;
     email: string;
+    profilePhoto?: string;
     department?: string;
     balances: LeaveBalanceEntry[];
 }
@@ -110,9 +112,11 @@ export default function LeaveBalancesTable({ users, onEdit }: LeaveBalancesTable
                                 {/* Employee */}
                                 <TableCell>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center justify-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 shadow-sm">
-                                            {user.firstName?.[0]}{user.lastName?.[0]}
-                                        </div>
+                                        <EmployeeAvatar
+                                            firstName={user.firstName}
+                                            lastName={user.lastName}
+                                            profilePhoto={user.profilePhoto}
+                                        />
                                         <div className="min-w-0">
                                             <p className="font-semibold text-sm truncate">
                                                 {user.firstName} {user.lastName}

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
+import EmployeeAvatar from "./EmployeeAvatar";
 
 interface EmployeeTableProps {
     employees: Employee[];
@@ -138,9 +139,11 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                                     {/* Employee - Combined name + email */}
                                     <TableCell>
                                         <div className="flex items-center gap-3">
-                                            <div className="flex items-center justify-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 shadow-sm">
-                                                {employee.firstName?.[0]}{employee.lastName?.[0]}
-                                            </div>
+                                            <EmployeeAvatar
+                                                firstName={employee.firstName}
+                                                lastName={employee.lastName}
+                                                profilePhoto={employee.profilePhoto}
+                                            />
                                             <div className="min-w-0">
                                                 <p className="font-semibold text-sm truncate">
                                                     {employee.firstName} {employee.lastName}

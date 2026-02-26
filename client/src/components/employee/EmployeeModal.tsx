@@ -6,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Camera, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import { useEmployeeModal } from "@/hooks/employee/useEmployeeModal";
+import { useRef } from "react";
 
 interface EmployeeModalProps {
     isOpen: boolean;
@@ -32,8 +33,14 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
         handleChange,
         handleDeptChange,
         toggleSkill,
-        handleSubmit
+        handleSubmit,
+        previewUrl,
+        uploading,
+        uploadError,
+        handleFileSelect,
     } = useEmployeeModal({ isOpen, onClose, initialData, onSuccess });
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -43,6 +50,51 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
                     {error && <p className="text-red-500 text-sm">{error}</p>}
+
+                    {/* Profile Photo Upload */}
+                    <div className="grid gap-2">
+                        <Label>Profile Photo {!initialData && <span className="text-red-500">*</span>}</Label>
+                        <div className="flex items-center gap-4">
+                            <div
+                                className="relative h-20 w-20 rounded-full border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors flex items-center justify-center overflow-hidden bg-muted/30"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                {uploading ? (
+                                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                ) : previewUrl ? (
+                                    <img src={previewUrl} alt="Preview" className="h-full w-full object-cover rounded-full" />
+                                ) : (
+                                    <Camera className="h-6 w-6 text-muted-foreground" />
+                                )}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                >
+                                    {uploading ? "Uploading..." : previewUrl ? "Change Photo" : "Upload Photo"}
+                                </Button>
+                                <p className="text-xs text-muted-foreground">JPG, PNG, max 5MB</p>
+                            </div>
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileSelect(file);
+                                e.target.value = "";
+                            }}
+                        />
+                        {uploadError && <p className="text-red-500 text-xs">{uploadError}</p>}
+                        {fieldErrors.profilePhoto && <p className="text-red-500 text-xs">{fieldErrors.profilePhoto}</p>}
+                    </div>
+
                     <div className="grid gap-2">
                         <Label htmlFor="firstName">First Name</Label>
                         <Input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required />
@@ -141,8 +193,8 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
                         <Textarea id="note" name="note" value={formData.note} onChange={handleChange} />
                     </div>
                     <DialogFooter>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? "Saving..." : "Save details"}
+                        <Button type="submit" disabled={loading || uploading}>
+                            {uploading ? "Uploading photo..." : loading ? "Saving..." : "Save details"}
                         </Button>
                     </DialogFooter>
                 </form>

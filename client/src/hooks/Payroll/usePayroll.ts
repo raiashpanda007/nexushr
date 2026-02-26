@@ -9,6 +9,7 @@ interface User {
     lastName: string;
     email: string;
     role?: string;
+    profilePhoto?: string;
 }
 
 interface Salary {

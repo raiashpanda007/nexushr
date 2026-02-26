@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLeaveRequestsTable } from "@/hooks/leaves/useLeaveRequestsTable";
+import EmployeeAvatar from "@/components/employee/EmployeeAvatar";
 
 export interface LeaveRequest {
     _id: string;
@@ -30,6 +31,7 @@ export interface LeaveRequest {
         firstName: string;
         lastName: string;
         email: string;
+        profilePhoto?: string;
     };
     type: { _id: string; name: string } | string;
     quantity: number;
@@ -173,9 +175,11 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                                 {/* Employee */}
                                 <TableCell>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center justify-center h-9 w-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 shadow-sm">
-                                            {req.requestedBy?.firstName?.[0]}{req.requestedBy?.lastName?.[0]}
-                                        </div>
+                                        <EmployeeAvatar
+                                            firstName={req.requestedBy?.firstName}
+                                            lastName={req.requestedBy?.lastName}
+                                            profilePhoto={req.requestedBy?.profilePhoto}
+                                        />
                                         <div className="min-w-0">
                                             <p className="font-semibold text-sm truncate">
                                                 {req.requestedBy?.firstName} {req.requestedBy?.lastName}

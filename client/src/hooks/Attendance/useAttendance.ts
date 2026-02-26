@@ -21,6 +21,7 @@ export interface AttendanceRecord {
         firstName: string;
         lastName: string;
         email: string;
+        profilePhoto?: string;
         deptId?: Department;
     };
     date: string;

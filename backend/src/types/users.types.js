@@ -5,7 +5,7 @@ export const CreateEmployeValidationSchema = zod.object({
   lastName: zod.string().min(1, "Please provide last name").trim(),
   password: zod.string().min(8, "Password must be at least 8 characters long").trim(),
   deptId: zod.string().trim(),
-  profilePhoto: zod.string().optional(),
+  profilePhoto: zod.string(),
   note: zod.string().optional(),
   skills: zod.array(zod.string())
 })

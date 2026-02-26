@@ -1,4 +1,5 @@
 import { Calendar, LogIn, LogOut, BarChart3, Search, Activity, Clock, Award, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Fingerprint } from 'lucide-react';
+import EmployeeAvatar from '@/components/employee/EmployeeAvatar';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Button } from '@/components/ui/button';
@@ -237,9 +238,13 @@ const Attendance = () => {
                                                     {isHR && (
                                                         <TableCell>
                                                             <div className="flex items-center gap-3">
-                                                                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-black text-white text-xs font-bold">
-                                                                    {record.user?.firstName?.[0]}{record.user?.lastName?.[0]}
-                                                                </div>
+                                                                <EmployeeAvatar
+                                                                    firstName={record.user?.firstName}
+                                                                    lastName={record.user?.lastName}
+                                                                    profilePhoto={record.user?.profilePhoto}
+                                                                    className="h-8 w-8"
+                                                                    textClassName="text-xs"
+                                                                />
                                                                 <div>
                                                                     <span className="font-semibold">{record.user?.firstName} {record.user?.lastName}</span>
                                                                     <div className="text-xs text-muted-foreground">{record.user?._id.slice(-6).toUpperCase()} • {record.user?.deptId?.name || 'N/A'}</div>

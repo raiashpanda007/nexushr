@@ -11,6 +11,7 @@ import {
     TrendingUp,
     Hash,
 } from 'lucide-react';
+import EmployeeAvatar from '@/components/employee/EmployeeAvatar';
 import {
     Table,
     TableBody,
@@ -29,6 +30,7 @@ interface User {
     firstName: string;
     lastName: string;
     email: string;
+    profilePhoto?: string;
     deptId?: {
         _id: string;
         name: string;
@@ -152,9 +154,11 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                                     {/* Employee Info - Combined name + email */}
                                     <TableCell>
                                         <div className="flex items-center gap-3">
-                                            <div className="flex items-center justify-center h-9 w-9 rounded-full bg-black text-white text-xs font-bold shrink-0 shadow-sm">
-                                                {salary.userId?.firstName?.[0]}{salary.userId?.lastName?.[0]}
-                                            </div>
+                                            <EmployeeAvatar
+                                                firstName={salary.userId?.firstName}
+                                                lastName={salary.userId?.lastName}
+                                                profilePhoto={salary.userId?.profilePhoto}
+                                            />
                                             <div className="min-w-0">
                                                 <p className="font-semibold text-sm truncate">
                                                     {salary.userId?.firstName} {salary.userId?.lastName}

@@ -13,6 +13,7 @@ class UserRoutes {
         this.router.get("/get-users", this.userController.GetUsers);
         this.router.get("/get-users/:id", this.userController.GetUsers);
         this.router.delete("/delete-employee/:id", this.userController.DeleteEmployee);
+        this.router.get("/get-signed-url", this.userController.GetSignedURL);
         return this.router;
     }
 }

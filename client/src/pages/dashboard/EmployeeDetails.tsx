@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, DollarSign, Download, FileText, Loader2, Mail, Minus, Receipt, UserCircle2, X } from "lucide-react";
+import EmployeeAvatar from "@/components/employee/EmployeeAvatar";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollDocument } from "@/utils/PdfGenerator";
 import type { PayrollDocumentProps } from "@/utils/PdfGenerator";
@@ -524,9 +525,13 @@ export default function EmployeeDetails() {
 
                     <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-10">
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-muted/50 backdrop-blur-md shadow-inner border border-border/50">
-                                <UserCircle2 className="h-7 w-7 text-foreground" />
-                            </div>
+                            <EmployeeAvatar
+                                firstName={employee.firstName}
+                                lastName={employee.lastName}
+                                profilePhoto={employee.profilePhoto}
+                                className="h-14 w-14"
+                                textClassName="text-lg"
+                            />
                             <div>
                                 <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{employeeName}</h1>
                                 <p className="text-muted-foreground text-sm sm:text-base mt-1 font-medium">Employee workspace</p>
@@ -542,9 +547,13 @@ export default function EmployeeDetails() {
                         <div className="h-1 bg-black" />
                         <CardHeader className="pb-4">
                             <div className="flex items-center gap-4">
-                                <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center font-bold text-foreground">
-                                    {initials(employee.firstName, employee.lastName)}
-                                </div>
+                                <EmployeeAvatar
+                                    firstName={employee.firstName}
+                                    lastName={employee.lastName}
+                                    profilePhoto={employee.profilePhoto}
+                                    className="h-14 w-14 rounded-2xl"
+                                    textClassName="text-lg"
+                                />
                                 <div className="min-w-0">
                                     <CardTitle className="text-xl truncate">{employeeName}</CardTitle>
                                     <p className="text-sm text-muted-foreground truncate flex items-center gap-1 mt-1">

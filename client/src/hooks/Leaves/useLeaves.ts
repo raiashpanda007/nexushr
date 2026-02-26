@@ -13,6 +13,7 @@ interface RawLeaveBalanceDoc {
         firstName: string;
         lastName: string;
         email: string;
+        profilePhoto?: string;
         department?: { name: string }
     };
     leaves: Array<{
@@ -29,6 +30,7 @@ function mapRawToUserLeaveBalance(doc: RawLeaveBalanceDoc): UserLeaveBalance {
         firstName: doc.userDetails?.firstName ?? "",
         lastName: doc.userDetails?.lastName ?? "",
         email: doc.userDetails?.email ?? "",
+        profilePhoto: doc.userDetails?.profilePhoto,
         department: doc.userDetails?.department?.name ?? "",
         balances: (doc.leaves ?? []).map((l) => ({
             leaveTypeId: l.typeDetails?._id ?? String(l.type),
