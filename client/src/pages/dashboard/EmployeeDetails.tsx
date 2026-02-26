@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { CheckCircle2, ChevronLeft, ChevronRight, Clock, DollarSign, Download, FileText, Loader2, Mail, Minus, Receipt, UserCircle2, X } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock, DollarSign, Download, FileText, Loader2, Mail, Minus, Receipt, X } from "lucide-react";
 import EmployeeAvatar from "@/components/employee/EmployeeAvatar";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollDocument } from "@/utils/PdfGenerator";
@@ -56,11 +56,7 @@ interface PayrollItem {
     createdAt: string;
 }
 
-function initials(firstName?: string, lastName?: string) {
-    const a = firstName?.trim()?.[0] ?? "";
-    const b = lastName?.trim()?.[0] ?? "";
-    return `${a}${b}`.toUpperCase() || "U";
-}
+
 
 function formatDuration(minutes: number) {
     const m = Number(minutes) || 0;

@@ -49,6 +49,9 @@ async function ProcessMessages() {
           if (event.Service === "s3:TestEvent") continue;
         }
 
+        if (!event.Records || !Array.isArray(event.Records)) {
+          continue;
+        }
 
         for (const record of event.Records) {
           const bucketName = record.s3.bucket.name;

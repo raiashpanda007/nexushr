@@ -28,7 +28,7 @@ async function getDescriptor(imagePath) {
     .withFaceLandmarks()
     .withFaceDescriptor();
 
-  if (!detection) throw new Error(`No face detected in: ${imagePath}`);
+  if (!detection) return null;
   return detection.descriptor;
 }
 
@@ -39,6 +39,13 @@ async function MatchFaces(registeredImagePath, punchImagePath) {
     getDescriptor(registeredImagePath),
     getDescriptor(punchImagePath),
   ]);
+  if (!registeredDescriptor || !punchDescriptor) {
+    return {
+      match: false,
+      status: false,
+      distance: null,
+    };
+  }
 
   const distance = faceapi.euclideanDistance(registeredDescriptor, punchDescriptor);
 

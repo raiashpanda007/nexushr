@@ -289,16 +289,15 @@ export function useAttendance() {
                     if (status === "verified") {
                         setVerificationStatus("verified");
                         setVerificationMessage("Face verified successfully! Punch out recorded.");
-                        await fetchAttendances(filterDate);
-                        return;
+                        return "verified";
                     } else if (status === "failed") {
                         setVerificationStatus("failed");
                         setVerificationMessage("Please use your own photo.");
-                        return;
+                        return "failed";
                     } else if (status === "timeout") {
                         setVerificationStatus("timeout");
                         setVerificationMessage("Please upload your selfie again.");
-                        return;
+                        return "timeout";
                     }
                 }
             } catch (error) {
@@ -312,6 +311,7 @@ export function useAttendance() {
         // Frontend-side timeout
         setVerificationStatus("timeout");
         setVerificationMessage("Please upload your selfie again.");
+        return "timeout";
     }, [filterDate]);
 
     const handlePunchOutWithPhoto = useCallback(async (photoBlob: Blob) => {
@@ -347,32 +347,36 @@ export function useAttendance() {
             // Step 3: Get the public URL (strip query params)
             const photoUrl = signedUrl.split('?')[0];
 
-            // Step 4: Punch OUT with photo URL
-            const result = await ApiCaller<{ userId: string; type: string; photo: string }, any>({
-                requestType: 'POST',
-                paths: ['api', 'v1', 'attendance'],
-                body: {
-                    userId: userDetails.id,
-                    type: 'OUT',
-                    photo: photoUrl,
-                },
-            });
+            setShowCamera(false);
+            setPunchOutUploading(false);
 
-            if (result.ok) {
-                setShowCamera(false);
-                setPunchOutUploading(false);
-                setActionLoading(false);
+            // Start long-polling for face verification result
+            const status = await pollVerificationStatus(photoUrl);
 
-                // Start long-polling for face verification result
-                pollVerificationStatus(photoUrl);
-            } else {
-                alert(result.response?.message || 'Failed to punch out');
+            if (status === "verified") {
+                // Step 4: Punch OUT with photo URL
+                const result = await ApiCaller<{ userId: string; type: string; photo: string }, any>({
+                    requestType: 'POST',
+                    paths: ['api', 'v1', 'attendance'],
+                    body: {
+                        userId: userDetails.id,
+                        type: 'OUT',
+                        photo: photoUrl,
+                    },
+                });
+
+                if (result.ok) {
+                    await fetchAttendances(filterDate);
+                } else {
+                    alert(result.response?.message || 'Failed to punch out');
+                    setVerificationStatus("failed");
+                    setVerificationMessage("Verification succeeded but punch out failed.");
+                }
             }
         } catch (error) {
             console.error('Error during punch out with photo:', error);
             alert('Failed to upload photo and punch out. Please try again.');
         } finally {
-            setPunchOutUploading(false);
             setActionLoading(false);
         }
     }, [userDetails, filterDate, pollVerificationStatus]);
