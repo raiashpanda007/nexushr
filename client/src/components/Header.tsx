@@ -36,15 +36,7 @@ function Header() {
 
                     <Separator orientation="vertical" className="!h-6 hidden md:block mx-2 bg-border/50" />
 
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hidden sm:inline-flex h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full transition-all"
-                        aria-label="Help"
-                    >
-                        <HelpCircle className="w-4.5 h-4.5" />
-                    </Button>
-
+                 
                     <Button
                         id="logout-btn"
                         variant="ghost"
