@@ -58,15 +58,15 @@ async function ImageProcessor(UserID, Bucket, ObjectKey, DbConnection) {
 
   console.log("User profile photo", userDetails.profilePhoto);
 
-  
+
   const ProfilePhotoBucket = Config.AWS_PROFILE_PHOTO_BUCKET || "register-photos";
   let ProfilePhotoKey;
   if (userDetails.profilePhoto) {
     try {
       const url = new URL(userDetails.profilePhoto);
-      
+
       const parts = url.pathname.split("/").filter(Boolean);
-      ProfilePhotoKey = parts.slice(1).join("/"); 
+      ProfilePhotoKey = parts.slice(1).join("/");
     } catch {
       ProfilePhotoKey = userDetails.profilePhoto;
     }
@@ -82,7 +82,7 @@ async function ImageProcessor(UserID, Bucket, ObjectKey, DbConnection) {
     console.warn(`No profile photo found for user ${UserID}, skipping registered photo download.`);
   }
 
-  
+
   punchPhotoPath = await DownloadImage(Bucket, ObjectKey, UserID, "./punched");
 
   const matchResult = await ImageMatcher(registeredPhotoPath, punchPhotoPath);

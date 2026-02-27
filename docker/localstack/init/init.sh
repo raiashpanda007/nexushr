@@ -2,9 +2,21 @@
 
 REGION="ap-south-1"
 ACCOUNT_ID="000000000000"
+
+# Punch Queue
 QUEUE_NAME="punch-processor"
 QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$QUEUE_NAME"
 QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$QUEUE_NAME"
+
+# Payroll Queue
+PAYROLL_QUEUE_NAME="payroll-generation"
+PAYROLL_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$PAYROLL_QUEUE_NAME"
+PAYROLL_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$PAYROLL_QUEUE_NAME"
+
+# Payroll Batch Queue (NEW)
+PAYROLL_BATCH_QUEUE_NAME="payroll-batch-generation"
+PAYROLL_BATCH_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$PAYROLL_BATCH_QUEUE_NAME"
+PAYROLL_BATCH_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$PAYROLL_BATCH_QUEUE_NAME"
 
 echo "Creating S3 buckets..."
 awslocal --region $REGION s3 mb s3://register-photos || true
@@ -32,9 +44,19 @@ awslocal --region $REGION s3api put-bucket-cors \
   --bucket punch-photos \
   --cors-configuration "$CORS_CONFIG"
 
-echo "Creating SQS queue..."
+echo "Creating SQS queues..."
+
+# Create punch queue
 awslocal --region $REGION sqs create-queue \
   --queue-name $QUEUE_NAME || true
+
+# Create payroll queue
+awslocal --region $REGION sqs create-queue \
+  --queue-name $PAYROLL_QUEUE_NAME || true
+
+# Create payroll batch queue (NEW)
+awslocal --region $REGION sqs create-queue \
+  --queue-name $PAYROLL_BATCH_QUEUE_NAME || true
 
 echo "Attaching SQS policy to allow S3 to publish..."
 

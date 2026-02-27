@@ -1,6 +1,7 @@
 {
-  "name": "workers",
+  "name": "payroll-generator",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,14 +11,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.998.0",
-    "@aws-sdk/client-sqs": "^3.998.0",
-    "@tensorflow/tfjs-node": "^4.22.0",
-    "@vladmandic/face-api": "^1.7.15",
-    "canvas": "^3.2.1",
+    "@aws-sdk/client-sqs": "^3.999.0",
     "dotenv": "^17.3.1",
-    "mongoose": "^9.2.2",
-    "redis": "^5.11.0",
     "zod": "^4.3.6"
   }
 }

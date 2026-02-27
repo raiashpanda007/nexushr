@@ -14,6 +14,7 @@ class PayrollRoutes {
         this.router.get("/", VerifyMiddleware, this.controller.Get);
         this.router.get("/deduction/:id", VerifyMiddleware, this.controller.GetLeaveDeductions);
         this.router.get("/:id", VerifyMiddleware, this.controller.Get);
+        this.router.post("/bulk", VerifyMiddleware, this.controller.GenerateBulkPayroll);
         return this.router;
     }
 }

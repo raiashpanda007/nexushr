@@ -5,6 +5,7 @@ import LeaveRequestModal from "../../Leaves/LeaveRequests/Models/leaveRequests.m
 import SalaryModal from "../../Salaries/Models/salaries.model.js";
 import Types from "../../../types/index.js"
 import AttendanceModel from "../../Attendance/Models/attendance.model.js";
+import { PayrollSendMessage } from "../../../queue/payroll.queue.js";
 
 function getDaysInMonth(year, monthIndex) {
     const date = new Date(year, monthIndex, 1);
@@ -208,6 +209,23 @@ class PayrollController {
 
         return res.status(200).json(new ApiResponse(200, { deductionsOnLeave, totalDeduction }, "Leave requests fetched successfully"));
 
+    })
+
+    GenerateBulkPayroll = AsyncHandler(async (req, res) => {
+        if (req.user.role != "HR") {
+            throw new ApiError(Types.Errors.Forbidden, "You are not allowed to generate payroll");
+        }
+        const parsedBody = Types.Payroll.GenerateBulk.safeParse(req.body);
+        if (!parsedBody.success) {
+            throw new ApiError(Types.Errors.UnprocessableData, "Invalid data", parsedBody.error.issues);
+        }
+        const { month, year, department } = parsedBody.data;
+        const payroll = await PayrollSendMessage({
+            month,
+            year,
+            department: department ? department : "All"
+        })
+        return res.status(200).json(new ApiResponse(200, payroll, "Payroll generated successfully"));
     })
 
 }
