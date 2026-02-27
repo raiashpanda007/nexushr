@@ -9,6 +9,7 @@ import LeaveRequestModel from "./modules/Leaves/LeaveRequests/Models/leaveReques
 import SalariesModel from "./modules/Salaries/Models/salaries.model.js";
 import AttendanceModel from "./modules/Attendance/Models/attendance.model.js";
 import PayrollModal from "./modules/Payroll/Models/payroll.model.js";
+import EventModel from "./modules/Events/Models/Events.models.js";
 
 const seed = async () => {
     try {
@@ -271,6 +272,63 @@ const seed = async () => {
             }
 
             await seedUserData(user, { base: 40000 + (Math.random() * 20000), hra: 15000, lta: 5000 });
+        }
+
+        // 6. Seed Events
+        console.log("\n--- Seeding Events ---");
+        const eventsData = [
+            { name: "Annual General Meeting", description: "Company-wide annual meeting", type: "MEETING", forAll: true, time: "10:00 AM", daysFromNow: 5 },
+            { name: "New Year's Day", description: "Public Holiday", type: "HOLIDAY", forAll: true, time: "00:00 AM", daysFromNow: 300 },
+            { name: "Project Kickoff", description: "Kickoff for new Q3 project", type: "MEETING", forAll: false, time: "02:00 PM", daysFromNow: 2, deptName: "Engineering" },
+            { name: "Marketing Strategy alignment", description: "Discussing new ad campaigns", type: "MEETING", forAll: false, time: "11:30 AM", daysFromNow: 4, deptName: "Marketing" },
+            { name: "Sales Quarterly Review", description: "Review of Q2 sales", type: "MEETING", forAll: false, time: "03:00 PM", daysFromNow: 6, deptName: "Sales" },
+            { name: "Alice's Birthday", description: "Happy Birthday Alice", type: "BIRTHDAY", forAll: true, time: "05:00 PM", daysFromNow: 1 },
+            { name: "Company Retreat", description: "Annual company retreat", type: "OTHER", forAll: true, time: "09:00 AM", daysFromNow: 30 },
+            { name: "Bob's 5th Work Anniversary", description: "Celebrating 5 years", type: "ANNIVERSARY", forAll: true, time: "04:00 PM", daysFromNow: 8 },
+            { name: "Town Hall", description: "Monthly town hall meeting", type: "MEETING", forAll: true, time: "01:00 PM", daysFromNow: 12 },
+            { name: "Finance Audit Prep", description: "Preparation for upcoming audit", type: "MEETING", forAll: false, time: "10:00 AM", daysFromNow: 3, deptName: "Finance" },
+            { name: "Independence Day", description: "Public Holiday", type: "HOLIDAY", forAll: true, time: "00:00 AM", daysFromNow: 150 },
+            { name: "Christmas Party", description: "End of year celebration", type: "OTHER", forAll: true, time: "07:00 PM", daysFromNow: -60 },
+            { name: "Tech Talk", description: "New frontend framework discussion", type: "MEETING", forAll: false, time: "04:30 PM", daysFromNow: -2, deptName: "Engineering" },
+            { name: "Charlie's Birthday", description: "Happy Birthday Charlie", type: "BIRTHDAY", forAll: true, time: "05:00 PM", daysFromNow: 14 },
+            { name: "Leadership Offsite", description: "Strategic planning", type: "MEETING", forAll: false, time: "09:00 AM", daysFromNow: -10, deptName: "General Management" },
+            { name: "Labor Day", description: "Public Holiday", type: "HOLIDAY", forAll: true, time: "00:00 AM", daysFromNow: -150 },
+            { name: "HR Policies Review", description: "Updating employee handbook", type: "MEETING", forAll: false, time: "11:00 AM", daysFromNow: 7, deptName: "Human Resources" },
+            { name: "Thanksgiving Break", description: "Company holiday", type: "HOLIDAY", forAll: true, time: "00:00 AM", daysFromNow: -90 },
+            { name: "Product Launch", description: "V2.0 Product Launch Event", type: "OTHER", forAll: true, time: "10:00 AM", daysFromNow: 20 },
+            { name: "Diana's 1st Work Anniversary", description: "Celebrating 1 year", type: "ANNIVERSARY", forAll: true, time: "04:00 PM", daysFromNow: 25 },
+            { name: "Emergency Maintenance", description: "Server downtime", type: "OTHER", forAll: false, time: "01:00 AM", daysFromNow: -1, deptName: "Engineering" },
+            { name: "All Hands", description: "Quarterly all hands sync", type: "MEETING", forAll: true, time: "12:00 PM", daysFromNow: -5 }
+        ];
+
+        for (const ev of eventsData) {
+            let existingEvent = await EventModel.findOne({ name: ev.name });
+            if (!existingEvent) {
+                const eventDate = new Date();
+                eventDate.setDate(eventDate.getDate() + ev.daysFromNow);
+                eventDate.setUTCHours(0, 0, 0, 0);
+
+                const eventPayload = {
+                    name: ev.name,
+                    description: ev.description,
+                    type: ev.type,
+                    forAll: ev.forAll,
+                    time: ev.time,
+                    date: eventDate,
+                    respectedToDepartments: [],
+                    resepectedEmplooyees: []
+                };
+
+                if (ev.deptName) {
+                    const dpt = finalDepartments.find(d => d.name === ev.deptName);
+                    if (dpt) {
+                        eventPayload.respectedToDepartments.push(dpt._id);
+                    }
+                }
+
+                await EventModel.create(eventPayload);
+                console.log(`Created Event: ${ev.name}`);
+            }
         }
 
         console.log("\nSeeding completed successfully.");

@@ -6,7 +6,7 @@ module.exports = {
       script: "./src/index.js",
       interpreter: "node",
       exec_mode: "cluster",
-      instances: "max",
+      instances: 4,
       autorestart: true,
       watch: false,
       env: {

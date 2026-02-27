@@ -171,6 +171,22 @@ export type UpdateLeaveBalanceInput = z.infer<typeof UpdateLeaveBalanceSchema>;
 export type CreateLeaveRequestInput = z.infer<typeof CreateLeaveRequestSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 
+// ============ Event Validations ============
+export const CreateEventSchema = z.object({
+    name: z.string().min(2, "Event name must be at least 2 characters").max(100, "Event name must be at most 100 characters"),
+    description: z.string().min(2, "Description must be at least 2 characters").max(1000, "Description must be at most 1000 characters"),
+    date: z.string().min(1, "Date is required"),
+    time: z.string().min(1, "Time is required"),
+    type: z.enum(["MEETING", "BIRTHDAY", "ANNIVERSARY", "OTHER", "HOLIDAY"], {
+        message: "Please select a valid event type"
+    }),
+    forAll: z.boolean().default(false),
+    employees: z.array(z.string()).optional(),
+    departments: z.array(z.string()).optional(),
+});
+
+export type CreateEventInput = z.infer<typeof CreateEventSchema>;
+
 // Helper function to format Zod errors into field-specific errors
 export function formatZodErrors(error: z.ZodError): Record<string, string> {
     const errors: Record<string, string> = {};

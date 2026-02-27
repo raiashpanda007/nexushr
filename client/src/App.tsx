@@ -9,6 +9,8 @@ import Skills from "./pages/dashboard/Skills"
 import Payroll from "./pages/dashboard/Payroll"
 import Attendance from "./pages/dashboard/Attendance"
 import Leaves from "./pages/dashboard/Leaves"
+import Events from "./pages/dashboard/Events"
+import EventDetails from "./pages/dashboard/EventDetails"
 import EmployeeDetails from "./pages/dashboard/EmployeeDetails"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -48,6 +50,8 @@ function App() {
         <Route path="payroll" element={<Payroll />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="leaves" element={<Leaves />} />
+        <Route path="events" element={<Events />} />
+        <Route path="events/:id" element={<EventDetails />} />
       </Route>
 
       {/* Catch all - redirect to home (which redirects based on role) */}

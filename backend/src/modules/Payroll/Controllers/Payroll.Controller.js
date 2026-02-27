@@ -4,6 +4,7 @@ import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
 import LeaveRequestModal from "../../Leaves/LeaveRequests/Models/leaveRequests.model.js";
 import SalaryModal from "../../Salaries/Models/salaries.model.js";
 import Types from "../../../types/index.js"
+import AttendanceModel from "../../Attendance/Models/attendance.model.js";
 
 function getDaysInMonth(year, monthIndex) {
     const date = new Date(year, monthIndex, 1);
@@ -17,6 +18,37 @@ function getDaysInMonth(year, monthIndex) {
     return days.length;
 }
 
+
+async function GetAbsentDays(startDate, endDate, userId, month, year) {
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+    const attendances = await AttendanceModel.aggregate([
+        {
+            $match: {
+                user: new mongoose.Types.ObjectId(userId),
+                date: {
+                    $gte: startDate,
+                    $lte: endDate,
+                },
+            },
+        },
+        {
+            $group: {
+                _id: {
+                    $dayOfMonth: "$date",
+                },
+            },
+        },
+        {
+            $count: "presentDays",
+        },
+    ])
+
+    const presentDays = attendances[0]?.presentDays || 0;
+    const totalDays = getDaysInMonth(year, month - 1);
+    const absentDays = totalDays - presentDays;
+    return absentDays;
+}
 
 
 class PayrollController {

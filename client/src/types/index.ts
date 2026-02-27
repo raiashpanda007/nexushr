@@ -1,6 +1,8 @@
 import type { UserDetails, UserState } from "./slices/userSlices.types"
+import type { EventItem, EventType } from "./events"
 
 export type { UserDetails, UserState }
+export type { EventItem, EventType }
 
 
 export interface Department {

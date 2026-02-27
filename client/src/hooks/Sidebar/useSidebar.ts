@@ -10,6 +10,7 @@ export function useSidebar() {
         { name: "Employee", path: "/employee", icon: "Users" },
         { name: "Attendance", path: "/attendance", icon: "CalendarCheck" },
         { name: "Leaves", path: "/leaves", icon: "CalendarDays" },
+        { name: "Events", path: "/events", icon: "CalendarRange" },
         { name: "Departments", path: "/departments", icon: "Building2" },
         { name: "Salaries", path: "/salaries", icon: "BadgeCommon" },
         { name: "Skills", path: "/skills", icon: "Award" },
@@ -19,6 +20,7 @@ export function useSidebar() {
     const employeeItems = [
         { name: "Attendance", path: "/attendance", icon: "CalendarCheck" },
         { name: "Leaves", path: "/leaves", icon: "CalendarDays" },
+        { name: "Events", path: "/events", icon: "CalendarRange" },
         { name: "Payroll", path: "/payroll", icon: "Banknote" },
         { name: "Salaries", path: "/salaries", icon: "BadgeCommon" },
     ]

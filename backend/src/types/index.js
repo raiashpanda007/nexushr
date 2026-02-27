@@ -6,6 +6,7 @@ import { CreateLeaveRequestValidationSchema, UpdateLeaveRequestValidationSchema,
 import { CreateLeaveBalanceValidationSchema, UpdateLeaveBalanceValidationSchema } from "./Leaves/LeaveBalance.types.js"
 import { CreateSalaryValidationSchema, UpdateSalaryValidationSchema } from "./salaries.types.js"
 import { CreatePayrollValidationSchema } from "./payroll.types.js"
+import {CreateEventSchema, UpdateEventSchema} from "./event.types.js"
 import { CreateAttendanceValidationSchema } from "./attendance.types.js"
 import { OfflineQueueValidationSchema } from "./sync.types.js"
 import { ErrorTypes } from "./error.types.js"
@@ -49,6 +50,10 @@ const Types = {
   },
   Attendance: {
     Create: CreateAttendanceValidationSchema
+  },
+  Events: {
+    Create: CreateEventSchema,
+    Update: UpdateEventSchema
   },
   OfflineQueue: OfflineQueueValidationSchema,
   Errors: ErrorTypes
