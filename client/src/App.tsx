@@ -12,6 +12,8 @@ import Leaves from "./pages/dashboard/Leaves"
 import Events from "./pages/dashboard/Events"
 import EventDetails from "./pages/dashboard/EventDetails"
 import EmployeeDetails from "./pages/dashboard/EmployeeDetails"
+import Assets from "./pages/dashboard/Assets"
+import AssetDetails from "./pages/dashboard/AssetDetails"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { userDetails } = useAppSelector((state) => state.userState)
@@ -52,6 +54,8 @@ function App() {
         <Route path="leaves" element={<Leaves />} />
         <Route path="events" element={<Events />} />
         <Route path="events/:id" element={<EventDetails />} />
+        <Route path="assets" element={<Assets />} />
+        <Route path="assets/:id" element={<AssetDetails />} />
       </Route>
 
       {/* Catch all - redirect to home (which redirects based on role) */}

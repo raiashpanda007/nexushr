@@ -23,7 +23,7 @@ const AssetSchema = new mongoose.Schema({
     currentOwner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Users",
-        required: true
+        default: null
     },
     purchaseDate: {
         type: Date,

@@ -12,6 +12,7 @@ import {
     BadgeDollarSign,
     Award,
     Banknote,
+    Package,
     type LucideIcon,
 } from "lucide-react"
 
@@ -24,6 +25,7 @@ const iconMap: Record<string, LucideIcon> = {
     BadgeCommon: BadgeDollarSign,
     Award,
     Banknote,
+    Package,
 }
 
 export default function Sidebar() {
