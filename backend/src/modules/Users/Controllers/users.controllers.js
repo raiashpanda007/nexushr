@@ -88,9 +88,11 @@ class UserController {
     const { email, password } = parsedBody.data;
 
     const savedUserDetail = await UserModel.findOne({ email }).select("+passwordHash");
-    console.log("SAVED USER DETAIL :: ", savedUserDetail);
-    console.log("PASSWORD :: ", password);
-    console.log("PASSWORD HASH :: ", savedUserDetail.passwordHash);
+
+    if (!savedUserDetail) {
+      throw new ApiError(Types.Errors.NotFound, "User not found");
+    }
+
     const isValid = await bcrypt.compare(password, savedUserDetail.passwordHash);
 
     if (!isValid) {

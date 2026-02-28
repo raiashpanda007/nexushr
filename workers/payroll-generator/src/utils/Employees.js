@@ -10,6 +10,7 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
     const collection = dbInstance.getCollection("users");
 
     const isAll = departments === "All";
+    console.log("isAll:", isAll, "departments:", departments);
     const deptObjectIds = isAll ? [] : departments.map((id) => new ObjectId(id));
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
@@ -195,6 +196,7 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
             _id: "$lastPayroll._id",
             month: "$lastPayroll.month",
             year: "$lastPayroll.year",
+            bonus: { $ifNull: ["$lastPayroll.bonus", []] },
           },
           perDaySalary: 1,
           presentDays: 1,
@@ -227,3 +229,4 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
 }
 
 export default GetEmployeeBatches;
+

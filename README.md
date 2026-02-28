@@ -17,6 +17,11 @@
   - [Running the Client](#running-the-client)
   - [Seeding the Database](#seeding-the-database)
 - [Process Management (PM2)](#process-management-pm2)
+- [Workers](#workers)
+  - [Payroll Generator](#payroll-generator)
+  - [Payroll Batch](#payroll-batch)
+  - [Image Worker](#image-worker)
+- [Bulk Payroll Processing](#bulk-payroll-processing)
 - [Backend](#backend)
   - [Entry Point & Clustering](#entry-point--clustering)
   - [Server Setup](#server-setup)
@@ -126,6 +131,8 @@ NexusHR/
 │   │   │   ├── Error.js          # ApiError class
 │   │   │   ├── Response.js       # ApiResponse class
 │   │   │   └── index.js          # Re-exports utils
+│   │   ├── queue/
+│   │   │   └── payroll.queue.js  # SQS client — sends bulk payroll messages
 │   │   ├── types/                # Shared Zod schemas / type definitions
 │   │   └── modules/
 │   │       ├── Users/            # Authentication + employee management
@@ -137,6 +144,24 @@ NexusHR/
 │   │       ├── Attendance/       # Punch-in/out records
 │   │       └── Sync/             # Offline batch sync endpoint
 │   └── package.json
+├── workers/
+│   ├── payroll-generator/        # Reads SQS, aggregates employee data, publishes batches
+│   │   └── src/
+│   │       ├── payroll.generator.js
+│   │       ├── conf/config.js
+│   │       └── utils/
+│   │           ├── Db.js
+│   │           └── Employees.js  # MongoDB aggregation pipeline
+│   ├── payroll-batch/            # Consumes batches and bulk-writes payroll records
+│   │   └── src/
+│   │       ├── payroll.batch.js
+│   │       ├── conf/Config.js
+│   │       └── utils/Db.js
+│   └── image-worker/             # Image processing worker
+│       └── src/
+│           └── image-worker.js
+├── docker/                       # Docker Compose + LocalStack for SQS
+├── ecosystem.config.js           # PM2 multi-app config
 └── client/
     ├── src/
     │   ├── main.tsx             # React entry point + Redux Provider
@@ -193,7 +218,20 @@ NexusHR/
 │  Modules: Auth | Users | Skills | Departments | Leaves      │
 │           Salaries | Payroll | Attendance | Sync            │
 │      │                                                       │
-│  Mongoose ──── MongoDB                                       │
+│  Mongoose ──── MongoDB        SQS Queue (payroll.queue.js)  │
+└──────────────────────────────────────────────────────────────┘
+               │                          │ SQS Messages
+┌──────────────────────────────────────────────────────────────┐
+│                     Workers (PM2 Managed)                     │
+│                                                              │
+│  payroll-generator (×1)                                      │
+│    └─ Polls SQS → aggregates employees → publishes batches  │
+│                                                              │
+│  payroll-batch (×3)                                          │
+│    └─ Polls SQS → bulk-writes payroll records to MongoDB    │
+│                                                              │
+│  image-worker (×1)                                           │
+│    └─ Image processing tasks                                │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -263,6 +301,18 @@ Use the root PM2 ecosystem file to run all services together.
 - PM2 installed globally (`npm i -g pm2`)
 - Dependencies installed in each app folder (`backend`, `workers`, `client`)
 
+### PM2 App Instances
+
+| Service | PM2 Name | Instances | Mode |
+|---------|----------|-----------|------|
+| Backend API | `nexushr-backend` | 1 | cluster |
+| Payroll Generator | `nexushr-payroll-worker` | 1 | cluster |
+| Payroll Batch Writer | `nexushr-payroll-batch` | 3 | cluster |
+| Image Worker | `nexushr-image-worker` | 1 | cluster |
+| Client Dev Server | `nexushr-client` | 1 | fork |
+
+The **payroll-batch** worker runs with 3 instances so multiple batches of employee payrolls can be written in parallel for faster processing.
+
 ### Start all services
 
 ```bash
@@ -291,6 +341,120 @@ pm2 restart ecosystem.config.js
 pm2 stop ecosystem.config.js
 pm2 delete ecosystem.config.js
 ```
+
+---
+
+## Workers
+
+Independent Node.js processes managed by PM2 that handle background tasks via SQS queues.
+
+### Payroll Generator
+
+**`workers/payroll-generator/src/payroll.generator.js`**
+
+Long-polls the **subscriber SQS queue** for bulk payroll messages from the backend. On receiving a message:
+
+1. Parses `{ departments, month, year, bulkBonus, bulkDeduction }` from the event
+2. Calls `GetEmployeeBatches()` — an **async generator** that runs a MongoDB aggregation pipeline on the `users` collection
+3. The pipeline joins salary, last payroll (including bonus), unpaid-leave deductions, and attendance data for each employee
+4. Yields employee batches of up to 1,000 documents
+5. Publishes each batch along with `month`, `year`, `bulkBonus`, and `bulkDeduction` to the **publisher SQS queue**
+6. Deletes the original message
+
+**Aggregation pipeline stages (Employees.js):**
+
+| Stage | Purpose |
+|-------|---------|
+| Match by department | Filter employees (skip if "All") |
+| Lookup last payroll | Get the most recent payroll (bonus carry-forward) |
+| Lookup salary | From last payroll's salary ref, or fall back to current salary |
+| Lookup unpaid leaves | ACCEPTED leave requests for the month where `leaveType.isPaid = false` |
+| Count present days | Distinct attendance days in the month |
+| Compute per-day salary | `base / totalDaysInMonth` |
+| Compute leave deductions | `quantity * perDaySalary` for each unpaid leave |
+| Final projection | Employee info, salary, last payroll bonus, leave deductions |
+
+### Payroll Batch
+
+**`workers/payroll-batch/src/payroll.batch.js`** — Runs **3 instances** via PM2.
+
+Long-polls the **publisher SQS queue** for employee batches. On receiving a batch:
+
+1. Parses `{ employees, month, year, bulkBonus, bulkDeduction }`
+2. Queries MongoDB to find employees who **already have a payroll** for this month/year — skips them
+3. For each remaining employee, builds a payroll document:
+   - **bonus** = bonus from last payroll + bulk bonus
+   - **deduction** = unpaid leave deductions + bulk deduction
+4. Executes a `bulkWrite` with `ordered: false` to insert all payroll records in one operation
+5. Deletes the SQS message
+
+### Image Worker
+
+**`workers/image-worker/src/image-worker.js`**
+
+Handles image processing tasks (resizing, optimization) via SQS.
+
+---
+
+## Bulk Payroll Processing
+
+End-to-end flow for generating payroll across the organization:
+
+```
+HR clicks "Generate Bulk" in the UI
+       │
+       ▼
+BulkPayrollDialog: selects month, year, departments,
+                   optional bulk bonus & bulk deduction
+       │
+       ▼
+POST /api/v1/payroll/bulk
+  { month, year, department?, bulkBonus?, bulkDeduction? }
+       │
+       ▼
+PayrollController.GenerateBulkPayroll
+  → Validates with Zod (GenerateBulkPayrollValidationSchema)
+  → Sends SQS message via PayrollSendMessage()
+  → Returns 200 immediately (fire-and-forget)
+       │
+       ▼  SQS (subscriber queue)
+       │
+payroll-generator worker (×1)
+  → Polls SQS, receives { departments, month, year, bulkBonus, bulkDeduction }
+  → Runs aggregation pipeline on users collection
+  → Yields batches of up to 1,000 enriched employee documents
+  → Publishes each batch to SQS (publisher queue)
+       │
+       ▼  SQS (publisher queue)
+       │
+payroll-batch worker (×3 — competing consumers)
+  → Polls SQS, receives { employees, month, year, bulkBonus, bulkDeduction }
+  → Skips employees that already have payroll for this month/year
+  → For each employee:
+       bonus    = lastPayroll.bonus + bulkBonus
+       deduction = unpaidLeaveDeductions + bulkDeduction
+  → Executes bulkWrite (ordered: false) into payrolls collection
+       │
+       ▼
+Payroll records in MongoDB
+  → Visible in the Payroll page for HR and employees
+  → Downloadable as PDF payslips
+```
+
+### What goes into each payroll record
+
+| Field | Source |
+|-------|--------|
+| `user` | Employee ID |
+| `salary` | Salary ref from last payroll, or employee's current salary |
+| `bonus` | Bonus array carried from last payroll + bulk bonus from HR |
+| `deduction` | Unpaid leave deductions (auto-calculated) + bulk deduction from HR |
+| `month` | Selected month |
+| `year` | Selected year |
+
+### Deduction amounts (negative in DB)
+
+The payroll model's `pre("save")` hook ensures deduction amounts are stored as **negative values**. During bulk-write (raw MongoDB), the `payroll-batch` worker inserts deduction amounts as-is (positive), matching the same pipeline output as single payroll generation.
 
 ---
 
@@ -490,11 +654,31 @@ Transactions (Mongoose sessions) are used in leave balance + request write opera
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/` | Generate payroll for a month/year |
+| `POST` | `/` | Generate payroll for a single employee (HR only) |
 | `GET` | `/` | List generated payrolls (filterable by month, year) |
 | `GET` | `/:id` | Get a specific payroll document |
+| `GET` | `/leave-deductions/:id` | Get unpaid-leave deductions for an employee |
+| `POST` | `/bulk` | Generate bulk payroll for all/selected departments (HR only) |
 
 Employee access is restricted to their own payroll. HR can view and generate payrolls for all employees. Payroll documents can be exported as PDFs from the frontend.
+
+**Bulk payroll request body:**
+
+```json
+{
+  "month": 3,
+  "year": 2026,
+  "department": ["dept_id_1", "dept_id_2"],
+  "bulkBonus": [
+    { "reason": "Festival Bonus", "amount": 5000 }
+  ],
+  "bulkDeduction": [
+    { "reason": "Insurance Premium", "amount": 1500 }
+  ]
+}
+```
+
+If `department` is omitted, payroll is generated for **all** departments. `bulkBonus` and `bulkDeduction` are optional arrays applied to every employee in the batch.
 
 ---
 

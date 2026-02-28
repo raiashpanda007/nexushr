@@ -86,13 +86,13 @@ class PayrollController {
 
     Get = AsyncHandler(async (req, res) => {
         const id = req.params.id;
-        const month = Number(req.query.month);
-        const year = Number(req.query.year);
+        const month = req.query.month ? Number(req.query.month) : null;
+        const year = req.query.year ? Number(req.query.year) : null;
 
-        if (month > 12 || month < 1 || month >= new Date().getMonth()) {
+        if (month !== null && (month > 12 || month < 1)) {
             throw new ApiError(Types.Errors.NotFound, "Invalid month");
         }
-        if (year > 2100 || year < 1900 || year <= new Date().getFullYear()) {
+        if (year !== null && (year > 2100 || year < 1900)) {
             throw new ApiError(Types.Errors.NotFound, "Invalid year");
         }
         const { page: pageQuery, limit: limitQuery } = req.query;
@@ -108,11 +108,9 @@ class PayrollController {
             }
             if (year) {
                 filter.year = year;
-                if (month) {
-                    filter.month = month;
-                    const payroll = await this.repo.findOne(filter).populate("salary").populate("user", "firstName lastName email profilePhoto");
-                    return res.status(200).json(new ApiResponse(200, payroll, "Payroll fetched successfully"));
-                }
+            }
+            if (month) {
+                filter.month = month;
             }
 
             let queryOptions = this.repo.find(filter).sort({ _id: -1 }).populate("salary").populate("user", "firstName lastName email profilePhoto");
@@ -219,11 +217,14 @@ class PayrollController {
         if (!parsedBody.success) {
             throw new ApiError(Types.Errors.UnprocessableData, "Invalid data", parsedBody.error.issues);
         }
-        const { month, year, department } = parsedBody.data;
+        const { month, year, department, bulkBonus, bulkDeduction } = parsedBody.data;
+        console.log("Generating payroll for month:", month, "year:", year, "department:", department ? department : "All");
         const payroll = await PayrollSendMessage({
             month,
             year,
-            departments: department ? department : "All"
+            departments: department ? department : "All",
+            bulkBonus: bulkBonus || [],
+            bulkDeduction: bulkDeduction || []
         })
         return res.status(200).json(new ApiResponse(200, payroll, "Payroll generated successfully"));
     })

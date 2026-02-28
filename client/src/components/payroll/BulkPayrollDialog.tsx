@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
     Dialog,
     DialogContent,
@@ -17,6 +18,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useBulkPayroll } from '@/hooks/Payroll/useBulkPayroll';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface BulkPayrollDialogProps {
     bulkPayroll: ReturnType<typeof useBulkPayroll>;
@@ -44,6 +46,14 @@ const BulkPayrollDialog = ({ bulkPayroll }: BulkPayrollDialogProps) => {
         handleDepartmentToggle,
         handleGenerateBulk,
         closeDialog,
+        bulkBonus,
+        bulkDeduction,
+        addBulkBonus,
+        removeBulkBonus,
+        updateBulkBonus,
+        addBulkDeduction,
+        removeBulkDeduction,
+        updateBulkDeduction,
     } = bulkPayroll;
 
     return (
@@ -54,7 +64,7 @@ const BulkPayrollDialog = ({ bulkPayroll }: BulkPayrollDialogProps) => {
                 else setIsBulkDialogOpen(true);
             }}
         >
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Generate Bulk Payroll</DialogTitle>
                     <DialogDescription>Select month, year, and one or more departments.</DialogDescription>
@@ -126,6 +136,74 @@ const BulkPayrollDialog = ({ bulkPayroll }: BulkPayrollDialogProps) => {
                                 </Label>
                             </div>
                         ))
+                    )}
+                </div>
+
+                {/* Bulk Bonus */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Bulk Bonus</Label>
+                        <Button type="button" variant="outline" size="sm" onClick={addBulkBonus} className="gap-1 h-7 text-xs">
+                            <Plus className="h-3 w-3" /> Add
+                        </Button>
+                    </div>
+                    {bulkBonus.length > 0 && (
+                        <div className="space-y-2 border rounded-md p-3">
+                            {bulkBonus.map((item, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        placeholder="Reason"
+                                        value={item.reason}
+                                        onChange={(e) => updateBulkBonus(index, 'reason', e.target.value)}
+                                        className="flex-1"
+                                    />
+                                    <Input
+                                        type="number"
+                                        placeholder="Amount"
+                                        value={item.amount || ''}
+                                        onChange={(e) => updateBulkBonus(index, 'amount', Number(e.target.value))}
+                                        className="w-28"
+                                    />
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeBulkBonus(index)} className="h-8 w-8 text-destructive hover:text-destructive">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Bulk Deduction */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Bulk Deduction</Label>
+                        <Button type="button" variant="outline" size="sm" onClick={addBulkDeduction} className="gap-1 h-7 text-xs">
+                            <Plus className="h-3 w-3" /> Add
+                        </Button>
+                    </div>
+                    {bulkDeduction.length > 0 && (
+                        <div className="space-y-2 border rounded-md p-3">
+                            {bulkDeduction.map((item, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        placeholder="Reason"
+                                        value={item.reason}
+                                        onChange={(e) => updateBulkDeduction(index, 'reason', e.target.value)}
+                                        className="flex-1"
+                                    />
+                                    <Input
+                                        type="number"
+                                        placeholder="Amount"
+                                        value={item.amount || ''}
+                                        onChange={(e) => updateBulkDeduction(index, 'amount', Number(e.target.value))}
+                                        className="w-28"
+                                    />
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeBulkDeduction(index)} className="h-8 w-8 text-destructive hover:text-destructive">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
 

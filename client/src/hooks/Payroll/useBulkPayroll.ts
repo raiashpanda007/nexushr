@@ -2,6 +2,11 @@ import { useState, useCallback, useEffect } from 'react';
 import ApiCaller from '@/utils/ApiCaller';
 import type { Department } from '@/types';
 
+interface BonusDeductionItem {
+    reason: string;
+    amount: number;
+}
+
 export const useBulkPayroll = (onSuccess: () => void) => {
     const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
     const [departmentList, setDepartmentList] = useState<Department[]>([]);
@@ -12,6 +17,9 @@ export const useBulkPayroll = (onSuccess: () => void) => {
     const now = new Date();
     const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+
+    const [bulkBonus, setBulkBonus] = useState<BonusDeductionItem[]>([]);
+    const [bulkDeduction, setBulkDeduction] = useState<BonusDeductionItem[]>([]);
 
     const fetchDepartments = useCallback(async () => {
         try {
@@ -53,12 +61,26 @@ export const useBulkPayroll = (onSuccess: () => void) => {
         setBulkError(null);
 
         const departments = selectedDepartments.length > 0 ? selectedDepartments : undefined;
+        const validBonus = bulkBonus.filter(b => b.reason.trim() && b.amount > 0);
+        const validDeduction = bulkDeduction.filter(d => d.reason.trim() && d.amount > 0);
 
         try {
-            const result = await ApiCaller<{ month: number; year: number; department?: string[] }, any>({
+            const result = await ApiCaller<{
+                month: number;
+                year: number;
+                department?: string[];
+                bulkBonus?: BonusDeductionItem[];
+                bulkDeduction?: BonusDeductionItem[];
+            }, any>({
                 requestType: 'POST',
                 paths: ['api', 'v1', 'payroll', 'bulk'],
-                body: { month: selectedMonth, year: selectedYear, department: departments },
+                body: {
+                    month: selectedMonth,
+                    year: selectedYear,
+                    department: departments,
+                    bulkBonus: validBonus.length > 0 ? validBonus : undefined,
+                    bulkDeduction: validDeduction.length > 0 ? validDeduction : undefined,
+                },
             });
 
             if (!result.ok) {
@@ -68,19 +90,47 @@ export const useBulkPayroll = (onSuccess: () => void) => {
 
             setIsBulkDialogOpen(false);
             setSelectedDepartments([]);
+            setBulkBonus([]);
+            setBulkDeduction([]);
             onSuccess();
         } catch {
             setBulkError('Failed to generate bulk payroll.');
         } finally {
             setBulkLoading(false);
         }
-    }, [selectedDepartments, selectedMonth, selectedYear, onSuccess]);
+    }, [selectedDepartments, selectedMonth, selectedYear, bulkBonus, bulkDeduction, onSuccess]);
+
+    const addBulkBonus = useCallback(() => {
+        setBulkBonus((prev) => [...prev, { reason: '', amount: 0 }]);
+    }, []);
+
+    const removeBulkBonus = useCallback((index: number) => {
+        setBulkBonus((prev) => prev.filter((_, i) => i !== index));
+    }, []);
+
+    const updateBulkBonus = useCallback((index: number, field: 'reason' | 'amount', value: string | number) => {
+        setBulkBonus((prev) => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+    }, []);
+
+    const addBulkDeduction = useCallback(() => {
+        setBulkDeduction((prev) => [...prev, { reason: '', amount: 0 }]);
+    }, []);
+
+    const removeBulkDeduction = useCallback((index: number) => {
+        setBulkDeduction((prev) => prev.filter((_, i) => i !== index));
+    }, []);
+
+    const updateBulkDeduction = useCallback((index: number, field: 'reason' | 'amount', value: string | number) => {
+        setBulkDeduction((prev) => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+    }, []);
 
     const openDialog = useCallback(() => setIsBulkDialogOpen(true), []);
 
     const closeDialog = useCallback(() => {
         setIsBulkDialogOpen(false);
         setSelectedDepartments([]);
+        setBulkBonus([]);
+        setBulkDeduction([]);
         setBulkError(null);
     }, []);
 
@@ -99,5 +149,13 @@ export const useBulkPayroll = (onSuccess: () => void) => {
         handleGenerateBulk,
         openDialog,
         closeDialog,
+        bulkBonus,
+        bulkDeduction,
+        addBulkBonus,
+        removeBulkBonus,
+        updateBulkBonus,
+        addBulkDeduction,
+        removeBulkDeduction,
+        updateBulkDeduction,
     };
 };

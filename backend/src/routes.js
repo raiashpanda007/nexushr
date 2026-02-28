@@ -9,6 +9,7 @@ import AttendanceRoutes from "./modules/Attendance/Routes/Attendance.routes.js";
 import SyncRoutes from "./modules/Sync/Routes/sync.routes.js";
 import SearchRoutes from "./modules/Search/Routes/search.routes.js";
 import EventRoutes from "./modules/Events/Routes/events.routes.js";
+import AssetsRoutes from "./modules/Assets/Routes/assets.routes.js";
 
 class Routes {
     constructor() {
@@ -23,6 +24,7 @@ class Routes {
         this.syncRoutes = new SyncRoutes().routes();
         this.searchRoutes = new SearchRoutes().routes();
         this.eventRoutes = new EventRoutes().routes();
+        this.assetsRoutes = new AssetsRoutes().routes();
     }
     routes() {
         this.router.use("/", this.userRoutes);
@@ -35,6 +37,7 @@ class Routes {
         this.router.use("/sync", this.syncRoutes);
         this.router.use("/events", this.eventRoutes);
         this.router.use("/search", this.searchRoutes);
+        this.router.use("/assets", this.assetsRoutes);
         return this.router;
     }
 }

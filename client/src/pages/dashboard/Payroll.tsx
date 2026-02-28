@@ -228,9 +228,8 @@ const Payroll = () => {
                 ) : (
                     <div className="space-y-4">
                         {filteredPayrolls.map(p => {
-                            const pDate = new Date(p.createdAt);
-                            const pYear = pDate.getFullYear();
-                            const pMonth = (pDate.getMonth() + 1).toString().padStart(2, '0');
+                            const pYear = p.year;
+                            const pMonth = p.month.toString().padStart(2, '0');
                             const { totalBonus, totalDeduction, baseSalary, netSalary } = calculateTotals(p);
                             return (
                                 <Card key={p._id} className="border-border hover:shadow-md transition-shadow overflow-hidden">
@@ -503,9 +502,8 @@ const Payroll = () => {
                                                 </TableCell>
                                             </TableRow>
                                         ) : filteredPayrolls.map((p) => {
-                                            const pDate = new Date(p.createdAt);
-                                            const pYear = pDate.getFullYear();
-                                            const pMonth = (pDate.getMonth() + 1).toString().padStart(2, '0');
+                                            const pYear = p.year;
+                                            const pMonth = p.month.toString().padStart(2, '0');
                                             const { totalBonus, totalDeduction, baseSalary, netSalary } = calculateTotals(p);
                                             return (
                                                 <TableRow key={p._id} className="hover:bg-emerald-50/40 transition-colors">

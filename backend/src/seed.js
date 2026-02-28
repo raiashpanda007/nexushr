@@ -10,12 +10,18 @@ import SalariesModel from "./modules/Salaries/Models/salaries.model.js";
 import AttendanceModel from "./modules/Attendance/Models/attendance.model.js";
 import PayrollModal from "./modules/Payroll/Models/payroll.model.js";
 import EventModel from "./modules/Events/Models/Events.models.js";
+import AssetModel from "./modules/Assets/Models/assets.models.js";
+import bcrypt from "bcrypt";
+
+const TARGET = 10000;
 
 const seed = async () => {
     try {
         await mongoose.connect(Cfg.MONGO_DB_URL, { dbName: Cfg.DB_NAME });
         console.log("Connected to MongoDB for seeding...");
 
+        // Precompute bcrypt hash for bulk insertMany (which skips pre-save hooks)
+        const bulkPasswordHash = await bcrypt.hash("password123", 10);
 
         const departments = [
             { name: "General Management", description: "Default department for administrative staff" },
@@ -60,6 +66,17 @@ const seed = async () => {
             finalDepartments.push(dept);
         }
 
+        // Ensure departments limited to 10 human-friendly names
+        const moreDeptNames = ["Operations","Research","Design","Product"];
+        for (const name of moreDeptNames) {
+            let d = await DepartmentModal.findOne({ name });
+            if (!d) {
+                d = await DepartmentModal.create({ name, description: `${name} department` });
+                console.log(`Created Department: ${d.name}`);
+            }
+            if (!finalDepartments.find(fd => fd._id.equals(d._id))) finalDepartments.push(d);
+        }
+
         // 2. Seed Skills
         console.log("\n--- Seeding Skills ---");
         const finalSkills = [];
@@ -72,6 +89,17 @@ const seed = async () => {
             finalSkills.push(skill);
         }
 
+        // Ensure skills limited to 10 human-friendly names (add until ~10)
+        const moreSkillNames = ["Node.js","TypeScript"];
+        for (const name of moreSkillNames) {
+            let sk = await SkillModal.findOne({ name });
+            if (!sk) {
+                sk = await SkillModal.create({ name, category: categories[Math.floor(Math.random()*categories.length)] });
+                console.log(`Created Skill: ${sk.name}`);
+            }
+            if (!finalSkills.find(fs => fs._id.equals(sk._id))) finalSkills.push(sk);
+        }
+
         // 3. Seed Leave Types
         console.log("\n--- Seeding Leave Types ---");
         const finalLeaveTypes = [];
@@ -82,6 +110,18 @@ const seed = async () => {
                 console.log(`Created Leave Type: ${leaveType.name}`);
             }
             finalLeaveTypes.push(leaveType);
+        }
+
+        // Ensure leave types limited to 10 human-friendly names (add until ~10)
+        const moreLeaveNames = ["Maternity Leave","Paternity Leave","Bereavement Leave","Comp-Off","Study Leave","Unpaid Leave"];
+        for (let i=0;i<moreLeaveNames.length;i++){
+            const code = `LT${i+10}`;
+            let lt = await LeaveTypeModal.findOne({ name: moreLeaveNames[i] });
+            if (!lt) {
+                lt = await LeaveTypeModal.create({ name: moreLeaveNames[i], code, length: "FULL", isPaid: Math.random() > 0.2 });
+                console.log(`Created Leave Type: ${lt.name}`);
+            }
+            if (!finalLeaveTypes.find(f => f._id.equals(lt._id))) finalLeaveTypes.push(lt);
         }
 
         // Utility: Generate Attendance Records for a user
@@ -213,7 +253,6 @@ const seed = async () => {
 
         // 4. Create Admin (HR) User
         const adminEmail = "admin@nexushr.com";
-        const adminPassword = "password123";
         let admin = await UserModel.findOne({ email: adminEmail });
 
         if (!admin) {
@@ -221,7 +260,7 @@ const seed = async () => {
                 email: adminEmail,
                 firstName: "Admin",
                 lastName: "User",
-                passwordHash: adminPassword,
+                passwordHash: "password123",
                 role: "HR",
                 deptId: finalDepartments.find(d => d.name === "Human Resources")?._id,
                 skills: finalSkills.slice(0, 2).map(s => s._id),
@@ -272,6 +311,210 @@ const seed = async () => {
             }
 
             await seedUserData(user, { base: 40000 + (Math.random() * 20000), hra: 15000, lta: 5000 });
+        }
+
+        // --- Bulk fill collections to reach TARGET documents each ---
+        console.log(`\n--- Ensuring each collection has at least ${TARGET} documents ---`);
+
+        // Helper to insert in batches
+        const batchInsert = async (Model, docs, batchSize = 1000) => {
+            for (let i = 0; i < docs.length; i += batchSize) {
+                const slice = docs.slice(i, i + batchSize);
+                try {
+                    await Model.insertMany(slice, { ordered: false });
+                } catch (err) {
+                    // ignore duplicate errors and continue
+                }
+            }
+        };
+
+        // 1) Departments
+        const deptCount = await DepartmentModal.countDocuments();
+        if (deptCount < 10) {
+            const need = 10 - deptCount;
+            const docs = [];
+            for (let i = 0; i < need; i++) {
+                docs.push({ name: `Department_${deptCount + i + 1}`, description: `Auto-generated department ${deptCount + i + 1}` });
+            }
+            console.log(`Inserting ${docs.length} departments to reach 10...`);
+            await batchInsert(DepartmentModal, docs);
+        }
+
+        // 2) Skills
+        const skillCount = await SkillModal.countDocuments();
+        if (skillCount < 10) {
+            const need = 10 - skillCount;
+            const docs = [];
+            for (let i = 0; i < need; i++) {
+                docs.push({ name: `Skill_${skillCount + i + 1}`, category: categories[i % categories.length] });
+            }
+            console.log(`Inserting ${docs.length} skills to reach 10...`);
+            await batchInsert(SkillModal, docs);
+        }
+
+        // 3) Leave Types
+        const ltCount = await LeaveTypeModal.countDocuments();
+        if (ltCount < 10) {
+            const need = 10 - ltCount;
+            const docs = [];
+            for (let i = 0; i < need; i++) {
+                docs.push({ name: `LeaveType_${ltCount + i + 1}`, code: `LTC${ltCount + i + 1}`, length: 'FULL', isPaid: Math.random() > 0.5 });
+            }
+            console.log(`Inserting ${docs.length} leave types to reach 10...`);
+            await batchInsert(LeaveTypeModal, docs);
+        }
+
+        // 4) Users (create enough unique emails)
+        const userCount = await UserModel.countDocuments();
+        if (userCount < TARGET) {
+            const need = TARGET - userCount;
+            console.log(`Creating ${need} users...`);
+            const firstNames = ["Alex","Sam","Taylor","Jordan","Morgan","Casey","Riley","Quinn","Avery","Parker","Blake","Drew","Jesse","Kris","Rowan","Skyler","Reese","Hayden","Cameron","Devon"];
+            const lastNames = ["Adams","Baker","Clark","Dunn","Evans","Foster","Garcia","Howard","Ibrahim","Jones","Khan","Lewis","Mason","Nguyen","Owens","Patel","Quinn","Roberts","Singh","Turner"];
+            const usersBatch = [];
+            for (let i = 0; i < need; i++) {
+                const idx = userCount + i + 1;
+                const first = firstNames[i % firstNames.length] + (Math.floor(i / firstNames.length) || '');
+                const last = lastNames[i % lastNames.length] + (Math.floor(i / lastNames.length) || '');
+                const email = `${first.toLowerCase()}.${last.toLowerCase()}.${idx}@nexushr.com`;
+                const dept = finalDepartments[i % finalDepartments.length];
+                const skl1 = finalSkills[i % finalSkills.length];
+                const skl2 = finalSkills[(i + 1) % finalSkills.length];
+                usersBatch.push({ email, firstName: first, lastName: last, passwordHash: bulkPasswordHash, role: 'EMPLOYEE', deptId: dept._id, skills: [skl1._id, skl2._id], online: false });
+                if (usersBatch.length >= 1000) {
+                    await batchInsert(UserModel, usersBatch);
+                    usersBatch.length = 0;
+                }
+            }
+            if (usersBatch.length) await batchInsert(UserModel, usersBatch);
+        }
+
+        // Refresh users list (limit to TARGET for downstream refs)
+        const users = await UserModel.find().limit(TARGET).lean();
+
+        // 5) Salaries - ensure one per user up to TARGET
+        const salaryCount = await SalariesModel.countDocuments();
+        if (salaryCount < TARGET) {
+            const need = TARGET - salaryCount;
+            console.log(`Creating ${need} salary docs...`);
+            const docs = [];
+            for (let i = 0; i < need; i++) {
+                const user = users[(i + salaryCount) % users.length];
+                docs.push({ userId: user._id, base: 30000 + Math.floor(Math.random() * 70000), hra: 10000 + Math.floor(Math.random() * 20000), lta: 2000 + Math.floor(Math.random() * 8000) });
+                if (docs.length >= 1000) { await batchInsert(SalariesModel, docs); docs.length = 0; }
+            }
+            if (docs.length) await batchInsert(SalariesModel, docs);
+        }
+
+        // 6) Leave Balances
+        const lbCount = await LeaveBalanceModel.countDocuments();
+        if (lbCount < TARGET) {
+            const need = TARGET - lbCount;
+            console.log(`Creating ${need} leave balance docs...`);
+            const docs = [];
+            const allLeaveTypes = await LeaveTypeModal.find().limit(50);
+            for (let i = 0; i < need; i++) {
+                const user = users[(i + lbCount) % users.length];
+                const leaves = [];
+                for (let j = 0; j < Math.min(5, allLeaveTypes.length); j++) {
+                    leaves.push({ type: allLeaveTypes[(i + j) % allLeaveTypes.length]._id, amount: 10 + (j % 10) });
+                }
+                docs.push({ user: user._id, leaves });
+                if (docs.length >= 1000) { await batchInsert(LeaveBalanceModel, docs); docs.length = 0; }
+            }
+            if (docs.length) await batchInsert(LeaveBalanceModel, docs);
+        }
+
+        // 7) Leave Requests
+        const lrCount = await LeaveRequestModel.countDocuments();
+        if (lrCount < TARGET) {
+            const need = TARGET - lrCount;
+            console.log(`Creating ${need} leave requests...`);
+            const docs = [];
+            const allLT = await LeaveTypeModal.find().limit(100);
+            for (let i = 0; i < need; i++) {
+                const user = users[(i + lrCount) % users.length];
+                const lt = allLT[i % allLT.length];
+                const from = new Date(); from.setDate(from.getDate() + (i % 30)); from.setUTCHours(0,0,0,0);
+                const to = new Date(from); to.setDate(from.getDate() + (1 + (i % 5)));
+                docs.push({ requestedBy: user._id, type: lt._id, quantity: 1 + (i % 5), from, to, status: ["PENDING","APPROVED","REJECTED"][i % 3] });
+                if (docs.length >= 1000) { await batchInsert(LeaveRequestModel, docs); docs.length = 0; }
+            }
+            if (docs.length) await batchInsert(LeaveRequestModel, docs);
+        }
+
+        // 8) Attendance
+        const attCount = await AttendanceModel.countDocuments();
+        if (attCount < TARGET) {
+            const need = TARGET - attCount;
+            console.log(`Creating ${need} attendance docs...`);
+            const docs = [];
+            for (let i = 0; i < need; i++) {
+                const user = users[(i + attCount) % users.length];
+                const date = new Date(); date.setDate(date.getDate() - (i % 365)); date.setUTCHours(0,0,0,0);
+                const inTime = new Date(date); inTime.setHours(9 + (i % 3), Math.floor(Math.random()*60), 0, 0);
+                const outTime = new Date(date); outTime.setHours(17 + (i % 2), Math.floor(Math.random()*60), 0, 0);
+                const punches = [{ type: 'IN', time: inTime }, { type: 'OUT', time: outTime }];
+                const diffMinutes = (outTime.getTime() - inTime.getTime()) / 60000;
+                docs.push({ user: user._id, date, punches, totalMinutes: Math.max(0, Math.floor(diffMinutes)) });
+                if (docs.length >= 1000) { await batchInsert(AttendanceModel, docs); docs.length = 0; }
+            }
+            if (docs.length) await batchInsert(AttendanceModel, docs);
+        }
+
+        // 9) Payroll
+        const payrollCount = await PayrollModal.countDocuments();
+        if (payrollCount < TARGET) {
+            const need = TARGET - payrollCount;
+            console.log(`Creating ${need} payroll docs...`);
+            const docs = [];
+            const salaries = await SalariesModel.find().limit(TARGET).lean();
+            for (let i = 0; i < need; i++) {
+                const user = users[(i + payrollCount) % users.length];
+                const salary = salaries[i % salaries.length];
+                docs.push({ user: user._id, bonus: [{ reason: 'Auto', amount: Math.floor(Math.random()*2000) }], deduction: [{ reason: 'Tax', amount: Math.floor(Math.random()*500) }], salary: salary?._id, month: ((i % 12) + 1), year: 2026 });
+                if (docs.length >= 1000) { await batchInsert(PayrollModal, docs); docs.length = 0; }
+            }
+            if (docs.length) await batchInsert(PayrollModal, docs);
+        }
+
+        // 10) Events
+        const eventCount = await EventModel.countDocuments();
+        if (eventCount < TARGET) {
+            const need = TARGET - eventCount;
+            console.log(`Creating ${need} events...`);
+            const docs = [];
+            for (let i = 0; i < need; i++) {
+                const daysFromNow = (i % 365) - 180;
+                const d = new Date(); d.setDate(d.getDate() + daysFromNow); d.setUTCHours(0,0,0,0);
+                docs.push({ name: `Event_${eventCount + i + 1}`, description: `Auto-generated event ${eventCount + i + 1}`, type: ['MEETING','HOLIDAY','OTHER','BIRTHDAY','ANNIVERSARY'][i%5], forAll: Math.random()>0.5, time: '09:00 AM', date: d, respectedToDepartments: [], resepectedEmplooyees: [] });
+                if (docs.length >= 1000) { await batchInsert(EventModel, docs); docs.length = 0; }
+            }
+            if (docs.length) await batchInsert(EventModel, docs);
+        }
+
+        // Assets - ensure at least 100 assets exist (schema requires many fields)
+        const assetCount = await AssetModel.countDocuments();
+        if (assetCount < 100) {
+            const need = 100 - assetCount;
+            console.log(`Creating ${need} asset docs...`);
+            const docs = [];
+            const assetNames = ["Laptop","Monitor","Keyboard","Mouse","Docking Station","Phone","Tablet","Printer","Scanner","Projector","Headset","Webcam","Router","Switch","Server","UPS","Desk","Chair","Cabinet","Whiteboard"];
+            const statuses = ["AVAILABLE","ASSIGNED","MAINTENANCE","DISPOSED"];
+            for (let i = 0; i < need; i++) {
+                const idx = assetCount + i + 1;
+                const name = `${assetNames[i % assetNames.length]} ${idx}`;
+                const photoURL = `https://placehold.co/600x400?text=Asset+${idx}`;
+                const description = `Auto-generated asset ${name}`;
+                const status = statuses[i % statuses.length];
+                const purchaseDate = new Date(); purchaseDate.setDate(purchaseDate.getDate() - (i % 365));
+                const purchasePrice = 100 + Math.floor(Math.random() * 5000);
+                const warrantyPeriod = `${1 + (i % 5)} year(s)`;
+                const notes = `Generated asset record ${idx}`;
+                docs.push({ name, photoURL, description, status, currentOwner: null, purchaseDate, purchasePrice, warrantyPeriod, notes });
+                if (docs.length >= 1000) { await batchInsert(AssetModel, docs); docs.length = 0; }
+            }
+            if (docs.length) await batchInsert(AssetModel, docs);
         }
 
         // 6. Seed Events

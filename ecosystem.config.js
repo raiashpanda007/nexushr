@@ -6,7 +6,7 @@ module.exports = {
       script: "./src/index.js",
       interpreter: "node",
       exec_mode: "cluster",
-      instances: 2,
+      instances: 1,
       autorestart: true,
       watch: false,
       env: {
@@ -19,7 +19,7 @@ module.exports = {
       script: "./src/image-worker.js",
       interpreter: "node",
       exec_mode: "cluster",
-      instances: 2,
+      instances: 1,
       autorestart: true,
       watch: false,
       env: {
@@ -32,7 +32,20 @@ module.exports = {
       script: "./src/payroll.generator.js",
       interpreter: "node",
       exec_mode: "cluster",
-      instances: 2,
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: "production"
+      }
+    },
+    {
+      name: "nexushr-payroll-batch",
+      cwd: "./workers/payroll-batch",
+      script: "./src/payroll.batch.js",
+      interpreter: "node",
+      exec_mode: "cluster",
+      instances: 3,
       autorestart: true,
       watch: false,
       env: {

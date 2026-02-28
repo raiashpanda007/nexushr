@@ -1,5 +1,5 @@
 import Config from "./conf/config.js";
-import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, SendMessageCommand} from "@aws-sdk/client-sqs";
+import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, SendMessageCommand } from "@aws-sdk/client-sqs";
 import DB from "./utils/Db.js";
 import GetEmployeeBatches from "./utils/Employees.js";
 const Cfg = new Config().MustLoad();
@@ -36,14 +36,20 @@ async function main() {
         const event = JSON.parse(Body);
         console.log("Received Event :: ", event);
 
-        const { department, month, year } = event;
-        const employeeBatches = GetEmployeeBatches(db, department, month, year);
+        const { departments, month, year, bulkBonus = [], bulkDeduction = [] } = event;
+        const employeeBatches = GetEmployeeBatches(db, departments, month, year);
 
         for await (const batch of employeeBatches) {
           await SQS_CLIENT.send(
             new SendMessageCommand({
               QueueUrl: Cfg.PUBLISHER_QUEUE_URL,
-              MessageBody: JSON.stringify(batch),
+              MessageBody: JSON.stringify({
+                employees: batch,
+                month,
+                year,
+                bulkBonus,
+                bulkDeduction,
+              }),
             }),
           );
         }
@@ -60,7 +66,10 @@ async function main() {
     }
   }
 }
-main();
+main().catch((error) => {
+  console.error("Error in main function:", error);
+});
+
 
 
 

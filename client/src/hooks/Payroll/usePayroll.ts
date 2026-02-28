@@ -26,6 +26,8 @@ export interface PayrollItem {
     salary: any;
     bonus: { reason: string; amount: number }[];
     deduction: { reason: string; amount: number }[];
+    month: number;
+    year: number;
     createdAt: string;
     syncState?: "unsynced" | "synced";
 }
@@ -136,16 +138,19 @@ export function usePayroll() {
         }
     };
 
-    const fetchPayrolls = async (currentPage = 1) => {
+    const fetchPayrolls = async (currentPage = 1, year?: string, month?: string) => {
         try {
             let apiPayrolls: PayrollItem[] = [];
             let apiTotal = 0;
 
             if (navigator.onLine) {
+                const queryParams: Record<string, string> = { page: currentPage.toString(), limit: payrollLimit.toString() };
+                if (year) queryParams.year = year;
+                if (year && month) queryParams.month = month;
                 const { response } = await ApiCaller<any, any>({
                     requestType: 'GET',
                     paths: ['api', 'v1', 'payroll'],
-                    queryParams: { page: currentPage.toString(), limit: payrollLimit.toString() }
+                    queryParams
                 });
                 if (response?.data) {
                     if (Array.isArray(response.data)) {
@@ -187,9 +192,13 @@ export function usePayroll() {
     }, [userDetails]);
 
     useEffect(() => {
-        console.log('payrollPage', payrollPage);
-        fetchPayrolls(payrollPage);
-    }, [payrollPage]);
+        fetchPayrolls(payrollPage, filterYear, filterMonth);
+    }, [payrollPage, filterYear, filterMonth]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setPayrollPage(1);
+    }, [filterYear, filterMonth]);
 
     useEffect(() => {
         fetchUsers(usersPage);
@@ -206,22 +215,13 @@ export function usePayroll() {
         if (payrollPage !== 1) {
             setPayrollPage(1); // useEffect will trigger fetch for page 1
         } else {
-            fetchPayrolls(1);
+            fetchPayrolls(1, filterYear, filterMonth);
         }
     };
 
     const filteredUsers = userSearchTerm.trim().length >= 2 ? searchedUsers : users;
 
-    const filteredPayrolls = payrolls.filter(p => {
-        if (!p.createdAt) return true;
-        const pDate = new Date(p.createdAt);
-        const pYear = pDate.getFullYear().toString();
-        const pMonth = (pDate.getMonth() + 1).toString();
-
-        if (filterYear && pYear !== filterYear) return false;
-        if (filterYear && filterMonth && pMonth !== filterMonth) return false;
-        return true;
-    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const filteredPayrolls = payrolls;
 
     const getUserName = (userId: any) => {
         if (!userId) return 'Unknown User';
