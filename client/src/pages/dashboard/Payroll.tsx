@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CreatePayrollModal from '@/components/payroll/CreatePayrollModal';
+import BulkPayrollDialog from '@/components/payroll/BulkPayrollDialog';
 import {
     Table,
     TableBody,
@@ -16,6 +17,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { usePayroll } from "@/hooks/Payroll/usePayroll";
+import { useBulkPayroll } from "@/hooks/Payroll/useBulkPayroll";
 import { useState, useCallback } from "react";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollDocument } from "@/utils/PdfGenerator";
@@ -61,7 +63,6 @@ const Payroll = () => {
         setPdfState("idle");
     }, [pdfUrl]);
 
-
     const {
         isHR,
         salaries,
@@ -95,6 +96,8 @@ const Payroll = () => {
         payrollTotal,
         payrollLimit,
     } = usePayroll();
+
+    const bulkPayroll = useBulkPayroll(handleModalSuccess);
 
     if (loading) {
         return (
@@ -315,6 +318,14 @@ const Payroll = () => {
                             <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Payroll Processing</h1>
                             <p className="text-muted-foreground text-sm sm:text-base mt-1 font-medium">Generate and review payroll information across the organization</p>
                         </div>
+                    </div>
+                    <div>
+                        <Button
+                            onClick={bulkPayroll.openDialog}
+                            className="gap-2"
+                        >
+                            <Users className="h-4 w-4" /> Generate Bulk
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -554,6 +565,8 @@ const Payroll = () => {
                     onSuccess={handleModalSuccess}
                 />
             )}
+
+            <BulkPayrollDialog bulkPayroll={bulkPayroll} />
         </div>
         </>
     );

@@ -18,3 +18,10 @@ export const CreatePayrollValidationSchema = zod.object({
     month: zod.number().min(1, "Month is required").max(12, "Month is required"),
     year: zod.number().min(1900, "Year is required").max(2100, "Year is required"),
 })
+
+
+export const GenerateBulkPayrollValidationSchema = zod.object({
+    month: zod.number().min(1, "Month is required").max(12, "Month is required"),
+    year: zod.number().min(1900, "Year is required").max(2100, "Year is required"),
+    department: zod.array(zod.string().trim()).optional(),
+})

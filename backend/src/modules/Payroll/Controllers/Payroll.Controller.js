@@ -223,7 +223,7 @@ class PayrollController {
         const payroll = await PayrollSendMessage({
             month,
             year,
-            department: department ? department : "All"
+            departments: department ? department : "All"
         })
         return res.status(200).json(new ApiResponse(200, payroll, "Payroll generated successfully"));
     })

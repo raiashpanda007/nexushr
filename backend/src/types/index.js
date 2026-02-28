@@ -5,9 +5,10 @@ import { CreateLeaveTypeValidationSchema, UpdateLeaveTypeValidationSchema } from
 import { CreateLeaveRequestValidationSchema, UpdateLeaveRequestValidationSchema, ResponseLeaveRequestValidationSchema } from "./Leaves/LeaveRequest.types.js"
 import { CreateLeaveBalanceValidationSchema, UpdateLeaveBalanceValidationSchema } from "./Leaves/LeaveBalance.types.js"
 import { CreateSalaryValidationSchema, UpdateSalaryValidationSchema } from "./salaries.types.js"
-import { CreatePayrollValidationSchema } from "./payroll.types.js"
-import {CreateEventSchema, UpdateEventSchema} from "./event.types.js"
+import { CreatePayrollValidationSchema, GenerateBulkPayrollValidationSchema } from "./payroll.types.js"
+import { CreateEventSchema, UpdateEventSchema } from "./event.types.js"
 import { CreateAttendanceValidationSchema } from "./attendance.types.js"
+import { CreateAssetValidationSchema, UpdateAssetValidationSchema } from "./asset.types.js"
 import { OfflineQueueValidationSchema } from "./sync.types.js"
 import { ErrorTypes } from "./error.types.js"
 
@@ -46,7 +47,8 @@ const Types = {
     Update: UpdateSalaryValidationSchema
   },
   Payroll: {
-    Create: CreatePayrollValidationSchema
+    Create: CreatePayrollValidationSchema,
+    GenerateBulk: GenerateBulkPayrollValidationSchema
   },
   Attendance: {
     Create: CreateAttendanceValidationSchema
@@ -54,6 +56,10 @@ const Types = {
   Events: {
     Create: CreateEventSchema,
     Update: UpdateEventSchema
+  },
+  Assets: {
+    Create: CreateAssetValidationSchema,
+    Update: UpdateAssetValidationSchema
   },
   OfflineQueue: OfflineQueueValidationSchema,
   Errors: ErrorTypes

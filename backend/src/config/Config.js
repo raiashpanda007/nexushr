@@ -13,6 +13,11 @@ const EnvSchema = zod.object({
   REDIS_URL: zod.string().min(1),
   REDIS_HOST: zod.string().min(1),
   REDIS_PORT: zod.coerce.number().int().positive(),
+  SQS_URL: zod.string().min(1),
+  SQS_REGION: zod.string().min(1),
+  SQS_ENDPOINT: zod.string().min(1),
+  SQS_ACCESS_KEY: zod.string().min(1),
+  SQS_SECRET_KEY: zod.string().min(1),
 });
 
 class Config {

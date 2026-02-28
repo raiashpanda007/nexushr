@@ -1,5 +1,7 @@
 import Config from "./conf/config.js";
-import {  SQSClient,  ReceiveMessageCommand,  DeleteMessageCommand,} from "@aws-sdk/client-sqs";
+import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, SendMessageCommand} from "@aws-sdk/client-sqs";
+import DB from "./utils/Db.js";
+import GetEmployeeBatches from "./utils/Employees.js";
 const Cfg = new Config().MustLoad();
 
 const SQS_CLIENT = new SQSClient({
@@ -13,6 +15,10 @@ const command = new ReceiveMessageCommand({
   VisibilityTimeout: 10,
   WaitTimeSeconds: 20,
 });
+
+const db = new DB(Cfg.MONGO_DB_URL, Cfg.DB_NAME);
+
+await db.connect();
 
 async function main() {
   while (true) {
@@ -28,9 +34,20 @@ async function main() {
         if (!Body) continue;
 
         const event = JSON.parse(Body);
-        console.log("Received event:", event);
+        console.log("Received Event :: ", event);
 
-   
+        const { department, month, year } = event;
+        const employeeBatches = GetEmployeeBatches(db, department, month, year);
+
+        for await (const batch of employeeBatches) {
+          await SQS_CLIENT.send(
+            new SendMessageCommand({
+              QueueUrl: Cfg.PUBLISHER_QUEUE_URL,
+              MessageBody: JSON.stringify(batch),
+            }),
+          );
+        }
+
         await SQS_CLIENT.send(
           new DeleteMessageCommand({
             QueueUrl: Cfg.SUBSCRIBER_QUEUE_URL,
@@ -44,3 +61,6 @@ async function main() {
   }
 }
 main();
+
+
+

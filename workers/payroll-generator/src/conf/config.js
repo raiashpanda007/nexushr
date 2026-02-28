@@ -9,7 +9,7 @@ const EnvSchema = zod.object({
   SQS_ENDPOINT: zod.string().min(1),
   AWS_REGION: zod.string().min(1),
   MONGO_DB_URL: zod.string().min(1),
-  DB_NAME: zod.string().min(1),  
+  DB_NAME: zod.string().min(1),
 });
 
 class Config {
