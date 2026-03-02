@@ -12,6 +12,15 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import EditEventModal from "@/components/events/EditEventModal";
+import {
     ArrowLeft,
     Calendar,
     Clock,
@@ -20,6 +29,8 @@ import {
     Globe,
     Loader2,
     Tag,
+    Pencil,
+    Trash,
 } from "lucide-react";
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -36,6 +47,31 @@ export default function EventDetails() {
     const [event, setEvent] = useState<EventItem | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
+    const handleDelete = async () => {
+        if (!id) return;
+        setDeleteLoading(true);
+        setDeleteError(null);
+        try {
+            const result = await ApiCaller({
+                requestType: "DELETE",
+                paths: ["api", "v1", "events", id],
+            });
+            if (result.ok) {
+                navigate("/events");
+            } else {
+                setDeleteError((result.response as any)?.message || "Failed to delete event");
+                setDeleteLoading(false);
+            }
+        } catch {
+            setDeleteError("An error occurred while deleting the event");
+            setDeleteLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -108,8 +144,60 @@ export default function EventDetails() {
                 <ArrowLeft className="h-4 w-4" />
                 Back to Events
             </Button>
+            <div className="w-full flex justify-end gap-2">
 
-            {/* Event Header */}
+                <Button className="w-fit" variant={"ghost"} onClick={() => setIsEditModalOpen(true)}>
+                    <Pencil className="h-4 w-4" />
+                </Button>
+
+                <Button variant={"destructive"} className="w-fit" onClick={() => setIsDeleteDialogOpen(true)}>
+                    <Trash className="h-4 w-4" />
+                </Button>
+            </div>
+
+            <EditEventModal
+                open={isEditModalOpen}
+                setOpen={setIsEditModalOpen}
+                eventDetails={event}
+                onSuccess={() => {
+                    setIsEditModalOpen(false);
+                    // Re-fetch updated event
+                    ApiCaller<null, EventItem>({
+                        requestType: "GET",
+                        paths: ["api", "v1", "events", id!],
+                    }).then((result) => {
+                        if (result.ok) setEvent(result.response.data);
+                    });
+                }}
+            />
+
+            {/* Delete confirmation dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if (!v) setDeleteError(null); }}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle>Delete Event</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete <span className="font-medium text-foreground">{event.name}</span>? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {deleteError && (
+                        <p className="text-red-500 text-sm bg-red-50 dark:bg-red-950/20 p-2 rounded-md">{deleteError}</p>
+                    )}
+                    <DialogFooter className="pt-2">
+                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={deleteLoading}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDelete} disabled={deleteLoading}>
+                            {deleteLoading ? (
+                                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Deleting...</>
+                            ) : (
+                                "Delete"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <div className="relative overflow-hidden rounded-2xl bg-card p-6 sm:p-8 shadow-sm border border-border/50">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 

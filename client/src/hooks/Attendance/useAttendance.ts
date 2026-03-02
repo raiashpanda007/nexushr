@@ -67,18 +67,34 @@ export function useAttendance() {
     >("idle");
     const [verificationMessage, setVerificationMessage] = useState<string>("");
 
+    const [availableDepartments, setAvailableDepartments] = useState<Department[]>([]);
 
-    const availableDepartments = useMemo(() => {
-        const uniqueIds = new Set<string>();
-        const depts: Department[] = [];
-        analyticsData.forEach(a => {
-            if (a.user?.deptId && !uniqueIds.has(a.user.deptId._id)) {
-                uniqueIds.add(a.user.deptId._id);
-                depts.push(a.user.deptId);
+    const fetchAllDepartments = async () => {
+        try {
+            if (navigator.onLine) {
+                const result = await ApiCaller<null, any>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "departments"],
+                    queryParams: { limit: "all" }
+                });
+                if (result.ok) {
+                    if (Array.isArray(result.response?.data)) {
+                        setAvailableDepartments(result.response.data);
+                    } else if (result.response?.data?.data) {
+                        setAvailableDepartments(result.response.data.data);
+                    }
+                }
             }
-        });
-        return depts;
-    }, [analyticsData]);
+        } catch (error) {
+            console.error("Error fetching all departments:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (isHR) {
+            fetchAllDepartments();
+        }
+    }, [isHR]);
 
     const fetchAttendances = async (dateStr?: string, currentPage = 1) => {
         setLoading(true);

@@ -38,7 +38,7 @@ class AssetController {
 
         const ownerChanged =
             parsedData.data.currentOwner &&
-            existingAsset.currentOwner.toString() !== parsedData.data.currentOwner;
+                existingAsset.currentOwner ? existingAsset.currentOwner.toString() : null !== parsedData.data.currentOwner;
 
         if (ownerChanged) {
             const session = await mongoose.startSession();
@@ -56,7 +56,7 @@ class AssetController {
                         assetId: asset._id,
                         userId: parsedData.data.currentOwner,
                         date: new Date(),
-                        notes: `Ownership transferred from ${existingAsset.currentOwner} to ${parsedData.data.currentOwner}`,
+                        notes: `Ownership transferred from ${existingAsset.currentOwner ? existingAsset.currentOwner : "Company"} to ${parsedData.data.currentOwner ? parsedData.data.currentOwner : "Company"}`
                     }],
                     { session }
                 );
@@ -86,7 +86,7 @@ class AssetController {
     Get = AsyncHandler(async (req, res) => {
         const id = req.params.id;
         if (id) {
-            if (req.user.role !== "HR" ) {
+            if (req.user.role !== "HR") {
                 const asset = await this.repo.findOne({ _id: id, currentOwner: req.user.id });
                 if (!asset) {
                     throw new ApiError(Types.Errors.Forbidden, "You are not authorized to access this asset");

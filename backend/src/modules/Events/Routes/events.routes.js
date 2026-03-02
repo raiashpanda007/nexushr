@@ -10,7 +10,7 @@ class EventRoutes {
     }
     routes() {
         this.router.post('/', VerifyMiddleware, this.controller.Create);
-        this.router.put('/', VerifyMiddleware, this.controller.Update);
+        this.router.put('/:id', VerifyMiddleware, this.controller.Update);
         this.router.get('/', VerifyMiddleware, this.controller.Get);
         this.router.get('/:id', VerifyMiddleware, this.controller.Get);
         this.router.delete('/:id', VerifyMiddleware, this.controller.Delete);

@@ -35,7 +35,6 @@ export function useEvents() {
 
     // Create modal
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
     // HR search for employee/department
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SearchEntity[]>([]);
@@ -237,6 +236,7 @@ export function useEvents() {
         eventsForSelectedDate,
         monthNames: MONTHS,
 
+
         // Actions
         setMonth,
         setYear,
@@ -251,5 +251,6 @@ export function useEvents() {
         handleOpenCreateModal,
         handleCreateModalClose,
         handleCreateSuccess,
+
     };
 }

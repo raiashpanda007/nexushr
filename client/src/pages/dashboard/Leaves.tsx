@@ -81,12 +81,12 @@ export default function Leaves() {
         .sort((a, b) => a.name.localeCompare(b.name));
 
     const barData = selectedDepartmentId === "all"
-        ? departmentStats.map((d) => {
+        ? departmentStats.slice(0, 10).map((d) => {
             const row: any = { label: d.department, fullName: d.department, total: d.totalLeaves };
             d.leaveTypes?.forEach(lt => { row[lt.type] = lt.count; });
             return row;
         })
-        : departmentUsers.map((u) => {
+        : departmentUsers.slice(0, 10).map((u) => {
             const shortName = u.firstName && u.lastName ? `${u.firstName} ${u.lastName.charAt(0)}.` : (u.firstName || u.email.split('@')[0]);
             const row: any = {
                 label: shortName,
