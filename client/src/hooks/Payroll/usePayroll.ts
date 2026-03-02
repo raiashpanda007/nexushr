@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
+import { toast } from 'sonner';
 import ApiCaller from '@/utils/ApiCaller';
 import type { RootState } from '@/store';
 
@@ -243,6 +244,26 @@ export function usePayroll() {
         return { totalBonus, totalDeduction, baseSalary, netSalary };
     };
 
+    const handleAnalytics = async (year: number, month: number) => {
+        try {
+            setLoading(true);
+            const { ok, response } = await ApiCaller<any, any>({
+                requestType: 'GET',
+                paths: ['api', 'v1', 'payroll', 'analytics'],
+                queryParams: { year: year.toString(), month: month.toString() },
+            });
+            if (ok) {
+                toast.success('Analytics information will be sent to your email');
+            } else {
+                toast.error(response?.message || 'Failed to generate analytics');
+            }
+        } catch (error) {
+            console.error('Error fetching analytics:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return {
         isHR,
         users,
@@ -276,6 +297,7 @@ export function usePayroll() {
         setPayrollPage,
         payrollTotal,
         payrollLimit,
-        calculateTotals
+        calculateTotals,
+        handleAnalytics
     };
 }

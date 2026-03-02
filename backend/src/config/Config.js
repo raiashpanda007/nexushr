@@ -18,6 +18,7 @@ const EnvSchema = zod.object({
   SQS_ENDPOINT: zod.string().min(1),
   SQS_ACCESS_KEY: zod.string().min(1),
   SQS_SECRET_KEY: zod.string().min(1),
+  ANALYTICS_SQS_URL: zod.string().min(1),
 });
 
 class Config {

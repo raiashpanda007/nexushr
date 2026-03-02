@@ -38,7 +38,7 @@ class AssetController {
 
         const ownerChanged =
             parsedData.data.currentOwner &&
-                existingAsset.currentOwner ? existingAsset.currentOwner.toString() : null !== parsedData.data.currentOwner;
+                existingAsset.currentOwner ? existingAsset.currentOwner.toString() !== parsedData.data.currentOwner : false;
 
         if (ownerChanged) {
             const session = await mongoose.startSession();

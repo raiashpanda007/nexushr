@@ -18,6 +18,11 @@ PAYROLL_BATCH_QUEUE_NAME="payroll-batch-generation"
 PAYROLL_BATCH_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$PAYROLL_BATCH_QUEUE_NAME"
 PAYROLL_BATCH_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$PAYROLL_BATCH_QUEUE_NAME"
 
+# Analytics Queue
+ANALYTICS_QUEUE_NAME="analytics-generation"
+ANALYTICS_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$ANALYTICS_QUEUE_NAME"
+ANALYTICS_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$ANALYTICS_QUEUE_NAME"
+
 echo "Creating S3 buckets..."
 awslocal --region $REGION s3 mb s3://register-photos || true
 awslocal --region $REGION s3 mb s3://punch-photos || true
@@ -62,6 +67,10 @@ awslocal --region $REGION sqs create-queue \
 # Create payroll batch queue (NEW)
 awslocal --region $REGION sqs create-queue \
   --queue-name $PAYROLL_BATCH_QUEUE_NAME || true
+
+# Create analytics queue
+awslocal --region $REGION sqs create-queue \
+  --queue-name $ANALYTICS_QUEUE_NAME || true
 
 echo "Attaching SQS policy to allow S3 to publish..."
 

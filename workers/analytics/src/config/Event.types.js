@@ -1,0 +1,5 @@
+const EVENT_TYPES = {
+    PAYROLL: "GET_PAYROLL_ANALYTICS"
+}
+
+export default EVENT_TYPES;

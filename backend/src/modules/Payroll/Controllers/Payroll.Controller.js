@@ -6,6 +6,7 @@ import SalaryModal from "../../Salaries/Models/salaries.model.js";
 import Types from "../../../types/index.js"
 import AttendanceModel from "../../Attendance/Models/attendance.model.js";
 import { PayrollSendMessage } from "../../../queue/payroll.queue.js";
+import { SendAnalyticsEvent } from "../../../queue/analytics.queue.js";
 
 function getDaysInMonth(year, monthIndex) {
     const date = new Date(year, monthIndex, 1);
@@ -17,7 +18,10 @@ function getDaysInMonth(year, monthIndex) {
     }
 
     return days.length;
+
 }
+
+
 
 
 async function GetAbsentDays(startDate, endDate, userId, month, year) {
@@ -93,7 +97,7 @@ class PayrollController {
             throw new ApiError(Types.Errors.NotFound, "Invalid month");
         }
         if (year !== null && (year > 2100 || year < 1900)) {
-            throw new ApiError(Types.Errors.NotFound, "Invalid year");
+            throw new ApiError(Types.Errors.NotFound, "Invalid messageyear");
         }
         const { page: pageQuery, limit: limitQuery } = req.query;
         let limit = parseInt(limitQuery) || 10;
@@ -121,6 +125,10 @@ class PayrollController {
             const total = await this.repo.countDocuments(filter);
 
             return res.status(200).json(new ApiResponse(200, { data: payrolls, total, page, limit: limitQuery === 'all' ? total : limit }, "Payroll fetched successfully"));
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new ApiError(Types.Errors.NotFound, "Payroll not found");
         }
 
         const payroll = await this.repo.findById(id).populate("salary").populate("user", "firstName lastName email profilePhoto");
@@ -227,6 +235,33 @@ class PayrollController {
             bulkDeduction: bulkDeduction || []
         })
         return res.status(200).json(new ApiResponse(200, payroll, "Payroll generated successfully"));
+    })
+
+
+    GetAnalytics = AsyncHandler(async (req, res) => {
+        if (req.user.role != "HR") {
+            throw new ApiError(Types.Errors.Forbidden, "You are not allowed to get payroll analytics");
+        }
+
+        const month = req.query.month ? Number(req.query.month) : new Date().getMonth() + 1;
+        const year  = req.query.year  ? Number(req.query.year)  : new Date().getFullYear();
+
+        if (month < 1 || month > 12) {
+            throw new ApiError(Types.Errors.UnprocessableData, "Invalid month");
+        }
+        if (year < 1900 || year > 2100) {
+            throw new ApiError(Types.Errors.UnprocessableData, "Invalid year");
+        }
+
+        const event = {
+            type: "GET_PAYROLL_ANALYTICS",
+            month,
+            year,
+            email: "ashwin.2201098cs@iiitbh.ac.in"
+        };
+
+        await SendAnalyticsEvent(event);
+        return res.status(200).json(new ApiResponse(200, {}, "Payroll analytics report will be sent to your email shortly"));
     })
 
 }

@@ -1,0 +1,24 @@
+{
+  "name": "analytics",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/analytics-worker.js",
+  "scripts": {
+    "start": "node src/analytics-worker.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.1000.0",
+    "chart.js": "^4.5.1",
+    "chartjs-node-canvas": "^5.0.0",
+    "dotenv": "^17.3.1",
+    "mongodb": "^7.1.0",
+    "nodemailer": "^8.0.1",
+    "pdfkit": "^0.17.2",
+    "zod": "^4.3.6"
+  }
+}

@@ -14,6 +14,7 @@ import EventDetails from "./pages/dashboard/EventDetails"
 import EmployeeDetails from "./pages/dashboard/EmployeeDetails"
 import Assets from "./pages/dashboard/Assets"
 import AssetDetails from "./pages/dashboard/AssetDetails"
+import { Toaster } from "sonner"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { userDetails } = useAppSelector((state) => state.userState)
@@ -38,29 +39,32 @@ function RoleBasedRedirect() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
+    <>
+      <Routes>
+        <Route path="/login" element={<Login />} />
 
-      {/* Protected Routes */}
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<RoleBasedRedirect />} />
-        <Route path="employee" element={<Employee />} />
-        <Route path="employee/:id" element={<EmployeeDetails />} />
-        <Route path="departments" element={<Departments />} />
-        <Route path="salaries" element={<Salaries />} />
-        <Route path="skills" element={<Skills />} />
-        <Route path="payroll" element={<Payroll />} />
-        <Route path="attendance" element={<Attendance />} />
-        <Route path="leaves" element={<Leaves />} />
-        <Route path="events" element={<Events />} />
-        <Route path="events/:id" element={<EventDetails />} />
-        <Route path="assets" element={<Assets />} />
-        <Route path="assets/:id" element={<AssetDetails />} />
-      </Route>
+        {/* Protected Routes */}
+        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route index element={<RoleBasedRedirect />} />
+          <Route path="employee" element={<Employee />} />
+          <Route path="employee/:id" element={<EmployeeDetails />} />
+          <Route path="departments" element={<Departments />} />
+          <Route path="salaries" element={<Salaries />} />
+          <Route path="skills" element={<Skills />} />
+          <Route path="payroll" element={<Payroll />} />
+          <Route path="attendance" element={<Attendance />} />
+          <Route path="leaves" element={<Leaves />} />
+          <Route path="events" element={<Events />} />
+          <Route path="events/:id" element={<EventDetails />} />
+          <Route path="assets" element={<Assets />} />
+          <Route path="assets/:id" element={<AssetDetails />} />
+        </Route>
 
-      {/* Catch all - redirect to home (which redirects based on role) */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Catch all - redirect to home (which redirects based on role) */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Toaster richColors position="top-right" />
+    </>
   )
 }
 

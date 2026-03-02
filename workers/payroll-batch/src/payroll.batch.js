@@ -16,7 +16,7 @@ const SQS_CLIENT = new SQSClient({
 const command = new ReceiveMessageCommand({
   QueueUrl: Cfg.SQS_QUEUE_URL,
   MaxNumberOfMessages: 1,
-  VisibilityTimeout: 10,
+  VisibilityTimeout: 100,
   WaitTimeSeconds: 20,
 });
 
