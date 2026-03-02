@@ -1,6 +1,7 @@
 import SendPayrollReport from "../utils/SendMail.js";
 import GetPayrollAnalyticsData from "../utils/PayrollData.js";
 import { generatePayrollPDF } from "../utils/PayrollPDF.js";
+import { generatePayrollExcel } from "../utils/PayrollExcel.js";
 import {
     generateMonthlyTrendChart,
     generateDeptDoughnutChart,
@@ -72,13 +73,17 @@ async function HandlePayrollEvent(event, dbClient) {
         deductionCategory: deductionCategoryBuf,
     };
 
-    // ── 3. Build the PDF ──────────────────────────────────────────────────
-    const pdfBuffer = await generatePayrollPDF(data, charts);
+    // ── 3. Build the PDF and Excel in parallel ───────────────────────────
+    const [pdfBuffer, excelBuffer] = await Promise.all([
+        generatePayrollPDF(data, charts),
+        generatePayrollExcel(data),
+    ]);
     console.log(`[Analytics] PDF generated. Size: ${(pdfBuffer.length / 1024).toFixed(1)} KB`);
+    console.log(`[Analytics] Excel generated. Size: ${(excelBuffer.byteLength / 1024).toFixed(1)} KB`);
 
-    // ── 4. Send email with PDF attached ───────────────────────────────────
+    // ── 4. Send email with PDF + Excel attached ───────────────────────────
     const { rupee } = _helpers;
-    await SendPayrollReport(email, pdfBuffer, {
+    await SendPayrollReport(email, pdfBuffer, excelBuffer, {
         monthName:     data.meta.monthName,
         year:          data.meta.year,
         employeeCount: data.summary.employeeCount,

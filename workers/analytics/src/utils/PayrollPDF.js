@@ -112,6 +112,29 @@ function tableRow(doc, columns, data, y, rowIdx) {
         .moveTo(40, y + 18).lineTo(555, y + 18).stroke().restore();
 }
 
+/**
+ * Place a chart image at the current doc.y and correctly advance doc.y
+ * to the bottom of the image. Using moveDown(N) after doc.image is wrong
+ * because it compounds on the post-image y, causing page overflows.
+ */
+function placeChart(doc, buffer, x, width, height, gap = 12) {
+    const startY = doc.y;
+    doc.image(buffer, x, startY, { width, height });
+    doc.y = startY + height + gap;
+}
+
+/**
+ * If less than `needed` points remain on the page, add a new page and
+ * re-draw the header so content never bleeds off the bottom.
+ */
+function _ensureSpace(doc, meta, needed) {
+    const BOTTOM = 800; // safe bottom limit (A4 = 842, footer at 810)
+    if (doc.y + needed > BOTTOM) {
+        doc.addPage();
+        _pageHeader(doc, "(continued)", meta);
+    }
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -260,43 +283,15 @@ export async function generatePayrollPDF(data, charts) {
         sectionTitle(doc, "12-Month Payroll Trend");
 
         if (charts.trend) {
-            doc.image(charts.trend, 38, doc.y, { width: 519, height: 211 });
-            doc.moveDown(11);
+            placeChart(doc, charts.trend, 38, 519, 211);
         }
 
-        // Trend table
         doc.moveDown(0.5);
-        sectionTitle(doc, "Monthly Breakdown");
-
-        const trendCols = [
-            { label: "Month",          key: "label",       width: 100 },
-            { label: "Employees",      key: "count",       width: 80,  align: "center" },
-            { label: "Gross Payroll",  key: "grossFmt",    width: 115, align: "right"  },
-            { label: "Net Payroll",    key: "netFmt",      width: 115, align: "right"  },
-            { label: "Change",         key: "changeFmt",   width: 105, align: "right"  },
-        ];
-
-        const trendRows = data.trend.map((t, i, arr) => {
-            const prev = arr[i - 1];
-            const change = prev && prev.net > 0
-                ? (((t.net - prev.net) / prev.net) * 100).toFixed(1)
-                : null;
-            return {
-                label: t.label,
-                count: t.count,
-                grossFmt: rupee(t.gross),
-                netFmt: rupee(t.net),
-                changeFmt: change !== null ? pct(change) : "—",
-            };
-        });
-
-        tableHeader(doc, trendCols, doc.y);
-        doc.moveDown(1.2);
-        for (let i = 0; i < trendRows.length; i++) {
-            if (doc.y + 20 > 770) { doc.addPage(); _pageHeader(doc, "Payroll Trend Analysis", data.meta); }
-            tableRow(doc, trendCols, trendRows[i], doc.y, i);
-            doc.moveDown(1.1);
-        }
+        doc.save()
+            .font("Helvetica").fontSize(8.5).fillColor(C.muted)
+            .text("Full month-by-month breakdown is available in the attached Excel workbook.", 48, doc.y, { width: 499 })
+            .restore();
+        doc.moveDown(0.5);
 
         _pageFooter(doc, data.meta);
 
@@ -306,11 +301,12 @@ export async function generatePayrollPDF(data, charts) {
         sectionTitle(doc, "Payroll Distribution by Department");
 
         if (charts.dept) {
-            doc.image(charts.dept, 38, doc.y, { width: 345, height: 212 });
+            const deptChartY = doc.y;
+            doc.image(charts.dept, 38, deptChartY, { width: 345, height: 212 });
 
             // Dept legend table alongside chart
             const deptLegendX = 395;
-            let dly = doc.y + 5;
+            let dly = deptChartY + 5;
             doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Dept.", deptLegendX, dly).restore();
             doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Net Pay", deptLegendX + 90, dly).restore();
             dly += 14;
@@ -325,35 +321,14 @@ export async function generatePayrollPDF(data, charts) {
                     .restore();
                 dly += 14;
             }
-            doc.moveDown(12);
+            doc.y = deptChartY + 212 + 12;
         }
 
+        doc.save()
+            .font("Helvetica").fontSize(8.5).fillColor(C.muted)
+            .text("Full department-wise payroll data is available in the attached Excel workbook.", 48, doc.y, { width: 499 })
+            .restore();
         doc.moveDown(0.5);
-        sectionTitle(doc, "Department Summary Table");
-
-        const deptCols = [
-            { label: "Department",       key: "name",       width: 160 },
-            { label: "Employees",        key: "count",      width: 70,  align: "center" },
-            { label: "Total Gross",      key: "grossFmt",   width: 110, align: "right"  },
-            { label: "Total Net",        key: "netFmt",     width: 110, align: "right"  },
-            { label: "Avg Net Pay",      key: "avgFmt",     width: 65,  align: "right"  },
-        ];
-
-        const deptTableRows = data.deptBreakdown.map((d) => ({
-            name: d.name,
-            count: d.count,
-            grossFmt: rupee(d.totalGross),
-            netFmt:   rupee(d.totalNet),
-            avgFmt:   rupee(d.totalNet / d.count),
-        }));
-
-        tableHeader(doc, deptCols, doc.y);
-        doc.moveDown(1.2);
-        for (let i = 0; i < deptTableRows.length; i++) {
-            if (doc.y + 20 > 770) { doc.addPage(); _pageHeader(doc, "Department Analysis", data.meta); }
-            tableRow(doc, deptCols, deptTableRows[i], doc.y, i);
-            doc.moveDown(1.1);
-        }
 
         _pageFooter(doc, data.meta);
 
@@ -363,19 +338,20 @@ export async function generatePayrollPDF(data, charts) {
         sectionTitle(doc, "Earnings Breakdown — Top 15 Employees");
 
         if (charts.earningsStacked) {
-            doc.image(charts.earningsStacked, 38, doc.y, { width: 519, height: 226 });
-            doc.moveDown(12.5);
+            placeChart(doc, charts.earningsStacked, 38, 519, 226);
         }
 
         doc.moveDown(0.3);
+        _ensureSpace(doc, data.meta, 220);
         sectionTitle(doc, "Net Pay Distribution");
 
         if (charts.distribution) {
-            doc.image(charts.distribution, 38, doc.y, { width: 345, height: 185 });
+            const distChartY = doc.y;
+            doc.image(charts.distribution, 38, distChartY, { width: 345, height: 185 });
 
             // Stats column next to histogram
             const sx = 400;
-            let sy = doc.y + 5;
+            let sy = distChartY + 5;
             const netArr = data.employees.map((e) => e.net).sort((a, b) => a - b);
             const med = netArr.length % 2 === 0
                 ? (netArr[netArr.length / 2 - 1] + netArr[netArr.length / 2]) / 2
@@ -395,7 +371,7 @@ export async function generatePayrollPDF(data, charts) {
                 doc.save().font("Helvetica").fontSize(8.5).fillColor(C.dark).text(val, sx + 65, sy).restore();
                 sy += 18;
             }
-            doc.moveDown(11);
+            doc.y = distChartY + 185 + 12;
         }
 
         _pageFooter(doc, data.meta);
@@ -406,8 +382,7 @@ export async function generatePayrollPDF(data, charts) {
         sectionTitle(doc, "Top 10 Employees by Net Pay");
 
         if (charts.topEarners) {
-            doc.image(charts.topEarners, 38, doc.y, { width: 519, height: 199 });
-            doc.moveDown(11);
+            placeChart(doc, charts.topEarners, 38, 519, 199);
         }
 
         doc.moveDown(0.3);
@@ -444,10 +419,11 @@ export async function generatePayrollPDF(data, charts) {
         if (data.topBonusCategories.length > 0) {
             sectionTitle(doc, "Bonus Categories");
             if (charts.bonusCategory) {
-                doc.image(charts.bonusCategory, 38, doc.y, { width: 345, height: 185 });
+                const bonusChartY = doc.y;
+                doc.image(charts.bonusCategory, 38, bonusChartY, { width: 345, height: 185 });
 
                 // bonus total alongside
-                let bx = 397, by = doc.y + 5;
+                let bx = 397, by = bonusChartY + 5;
                 doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Category", bx, by).restore();
                 doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Amount", bx + 110, by).restore();
                 by += 14;
@@ -458,17 +434,19 @@ export async function generatePayrollPDF(data, charts) {
                         .text(rupee(b.amount), bx + 110, by, { width: 48, align: "right", lineBreak: false }).restore();
                     by += 13;
                 }
-                doc.moveDown(11);
+                doc.y = bonusChartY + 185 + 12;
             }
         }
 
         if (data.topDeductionCategories.length > 0) {
+            _ensureSpace(doc, data.meta, 220);
             doc.moveDown(0.3);
             sectionTitle(doc, "Deduction Categories");
             if (charts.deductionCategory) {
-                doc.image(charts.deductionCategory, 38, doc.y, { width: 345, height: 185 });
+                const dedChartY = doc.y;
+                doc.image(charts.deductionCategory, 38, dedChartY, { width: 345, height: 185 });
 
-                let dx = 397, dy = doc.y + 5;
+                let dx = 397, dy = dedChartY + 5;
                 doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Category", dx, dy).restore();
                 doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Amount", dx + 110, dy).restore();
                 dy += 14;
@@ -479,80 +457,9 @@ export async function generatePayrollPDF(data, charts) {
                         .text(rupee(d.amount), dx + 110, dy, { width: 48, align: "right", lineBreak: false }).restore();
                     dy += 13;
                 }
-                doc.moveDown(11);
+                doc.y = dedChartY + 185 + 12;
             }
         }
-
-        _pageFooter(doc, data.meta);
-
-        // ══════════ PAGE 8+  ─  Full Employee Payroll Details ════════════
-        doc.addPage();
-        _pageHeader(doc, "Individual Employee Payroll Details", data.meta);
-        sectionTitle(doc, `All Employees — ${data.meta.monthName} ${data.meta.year}`);
-
-        const empCols = [
-            { label: "#",         key: "idx",     width: 25,  align: "center" },
-            { label: "Employee",  key: "name",    width: 130 },
-            { label: "Dept",      key: "dept",    width: 75  },
-            { label: "Base",      key: "base",    width: 70,  align: "right" },
-            { label: "HRA",       key: "hra",     width: 55,  align: "right" },
-            { label: "LTA",       key: "lta",     width: 50,  align: "right" },
-            { label: "Bonus",     key: "bonus",   width: 55,  align: "right" },
-            { label: "Deduction", key: "deduct",  width: 55,  align: "right" },
-        ];
-
-        // Sort alphabetically by name
-        const sorted = [...data.employees].sort((a, b) => a.employeeName.localeCompare(b.employeeName));
-
-        tableHeader(doc, empCols, doc.y);
-        doc.moveDown(1.2);
-
-        for (let i = 0; i < sorted.length; i++) {
-            if (doc.y + 20 > 770) {
-                doc.addPage();
-                _pageHeader(doc, "Employee Payroll Details (cont.)", data.meta);
-                tableHeader(doc, empCols, doc.y);
-                doc.moveDown(1.2);
-            }
-            const e = sorted[i];
-            tableRow(doc, empCols, {
-                idx:    i + 1,
-                name:   e.employeeName,
-                dept:   e.department,
-                base:   rupee(e.base),
-                hra:    rupee(e.hra),
-                lta:    rupee(e.lta),
-                bonus:  rupee(e.totalBonus),
-                deduct: rupee(e.totalDeduction),
-            }, doc.y, i);
-            doc.moveDown(1.1);
-        }
-
-        // Net pay totals row
-        doc.moveDown(0.2);
-        filledRect(doc, 40, doc.y, 515, 20, C.brandLight);
-        doc.save()
-            .font("Helvetica-Bold").fontSize(8.5).fillColor(C.brand)
-            .text("TOTALS", 44, doc.y + 6, { lineBreak: false })
-            .restore();
-        const totX = { base: 230, hra: 300, lta: 355, bonus: 405, deduct: 460 };
-        const tot = sorted.reduce(
-            (acc, e) => ({
-                base:   acc.base   + e.base,
-                hra:    acc.hra    + e.hra,
-                lta:    acc.lta    + e.lta,
-                bonus:  acc.bonus  + e.totalBonus,
-                deduct: acc.deduct + e.totalDeduction,
-            }),
-            { base: 0, hra: 0, lta: 0, bonus: 0, deduct: 0 },
-        );
-        for (const [field, x] of Object.entries(totX)) {
-            doc.save()
-                .font("Helvetica-Bold").fontSize(8).fillColor(C.brand)
-                .text(rupee(tot[field]), x, doc.y + 6, { width: 50, align: "right", lineBreak: false })
-                .restore();
-        }
-        doc.moveDown(1.4);
 
         _pageFooter(doc, data.meta);
 

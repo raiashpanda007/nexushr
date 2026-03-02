@@ -42,8 +42,12 @@ function buildEmailTemplate({ monthName, year, employeeCount, totalPayroll, momC
               <p style="margin-top:0;">Hello,</p>
               <p>
                 Your payroll analytics report for <strong>${monthName} ${year}</strong> has been
-                generated and is attached to this email as a PDF.
+                generated and is attached to this email as <strong>two files</strong>:
               </p>
+              <ul style="padding-left:20px;color:#334155;margin-bottom:0;">
+                <li><strong>PDF</strong> — Visual analytics: charts, KPIs, and key insights</li>
+                <li><strong>Excel (.xlsx)</strong> — Full raw data: employee details, department breakdown, trend &amp; category data</li>
+              </ul>
 
               <!-- KPI strip -->
               <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border-radius:6px;overflow:hidden;border:1px solid #e2e8f0;">
@@ -63,16 +67,26 @@ function buildEmailTemplate({ monthName, year, employeeCount, totalPayroll, momC
                 </tr>
               </table>
 
-              <p>The attached PDF includes:</p>
+              <p style="margin-top:18px;"><strong>📊 PDF includes:</strong></p>
               <ul style="padding-left:20px;color:#334155;">
                 <li>Executive summary with key metrics</li>
                 <li>12-month payroll trend chart</li>
-                <li>Department-wise salary distribution</li>
-                <li>Earnings structure analysis (Base, HRA, LTA, Bonus)</li>
+                <li>Department-wise salary distribution chart</li>
+                <li>Earnings structure stacked bar chart (Base, HRA, LTA, Bonus)</li>
                 <li>Net pay distribution histogram</li>
                 <li>Top 10 earners chart</li>
-                <li>Bonus &amp; deduction category breakdown</li>
-                <li>Complete employee-wise payroll table</li>
+                <li>Bonus &amp; deduction category charts</li>
+              </ul>
+
+              <p><strong>📋 Excel workbook includes:</strong></p>
+              <ul style="padding-left:20px;color:#334155;">
+                <li>Summary KPIs sheet</li>
+                <li>Full employee payroll details (all employees)</li>
+                <li>Bonus &amp; deduction line items per employee</li>
+                <li>Department breakdown</li>
+                <li>12-month trend data</li>
+                <li>Bonus &amp; deduction category totals</li>
+                <li>Net pay distribution buckets</li>
               </ul>
 
               <p style="margin-bottom:0;">

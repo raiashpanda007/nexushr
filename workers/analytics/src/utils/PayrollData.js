@@ -241,6 +241,54 @@ async function GetPayrollAnalyticsData(db, month, year) {
     }
     const distribution = Object.entries(buckets).map(([range, count]) => ({ range, count }));
 
+    // ─── 9. All-months individual payroll records (for Excel Full History) ─
+    const rawAllMonths = await payrolls
+        .find({ $or: trendMonths.map(({ month: m, year: y }) => ({ month: m, year: y })) })
+        .sort({ year: 1, month: 1 })
+        .toArray();
+
+    // Resolve any salary/user/dept IDs that weren't in the current-month maps
+    const allSalaryIds = [...new Set(rawAllMonths.map((p) => p.salary?.toString()).filter(Boolean))];
+    const allUserIds   = [...new Set(rawAllMonths.map((p) => p.user?.toString()).filter(Boolean))];
+
+    const newSalaryIds = allSalaryIds.filter((id) => !salaryMap[id]);
+    const newUserIds   = allUserIds.filter((id)   => !userMap[id]);
+
+    const [extraSalaries, extraUsers] = await Promise.all([
+        newSalaryIds.length > 0
+            ? salaries.find({ _id: { $in: newSalaryIds.map((id) => new ObjectId(id)) } }).toArray()
+            : Promise.resolve([]),
+        newUserIds.length > 0
+            ? users.find(
+                { _id: { $in: newUserIds.map((id) => new ObjectId(id)) } },
+                { projection: { firstName: 1, lastName: 1, email: 1, deptId: 1, profilePhoto: 1 } },
+              ).toArray()
+            : Promise.resolve([]),
+    ]);
+
+    for (const s of extraSalaries) salaryMap[s._id.toString()] = s;
+    for (const u of extraUsers)   userMap[u._id.toString()]   = u;
+
+    const allPayrolls = rawAllMonths.map((p) => {
+        const salary = salaryMap[p.salary?.toString()] || {};
+        const user   = userMap[p.user?.toString()]     || {};
+        const dept   = deptMap[user.deptId?.toString()] || {};
+        const calcs  = calcNet({ ...p, salary });
+        return {
+            _id:          p._id.toString(),
+            month:        p.month,
+            year:         p.year,
+            monthLabel:   MONTH_NAMES[p.month - 1],
+            employeeName: `${user.firstName || "Unknown"} ${user.lastName || ""}`.trim(),
+            email:        user.email || "",
+            department:   dept.name || "Unknown",
+            bonus:        p.bonus || [],
+            deduction:    p.deduction || [],
+            salary,
+            ...calcs,
+        };
+    });
+
     return {
         meta: {
             month,
@@ -266,6 +314,7 @@ async function GetPayrollAnalyticsData(db, month, year) {
         topBonusCategories,
         topDeductionCategories,
         distribution,
+        allPayrolls,                   // all 12 months individual records (for Excel Full History)
     };
 }
 

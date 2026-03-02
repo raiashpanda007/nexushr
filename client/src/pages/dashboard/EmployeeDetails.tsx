@@ -54,6 +54,8 @@ interface PayrollItem {
     bonus: { reason: string; amount: number }[];
     deduction: { reason: string; amount: number }[];
     createdAt: string;
+    month: number;
+    year: number;
 }
 
 
@@ -127,9 +129,12 @@ export default function EmployeeDetails() {
     const [leaveRequestsPage, setLeaveRequestsPage] = useState(1);
     const leaveRequestsLimit = 10;
 
-    // ── Payroll tab state (read-only, filtered from HR views) ────────────────
+    // ── Payroll tab state ────────────────────────────────────────────────────
     const [payrollLoading, setPayrollLoading] = useState(false);
-    const [payrollsAll, setPayrollsAll] = useState<PayrollItem[]>([]);
+    const [payrolls, setPayrolls] = useState<PayrollItem[]>([]);
+    const [payrollPage, setPayrollPage] = useState(1);
+    const [payrollTotal, setPayrollTotal] = useState(0);
+    const payrollLimit = 10;
     const [filterYear, setFilterYear] = useState<string>("");
     const [filterMonth, setFilterMonth] = useState<string>("");
 
@@ -408,25 +413,44 @@ export default function EmployeeDetails() {
     }, [employeeId, activeTab]);
 
     useEffect(() => {
+        setPayrollPage(1);
+    }, [filterYear, filterMonth]);
+
+    useEffect(() => {
         let ignore = false;
 
         async function fetchPayrolls() {
             if (!employeeId) return;
             setPayrollLoading(true);
             try {
+                const queryParams: Record<string, string> = {
+                    page: payrollPage.toString(),
+                    limit: payrollLimit.toString(),
+                };
+                if (filterYear) queryParams.year = filterYear;
+                if (filterYear && filterMonth) queryParams.month = filterMonth;
+
                 const result = await ApiCaller<null, any>({
                     requestType: "GET",
-                    paths: ["api", "v1", "payroll"],
-                    queryParams: { limit: "all" },
+                    paths: ["api", "v1", "payroll", employeeId],
+                    queryParams,
                 });
 
                 if (!result.ok) throw new Error(result.response?.message || "Failed to fetch payrolls");
 
                 const payload = result.response.data;
                 const rows = Array.isArray(payload) ? payload : payload?.data ?? [];
-                if (!ignore) setPayrollsAll(rows);
+                const total = payload?.total ?? rows.length;
+
+                if (!ignore) {
+                    setPayrolls(rows);
+                    setPayrollTotal(total);
+                }
             } catch {
-                if (!ignore) setPayrollsAll([]);
+                if (!ignore) {
+                    setPayrolls([]);
+                    setPayrollTotal(0);
+                }
             } finally {
                 if (!ignore) setPayrollLoading(false);
             }
@@ -437,7 +461,7 @@ export default function EmployeeDetails() {
         }
 
         return () => { ignore = true; };
-    }, [employeeId, activeTab]);
+    }, [employeeId, activeTab, payrollPage, filterYear, filterMonth]);
 
     const employeeName = useMemo(() => {
         const first = employee?.firstName ?? "";
@@ -459,32 +483,13 @@ export default function EmployeeDetails() {
 
     const attendancePages = Math.ceil(attendanceTotal / attendanceLimit);
     const salaryPages = Math.ceil(salaryTotal / salaryLimit);
+    const payrollPages = Math.ceil(payrollTotal / payrollLimit);
 
     const leaveRequestsPaged = useMemo(() => {
         const start = (leaveRequestsPage - 1) * leaveRequestsLimit;
         return leaveRequestsAll.slice(start, start + leaveRequestsLimit);
     }, [leaveRequestsAll, leaveRequestsPage]);
     const leaveRequestsPages = Math.ceil(leaveRequestsAll.length / leaveRequestsLimit);
-
-    const payrollsForEmployee = useMemo(() => {
-        const filtered = payrollsAll
-            .filter((p) => {
-                const uid = (p as any)?.user?._id ?? (p as any)?.user;
-                return uid === employeeId;
-            })
-            .filter((p) => {
-                if (!p.createdAt) return true;
-                const d = new Date(p.createdAt);
-                const y = d.getFullYear().toString();
-                const m = (d.getMonth() + 1).toString();
-                if (filterYear && y !== filterYear) return false;
-                if (filterYear && filterMonth && m !== filterMonth) return false;
-                return true;
-            })
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        return filtered;
-    }, [payrollsAll, employeeId, filterYear, filterMonth]);
 
     if (employeeLoading) {
         return (
@@ -984,17 +989,16 @@ export default function EmployeeDetails() {
                                                     <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
                                                     <p className="text-sm font-medium animate-pulse">Loading payrolls...</p>
                                                 </div>
-                                            ) : payrollsForEmployee.length === 0 ? (
+                                            ) : payrolls.length === 0 ? (
                                                 <div className="rounded-2xl border border-dashed p-10 flex flex-col items-center justify-center text-center">
                                                     <Receipt className="w-10 h-10 mb-3 text-indigo-400" />
                                                     <p className="font-medium text-muted-foreground">No payrolls found matching your filters.</p>
                                                 </div>
                                             ) : (
                                                 <div className="space-y-4">
-                                                    {payrollsForEmployee.map((p) => {
-                                                        const pDate = new Date(p.createdAt);
-                                                        const pYear = pDate.getFullYear();
-                                                        const pMonth = (pDate.getMonth() + 1).toString().padStart(2, "0");
+                                                    {payrolls.map((p) => {
+                                                        const pYear = p.year.toString();
+                                                        const pMonth = p.month
                                                         const { totalBonus, totalDeduction, baseSalary, netSalary } = calculatePayrollTotals(p);
                                                         return (
                                                             <Card key={p._id} className="border-border hover:shadow-md transition-shadow overflow-hidden">
@@ -1044,6 +1048,38 @@ export default function EmployeeDetails() {
                                                             </Card>
                                                         );
                                                     })}
+                                                </div>
+                                            )}
+                                            {payrollTotal > 0 && (
+                                                <div className="mt-4 flex justify-between items-center border-t border-border pt-4">
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Showing <span className="font-semibold text-foreground">{(payrollPage - 1) * payrollLimit + 1}</span> to{" "}
+                                                        <span className="font-semibold text-foreground">{Math.min(payrollPage * payrollLimit, payrollTotal)}</span> of{" "}
+                                                        <span className="font-semibold text-foreground">{payrollTotal}</span>
+                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setPayrollPage((p) => Math.max(1, p - 1))}
+                                                            disabled={payrollPage === 1}
+                                                            className="gap-1"
+                                                        >
+                                                            <ChevronLeft className="h-4 w-4" /> Previous
+                                                        </Button>
+                                                        <span className="text-sm font-medium text-muted-foreground px-2">
+                                                            {payrollPage} / {payrollPages || 1}
+                                                        </span>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setPayrollPage((p) => Math.min(payrollPages, p + 1))}
+                                                            disabled={payrollPage === payrollPages || payrollPages === 0}
+                                                            className="gap-1"
+                                                        >
+                                                            Next <ChevronRight className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             )}
                                         </CardContent>

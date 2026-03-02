@@ -3,7 +3,7 @@ import PayrollModal from "../Models/payroll.model.js";
 import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
 import LeaveRequestModal from "../../Leaves/LeaveRequests/Models/leaveRequests.model.js";
 import SalaryModal from "../../Salaries/Models/salaries.model.js";
-import Types from "../../../types/index.js"
+import Types from "../../../types/index.js";
 import AttendanceModel from "../../Attendance/Models/attendance.model.js";
 import { PayrollSendMessage } from "../../../queue/payroll.queue.js";
 import { SendAnalyticsEvent } from "../../../queue/analytics.queue.js";
@@ -18,11 +18,7 @@ function getDaysInMonth(year, monthIndex) {
     }
 
     return days.length;
-
 }
-
-
-
 
 async function GetAbsentDays(startDate, endDate, userId, month, year) {
     startDate.setHours(0, 0, 0, 0);
@@ -47,7 +43,7 @@ async function GetAbsentDays(startDate, endDate, userId, month, year) {
         {
             $count: "presentDays",
         },
-    ])
+    ]);
 
     const presentDays = attendances[0]?.presentDays || 0;
     const totalDays = getDaysInMonth(year, month - 1);
@@ -55,21 +51,25 @@ async function GetAbsentDays(startDate, endDate, userId, month, year) {
     return absentDays;
 }
 
-
 class PayrollController {
-
     constructor() {
         this.repo = PayrollModal;
     }
 
-
     Create = AsyncHandler(async (req, res) => {
         if (req.user.role != "HR") {
-            throw new ApiError(Types.Errors.Forbidden, "You are not allowed to create payroll");
+            throw new ApiError(
+                Types.Errors.Forbidden,
+                "You are not allowed to create payroll",
+            );
         }
         const parsedBody = Types.Payroll.Create.safeParse(req.body);
         if (!parsedBody.success) {
-            throw new ApiError(Types.Errors.UnprocessableData, "Invalid data", parsedBody.error.issues);
+            throw new ApiError(
+                Types.Errors.UnprocessableData,
+                "Invalid data",
+                parsedBody.error.issues,
+            );
         }
         const { user, bonus, deduction, salary, month, year } = parsedBody.data;
 
@@ -79,14 +79,13 @@ class PayrollController {
             deduction,
             salary,
             month,
-            year
-        })
+            year,
+        });
 
-        return res.status(200).json(new ApiResponse(200, payroll, "Payroll created successfully"));
-
-    })
-
-
+        return res
+            .status(200)
+            .json(new ApiResponse(200, payroll, "Payroll created successfully"));
+    });
 
     Get = AsyncHandler(async (req, res) => {
         const id = req.params.id;
@@ -97,49 +96,91 @@ class PayrollController {
             throw new ApiError(Types.Errors.NotFound, "Invalid month");
         }
         if (year !== null && (year > 2100 || year < 1900)) {
-            throw new ApiError(Types.Errors.NotFound, "Invalid messageyear");
+            throw new ApiError(Types.Errors.NotFound, "Invalid year");
         }
+
+        // ── Single record by ID ──────────────────────────────────────────
+        if (id) {
+            if (!mongoose.Types.ObjectId.isValid(id)) {
+                throw new ApiError(Types.Errors.NotFound, "Payroll not found");
+            }
+
+            // Non-HR users can only fetch their own records
+            if (req.user.role !== "HR" && id !== req.user.id) {
+                throw new ApiError(Types.Errors.Forbidden, "You are not allowed to view this payroll");
+            }
+
+            const { page: pageQuery, limit: limitQuery } = req.query;
+            let limit = parseInt(limitQuery) || 10;
+            let page = parseInt(pageQuery) || 1;
+            if (limit > 100) limit = 100;
+            const skip = (page - 1) * limit;
+
+            const filter = { user: id };
+            if (year)  filter.year  = year;
+            if (month) filter.month = month;
+
+            let queryOptions = this.repo
+                .find(filter)
+                .sort({ _id: -1 })
+                .populate("salary")
+                .populate("user", "firstName lastName email profilePhoto");
+
+            if (limitQuery !== "all") {
+                queryOptions = queryOptions.skip(skip).limit(limit);
+            }
+
+            const [payrolls, total] = await Promise.all([
+                queryOptions,
+                this.repo.countDocuments(filter),
+            ]);
+
+            return res.status(200).json(
+                new ApiResponse(
+                    200,
+                    { data: payrolls, total, page, limit: limitQuery === "all" ? total : limit },
+                    "Payroll fetched successfully",
+                ),
+            );
+        }
+
+        // ── List ─────────────────────────────────────────────────────────
         const { page: pageQuery, limit: limitQuery } = req.query;
         let limit = parseInt(limitQuery) || 10;
         let page = parseInt(pageQuery) || 1;
         if (limit > 100) limit = 100;
         const skip = (page - 1) * limit;
 
-        if (!id) {
-            let filter = {};
-            if (req.user.role !== "HR") {
-                filter.user = req.user.id;
-            }
-            if (year) {
-                filter.year = year;
-            }
-            if (month) {
-                filter.month = month;
-            }
+        const filter = {};
+        if (req.user.role !== "HR") {
+            filter.user = req.user.id;
+        }
+        if (year)  filter.year  = year;
+        if (month) filter.month = month;
 
-            let queryOptions = this.repo.find(filter).sort({ _id: -1 }).populate("salary").populate("user", "firstName lastName email profilePhoto");
-            if (limitQuery !== 'all') {
-                queryOptions = queryOptions.skip(skip).limit(limit);
-            }
-            const payrolls = await queryOptions;
-            const total = await this.repo.countDocuments(filter);
+        let queryOptions = this.repo
+            .find(filter)
+            .sort({ _id: -1 })
+            .populate("salary")
+            .populate("user", "firstName lastName email profilePhoto");
 
-            return res.status(200).json(new ApiResponse(200, { data: payrolls, total, page, limit: limitQuery === 'all' ? total : limit }, "Payroll fetched successfully"));
+        if (limitQuery !== "all") {
+            queryOptions = queryOptions.skip(skip).limit(limit);
         }
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            throw new ApiError(Types.Errors.NotFound, "Payroll not found");
-        }
+        const [payrolls, total] = await Promise.all([
+            queryOptions,
+            this.repo.countDocuments(filter),
+        ]);
 
-        const payroll = await this.repo.findById(id).populate("salary").populate("user", "firstName lastName email profilePhoto");
-
-        if (req.user.role != "HR" && payroll.user != req.user.id) {
-            throw new ApiError(Types.Errors.NotFound, "Payroll not found");
-        }
-
-        return res.status(200).json(new ApiResponse(200, payroll, "Payroll fetched successfully"));
-
-    })
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                { data: payrolls, total, page, limit: limitQuery === "all" ? total : limit },
+                "Payroll fetched successfully",
+            ),
+        );
+    });
 
     GetLeaveDeductions = AsyncHandler(async (req, res) => {
         const user = req.params.id;
@@ -164,29 +205,28 @@ class PayrollController {
                     requestedBy: new mongoose.Types.ObjectId(user),
                     from: {
                         $gte: new Date(year, month - 1, 1),
-                        $lte: new Date(year, month, 0)
+                        $lte: new Date(year, month, 0),
                     },
                     to: {
                         $gte: new Date(year, month - 1, 1),
-                        $lte: new Date(year, month, 0)
-                    }
-                }
+                        $lte: new Date(year, month, 0),
+                    },
+                },
             },
             {
                 $lookup: {
                     from: "leavetypes",
                     localField: "type",
                     foreignField: "_id",
-                    as: "type"
-                }
+                    as: "type",
+                },
             },
             {
                 $match: {
-                    "type.isPaid": false
-                }
+                    "type.isPaid": false,
+                },
             },
-
-        ])
+        ]);
 
         const selectedSalary = salary
             ? await SalaryModal.findById(salary)
@@ -205,46 +245,76 @@ class PayrollController {
             const amount = quantity * perDaySalary;
             deductionsOnLeave.push({
                 reason: type.name,
-                amount
-            })
+                amount,
+            });
         }
 
         const totalDeduction = deductionsOnLeave.reduce((total, deduction) => {
             return total + deduction.amount;
         }, 0);
 
-        return res.status(200).json(new ApiResponse(200, { deductionsOnLeave, totalDeduction }, "Leave requests fetched successfully"));
-
-    })
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    { deductionsOnLeave, totalDeduction },
+                    "Leave requests fetched successfully",
+                ),
+            );
+    });
 
     GenerateBulkPayroll = AsyncHandler(async (req, res) => {
         if (req.user.role != "HR") {
-            throw new ApiError(Types.Errors.Forbidden, "You are not allowed to generate payroll");
+            throw new ApiError(
+                Types.Errors.Forbidden,
+                "You are not allowed to generate payroll",
+            );
         }
         const parsedBody = Types.Payroll.GenerateBulk.safeParse(req.body);
         if (!parsedBody.success) {
-            throw new ApiError(Types.Errors.UnprocessableData, "Invalid data", parsedBody.error.issues);
+            throw new ApiError(
+                Types.Errors.UnprocessableData,
+                "Invalid data",
+                parsedBody.error.issues,
+            );
         }
-        const { month, year, department, bulkBonus, bulkDeduction } = parsedBody.data;
-        console.log("Generating payroll for month:", month, "year:", year, "department:", department ? department : "All");
+        const { month, year, department, bulkBonus, bulkDeduction } =
+            parsedBody.data;
+        console.log(
+            "Generating payroll for month:",
+            month,
+            "year:",
+            year,
+            "department:",
+            department ? department : "All",
+        );
         const payroll = await PayrollSendMessage({
             month,
             year,
             departments: department ? department : "All",
             bulkBonus: bulkBonus || [],
-            bulkDeduction: bulkDeduction || []
-        })
-        return res.status(200).json(new ApiResponse(200, payroll, "Payroll generated successfully"));
-    })
-
+            bulkDeduction: bulkDeduction || [],
+        });
+        return res
+            .status(200)
+            .json(new ApiResponse(200, payroll, "Payroll generated successfully"));
+    });
 
     GetAnalytics = AsyncHandler(async (req, res) => {
         if (req.user.role != "HR") {
-            throw new ApiError(Types.Errors.Forbidden, "You are not allowed to get payroll analytics");
+            throw new ApiError(
+                Types.Errors.Forbidden,
+                "You are not allowed to get payroll analytics",
+            );
         }
 
-        const month = req.query.month ? Number(req.query.month) : new Date().getMonth() + 1;
-        const year  = req.query.year  ? Number(req.query.year)  : new Date().getFullYear();
+        const month = req.query.month
+            ? Number(req.query.month)
+            : new Date().getMonth() + 1;
+        const year = req.query.year
+            ? Number(req.query.year)
+            : new Date().getFullYear();
 
         if (month < 1 || month > 12) {
             throw new ApiError(Types.Errors.UnprocessableData, "Invalid month");
@@ -257,13 +327,20 @@ class PayrollController {
             type: "GET_PAYROLL_ANALYTICS",
             month,
             year,
-            email: "ashwin.2201098cs@iiitbh.ac.in"
+            email: req.user.email,
         };
 
         await SendAnalyticsEvent(event);
-        return res.status(200).json(new ApiResponse(200, {}, "Payroll analytics report will be sent to your email shortly"));
-    })
-
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    {},
+                    "Payroll analytics report will be sent to your email shortly",
+                ),
+            );
+    });
 }
 
 export default PayrollController;

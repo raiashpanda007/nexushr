@@ -5,7 +5,7 @@ import buildEmailTemplate from "../templates/payroll.template.js";
 
 
 
-async function SendPayrollReport(recipientEmail, pdfBuffer, meta) {
+async function SendPayrollReport(recipientEmail, pdfBuffer, excelBuffer, meta) {
     const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -15,7 +15,7 @@ async function SendPayrollReport(recipientEmail, pdfBuffer, meta) {
     });
 
     const html = buildEmailTemplate(meta);
-    const fileName = `payroll-report-${meta.monthName.toLowerCase()}-${meta.year}.pdf`;
+    const baseName = `payroll-report-${meta.monthName.toLowerCase()}-${meta.year}`;
 
     const mailOptions = {
         from: `"NexusHR Analytics" <${Cfg.USER_EMAIL}>`,
@@ -24,9 +24,14 @@ async function SendPayrollReport(recipientEmail, pdfBuffer, meta) {
         html,
         attachments: [
             {
-                filename: fileName,
+                filename: `${baseName}.pdf`,
                 content: pdfBuffer,
                 contentType: "application/pdf",
+            },
+            {
+                filename: `${baseName}.xlsx`,
+                content: Buffer.from(excelBuffer),
+                contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             },
         ],
     };
