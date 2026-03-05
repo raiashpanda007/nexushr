@@ -173,7 +173,7 @@ class LeaveBalanceController {
             }
 
             const leaveBalance = await this.repo.aggregate([
-                { $match: { _id: new mongoose.Types.ObjectId(id) } },
+                { $match: { user: new mongoose.Types.ObjectId(id) } },
                 ...pipeline
             ])
 

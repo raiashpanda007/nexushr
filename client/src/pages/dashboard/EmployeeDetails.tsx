@@ -121,10 +121,11 @@ export default function EmployeeDetails() {
     const [salaryTotal, setSalaryTotal] = useState(0);
     const salaryLimit = 10;
 
-    // ── Leaves tab state (read-only, filtered from HR views) ────────────────
+    // ── Leaves tab state ──────────────────────────────────────────────────────
     const [leavesLoading, setLeavesLoading] = useState(false);
     const [leaveBalances, setLeaveBalances] = useState<ReturnType<typeof mapRawDoc>["balances"]>([]);
-    const [leaveRequestsAll, setLeaveRequestsAll] = useState<EmployeeLeaveRequest[]>([]);
+    const [leaveRequests, setLeaveRequests] = useState<EmployeeLeaveRequest[]>([]);
+    const [leaveRequestsTotal, setLeaveRequestsTotal] = useState(0);
     const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
     const [leaveRequestsPage, setLeaveRequestsPage] = useState(1);
     const leaveRequestsLimit = 10;
@@ -358,59 +359,71 @@ export default function EmployeeDetails() {
     useEffect(() => {
         let ignore = false;
 
-        async function fetchLeaves() {
+        async function fetchLeaveBalance() {
             if (!employeeId) return;
-
             setLeavesLoading(true);
-            setLeaveRequestsLoading(true);
             try {
-                const [balancesRes, requestsRes] = await Promise.all([
-                    ApiCaller<null, any>({
-                        requestType: "GET",
-                        paths: ["api", "v1", "leaves", "balances"],
-                        queryParams: { limit: "all" },
-                    }),
-                    ApiCaller<null, any>({
-                        requestType: "GET",
-                        paths: ["api", "v1", "leaves", "requests"],
-                        queryParams: { limit: "all" },
-                    }),
-                ]);
-
-                if (balancesRes.ok) {
-                    const payload = balancesRes.response.data;
-                    const docs = Array.isArray(payload) ? payload : payload?.data ?? [];
-                    const match = docs.find((d: any) => d?.userDetails?._id === employeeId || d?.user === employeeId);
-                    const mapped = match ? mapRawDoc(match) : null;
+                const res = await ApiCaller<null, any>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "leaves", "balances", employeeId],
+                });
+                if (res.ok) {
+                    const mapped = mapRawDoc(res.response.data);
                     if (!ignore) setLeaveBalances(mapped?.balances ?? []);
                 } else if (!ignore) {
                     setLeaveBalances([]);
                 }
-
-                if (requestsRes.ok) {
-                    const payload = requestsRes.response.data;
-                    const rows = Array.isArray(payload) ? payload : payload?.data ?? [];
-                    const filtered = rows
-                        .filter((r: any) => r?.requestedBy?._id === employeeId || r?.requestedBy === employeeId)
-                        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                    if (!ignore) setLeaveRequestsAll(filtered);
-                } else if (!ignore) {
-                    setLeaveRequestsAll([]);
-                }
             } finally {
-                if (!ignore) {
-                    setLeavesLoading(false);
-                    setLeaveRequestsLoading(false);
-                }
+                if (!ignore) setLeavesLoading(false);
             }
         }
 
         if (activeTab === "leaves") {
-            fetchLeaves();
+            fetchLeaveBalance();
         }
 
         return () => { ignore = true; };
     }, [employeeId, activeTab]);
+
+    useEffect(() => {
+        let ignore = false;
+
+        async function fetchLeaveRequests() {
+            if (!employeeId) return;
+            setLeaveRequestsLoading(true);
+            try {
+                const res = await ApiCaller<null, any>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "leaves", "requests"],
+                    queryParams: {
+                        userId: employeeId,
+                        page: leaveRequestsPage.toString(),
+                        limit: leaveRequestsLimit.toString(),
+                    },
+                });
+                if (res.ok) {
+                    const payload = res.response.data;
+                    const rows = Array.isArray(payload) ? payload : payload?.data ?? [];
+                    const total = payload?.total ?? rows.length;
+                    if (!ignore) {
+                        setLeaveRequests(rows);
+                        setLeaveRequestsTotal(total);
+                    }
+                } else if (!ignore) {
+                    setLeaveRequests([]);
+                    setLeaveRequestsTotal(0);
+                }
+            } finally {
+                if (!ignore) setLeaveRequestsLoading(false);
+            }
+        }
+
+        if (activeTab === "leaves") {
+            fetchLeaveRequests();
+        }
+
+        return () => { ignore = true; };
+    }, [employeeId, activeTab, leaveRequestsPage]);
 
     useEffect(() => {
         setPayrollPage(1);
@@ -485,11 +498,7 @@ export default function EmployeeDetails() {
     const salaryPages = Math.ceil(salaryTotal / salaryLimit);
     const payrollPages = Math.ceil(payrollTotal / payrollLimit);
 
-    const leaveRequestsPaged = useMemo(() => {
-        const start = (leaveRequestsPage - 1) * leaveRequestsLimit;
-        return leaveRequestsAll.slice(start, start + leaveRequestsLimit);
-    }, [leaveRequestsAll, leaveRequestsPage]);
-    const leaveRequestsPages = Math.ceil(leaveRequestsAll.length / leaveRequestsLimit);
+    const leaveRequestsPages = Math.ceil(leaveRequestsTotal / leaveRequestsLimit);
 
     if (employeeLoading) {
         return (
@@ -873,14 +882,14 @@ export default function EmployeeDetails() {
                                                                 </TableRow>
                                                             </TableHeader>
                                                             <TableBody>
-                                                                {leaveRequestsPaged.length === 0 ? (
+                                                                {leaveRequests.length === 0 ? (
                                                                     <TableRow>
                                                                         <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                                                                             No leave requests found.
                                                                         </TableCell>
                                                                     </TableRow>
                                                                 ) : (
-                                                                    leaveRequestsPaged.map((r) => {
+                                                                    leaveRequests.map((r) => {
                                                                         const typeName = typeof r.type === "object" && r.type ? r.type.name : String(r.type);
                                                                         return (
                                                                             <TableRow key={r._id} className="hover:bg-muted/30 transition-colors">
@@ -902,12 +911,12 @@ export default function EmployeeDetails() {
                                                         </Table>
                                                     </div>
 
-                                                    {leaveRequestsAll.length > 0 && (
+                                                    {leaveRequestsTotal > 0 && (
                                                         <div className="p-4 flex justify-between items-center border-t border-border">
                                                             <p className="text-sm text-muted-foreground">
                                                                 Showing <span className="font-semibold text-foreground">{(leaveRequestsPage - 1) * leaveRequestsLimit + 1}</span> to{" "}
-                                                                <span className="font-semibold text-foreground">{Math.min(leaveRequestsPage * leaveRequestsLimit, leaveRequestsAll.length)}</span> of{" "}
-                                                                <span className="font-semibold text-foreground">{leaveRequestsAll.length}</span>
+                                                                <span className="font-semibold text-foreground">{Math.min(leaveRequestsPage * leaveRequestsLimit, leaveRequestsTotal)}</span> of{" "}
+                                                                <span className="font-semibold text-foreground">{leaveRequestsTotal}</span>
                                                             </p>
                                                             <div className="flex items-center gap-2">
                                                                 <Button

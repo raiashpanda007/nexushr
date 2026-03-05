@@ -94,18 +94,26 @@ class LeaveRequestController {
     Get = AsyncHandler(async (req, res) => {
         const uid = req.params.uid;
         if (!uid) {
-            const { page: pageQuery, limit: limitQuery } = req.query;
+            const { page: pageQuery, limit: limitQuery, userId } = req.query;
             let limit = parseInt(limitQuery) || 10;
             let page = parseInt(pageQuery) || 1;
             if (limit > 100) limit = 100;
             const skip = (page - 1) * limit;
 
             if (req.user.role === "HR") {
-                let queryOptions = this.repo.find().populate("requestedBy").populate("respondedBy").populate("type").sort({ createdAt: -1 });
+                const filter = {};
+                if (userId) {
+                    if (!mongoose.Types.ObjectId.isValid(userId)) {
+                        throw new ApiError(Types.Errors.BadRequest, "Invalid userId");
+                    }
+                    filter.requestedBy = new mongoose.Types.ObjectId(userId);
+                }
+
+                let queryOptions = this.repo.find(filter).populate("requestedBy").populate("respondedBy").populate("type").sort({ createdAt: -1 });
                 if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
 
                 const leaveRequests = await queryOptions;
-                const total = await this.repo.countDocuments();
+                const total = await this.repo.countDocuments(filter);
 
                 return res.status(200).json(new ApiResponse(200, { data: leaveRequests, total, page, limit: limitQuery === 'all' ? total : limit }, "Leave requests fetched successfully"));
             } else {
@@ -206,9 +214,6 @@ class LeaveRequestController {
         const matchStage = {};
         if (status) matchStage.status = String(status);
 
-        // =====================================================
-        // 📊 COMPANY VIEW — ALL DEPARTMENTS + LEAVE TYPE COUNTS
-        // =====================================================
         if (!departmentId) {
             const summaryPipeline = [
                 { $match: matchStage },
