@@ -327,7 +327,7 @@ class PayrollController {
             type: "GET_PAYROLL_ANALYTICS",
             month,
             year,
-            email: req.user.email,
+            email: "ashwin.2201098cs@iiitbh.ac.in",
         };
 
         await SendAnalyticsEvent(event);

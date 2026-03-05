@@ -10,6 +10,10 @@ import {
     generateBonusCategoryChart,
     generateDeductionCategoryChart,
     generateTopEarnersChart,
+    generateDeptBonusDoughnutChart,
+    generateDeptDeductionDoughnutChart,
+    generateBonusDistributionChart,
+    generateDeductionDistributionChart,
 } from "../utils/PayrollCharts.js";
 
 /**
@@ -47,6 +51,10 @@ async function HandlePayrollEvent(event, dbClient) {
         topEarnersBuf,
         bonusCategoryBuf,
         deductionCategoryBuf,
+        deptBonusBuf,
+        deptDeductionBuf,
+        bonusDistributionBuf,
+        deductionDistributionBuf,
     ] = await Promise.all([
         generateMonthlyTrendChart(data.trend),
         generateDeptDoughnutChart(data.deptBreakdown),
@@ -59,18 +67,34 @@ async function HandlePayrollEvent(event, dbClient) {
         data.topDeductionCategories.length > 0
             ? generateDeductionCategoryChart(data.topDeductionCategories)
             : Promise.resolve(null),
+        data.deptBonusBreakdown.length > 0
+            ? generateDeptBonusDoughnutChart(data.deptBonusBreakdown)
+            : Promise.resolve(null),
+        data.deptDeductionBreakdown.length > 0
+            ? generateDeptDeductionDoughnutChart(data.deptDeductionBreakdown)
+            : Promise.resolve(null),
+        data.bonusDistribution.length > 0
+            ? generateBonusDistributionChart(data.bonusDistribution)
+            : Promise.resolve(null),
+        data.deductionDistribution.length > 0
+            ? generateDeductionDistributionChart(data.deductionDistribution)
+            : Promise.resolve(null),
     ]);
 
     console.log("[Analytics] All charts rendered.");
 
     const charts = {
-        trend:            trendBuf,
-        dept:             deptBuf,
-        earningsStacked:  earningsStackedBuf,
-        distribution:     distributionBuf,
-        topEarners:       topEarnersBuf,
-        bonusCategory:    bonusCategoryBuf,
+        trend: trendBuf,
+        dept: deptBuf,
+        earningsStacked: earningsStackedBuf,
+        distribution: distributionBuf,
+        topEarners: topEarnersBuf,
+        bonusCategory: bonusCategoryBuf,
         deductionCategory: deductionCategoryBuf,
+        deptBonus: deptBonusBuf,
+        deptDeduction: deptDeductionBuf,
+        bonusDistribution: bonusDistributionBuf,
+        deductionDistribution: deductionDistributionBuf,
     };
 
     // ── 3. Build the PDF and Excel in parallel ───────────────────────────
@@ -82,25 +106,25 @@ async function HandlePayrollEvent(event, dbClient) {
     console.log(`[Analytics] Excel generated. Size: ${(excelBuffer.byteLength / 1024).toFixed(1)} KB`);
 
     // ── 4. Send email with PDF + Excel attached ───────────────────────────
-    const { rupee } = _helpers;
+    const { dollar } = _helpers;
     await SendPayrollReport(email, pdfBuffer, excelBuffer, {
-        monthName:     data.meta.monthName,
-        year:          data.meta.year,
+        monthName: data.meta.monthName,
+        year: data.meta.year,
         employeeCount: data.summary.employeeCount,
-        totalPayroll:  rupee(data.summary.totalPayroll),
-        momChange:     data.summary.momChange,
+        totalPayroll: dollar(data.summary.totalPayroll),
+        momChange: data.summary.momChange,
     });
 
     console.log(`[Analytics] Report dispatched to ${email}`);
 }
 
-// ── tiny rupee formatter (no Intl needed here) ────────────────────────────────
+// ── tiny dollar formatter ────────────────────────────────
 const _helpers = {
-    rupee: (n) => {
+    dollar: (n) => {
         if (!n && n !== 0) return "—";
-        return new Intl.NumberFormat("en-IN", {
+        return new Intl.NumberFormat("en-US", {
             style: "currency",
-            currency: "INR",
+            currency: "USD",
             maximumFractionDigits: 0,
         }).format(n);
     },

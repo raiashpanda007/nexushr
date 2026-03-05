@@ -2,20 +2,20 @@ import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 
 // ─── colour palette ───────────────────────────────────────────────────────────
 const PALETTE = {
-    blue:        "rgba(37,  99,  235, 0.85)",
-    blueLight:   "rgba(37,  99,  235, 0.25)",
-    green:       "rgba(16,  185, 129, 0.85)",
-    greenLight:  "rgba(16,  185, 129, 0.25)",
-    amber:       "rgba(245, 158,  11, 0.85)",
-    amberLight:  "rgba(245, 158,  11, 0.25)",
-    red:         "rgba(239,  68,  68, 0.85)",
-    redLight:    "rgba(239,  68,  68, 0.25)",
-    purple:      "rgba(139,  92, 246, 0.85)",
-    indigo:      "rgba(99,  102, 241, 0.85)",
-    pink:        "rgba(236,  72, 153, 0.85)",
-    teal:        "rgba(20,  184, 166, 0.85)",
-    orange:      "rgba(249, 115,  22, 0.85)",
-    slate:       "rgba(100, 116, 139, 0.85)",
+    blue: "rgba(37,  99,  235, 0.85)",
+    blueLight: "rgba(37,  99,  235, 0.25)",
+    green: "rgba(16,  185, 129, 0.85)",
+    greenLight: "rgba(16,  185, 129, 0.25)",
+    amber: "rgba(245, 158,  11, 0.85)",
+    amberLight: "rgba(245, 158,  11, 0.25)",
+    red: "rgba(239,  68,  68, 0.85)",
+    redLight: "rgba(239,  68,  68, 0.25)",
+    purple: "rgba(139,  92, 246, 0.85)",
+    indigo: "rgba(99,  102, 241, 0.85)",
+    pink: "rgba(236,  72, 153, 0.85)",
+    teal: "rgba(20,  184, 166, 0.85)",
+    orange: "rgba(249, 115,  22, 0.85)",
+    slate: "rgba(100, 116, 139, 0.85)",
 };
 
 const PIE_COLORS = Object.values(PALETTE);
@@ -50,9 +50,9 @@ function makeCanvas(w, h) {
 }
 
 function fmt(n) {
-    if (n >= 1_000_000) return `₹${(n / 1_000_000).toFixed(2)}M`;
-    if (n >= 1_000)     return `₹${(n / 1_000).toFixed(1)}k`;
-    return `₹${n.toFixed(0)}`;
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+    if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
+    return `$${n.toFixed(0)}`;
 }
 
 // ─── 1. Monthly Trend Bar + Line Chart ───────────────────────────────────────
@@ -60,7 +60,7 @@ export async function generateMonthlyTrendChart(trend) {
     const canvas = makeCanvas(780, 320);
     const labels = trend.map((t) => t.label);
     const grossData = trend.map((t) => t.gross);
-    const netData   = trend.map((t) => t.net);
+    const netData = trend.map((t) => t.net);
 
     return canvas.renderToBuffer({
         type: "bar",
@@ -126,7 +126,7 @@ export async function generateMonthlyTrendChart(trend) {
 export async function generateDeptDoughnutChart(deptBreakdown) {
     const canvas = makeCanvas(520, 320);
     const labels = deptBreakdown.map((d) => d.name);
-    const data   = deptBreakdown.map((d) => d.totalNet);
+    const data = deptBreakdown.map((d) => d.totalNet);
 
     return canvas.renderToBuffer({
         type: "doughnut",
@@ -150,6 +150,86 @@ export async function generateDeptDoughnutChart(deptBreakdown) {
                 title: {
                     display: true,
                     text: "Payroll by Department",
+                    font: { size: 14, weight: "bold" },
+                    color: "#0f172a",
+                    padding: { bottom: 12 },
+                },
+                legend: {
+                    ...GLOBAL_DEFAULTS.plugins.legend,
+                    position: "right",
+                },
+            },
+        },
+    });
+}
+
+export async function generateDeptBonusDoughnutChart(deptBonusBreakdown) {
+    const canvas = makeCanvas(520, 320);
+    const labels = deptBonusBreakdown.map((d) => d.name);
+    const data = deptBonusBreakdown.map((d) => d.totalBonus);
+
+    return canvas.renderToBuffer({
+        type: "doughnut",
+        data: {
+            labels,
+            datasets: [
+                {
+                    data,
+                    backgroundColor: PIE_COLORS.slice(0, labels.length),
+                    borderColor: "#ffffff",
+                    borderWidth: 2,
+                    hoverOffset: 6,
+                },
+            ],
+        },
+        options: {
+            ...GLOBAL_DEFAULTS,
+            cutout: "58%",
+            plugins: {
+                ...GLOBAL_DEFAULTS.plugins,
+                title: {
+                    display: true,
+                    text: "Bonus by Department",
+                    font: { size: 14, weight: "bold" },
+                    color: "#0f172a",
+                    padding: { bottom: 12 },
+                },
+                legend: {
+                    ...GLOBAL_DEFAULTS.plugins.legend,
+                    position: "right",
+                },
+            },
+        },
+    });
+}
+
+export async function generateDeptDeductionDoughnutChart(deptDeductionBreakdown) {
+    const canvas = makeCanvas(520, 320);
+    const labels = deptDeductionBreakdown.map((d) => d.name);
+    const data = deptDeductionBreakdown.map((d) => d.totalDeduction);
+
+    return canvas.renderToBuffer({
+        type: "doughnut",
+        data: {
+            labels,
+            datasets: [
+                {
+                    data,
+                    backgroundColor: PIE_COLORS.slice(0, labels.length),
+                    borderColor: "#ffffff",
+                    borderWidth: 2,
+                    hoverOffset: 6,
+                },
+            ],
+        },
+        options: {
+            ...GLOBAL_DEFAULTS,
+            cutout: "58%",
+            plugins: {
+                ...GLOBAL_DEFAULTS.plugins,
+                title: {
+                    display: true,
+                    text: "Deductions by Department",
                     font: { size: 14, weight: "bold" },
                     color: "#0f172a",
                     padding: { bottom: 12 },
@@ -264,6 +344,98 @@ export async function generateSalaryDistributionChart(distribution) {
                 title: {
                     display: true,
                     text: "Net Pay Distribution",
+                    font: { size: 13, weight: "bold" },
+                    color: "#0f172a",
+                    padding: { bottom: 10 },
+                },
+                legend: { display: false },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 9 }, maxRotation: 30 },
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: "#f1f5f9" },
+                    ticks: { stepSize: 1, font: { size: 10 } },
+                    title: { display: true, text: "No. of Employees", font: { size: 10 } },
+                },
+            },
+        },
+    });
+}
+
+export async function generateBonusDistributionChart(distribution) {
+    const canvas = makeCanvas(520, 280);
+    return canvas.renderToBuffer({
+        type: "bar",
+        data: {
+            labels: distribution.map((d) => d.range),
+            datasets: [
+                {
+                    label: "Employees",
+                    data: distribution.map((d) => d.count),
+                    backgroundColor: PALETTE.green,
+                    borderColor: PALETTE.greenLight,
+                    borderWidth: 1.5,
+                    borderRadius: 4,
+                },
+            ],
+        },
+        options: {
+            ...GLOBAL_DEFAULTS,
+            plugins: {
+                ...GLOBAL_DEFAULTS.plugins,
+                title: {
+                    display: true,
+                    text: "Bonus Distribution",
+                    font: { size: 13, weight: "bold" },
+                    color: "#0f172a",
+                    padding: { bottom: 10 },
+                },
+                legend: { display: false },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 9 }, maxRotation: 30 },
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: "#f1f5f9" },
+                    ticks: { stepSize: 1, font: { size: 10 } },
+                    title: { display: true, text: "No. of Employees", font: { size: 10 } },
+                },
+            },
+        },
+    });
+}
+
+export async function generateDeductionDistributionChart(distribution) {
+    const canvas = makeCanvas(520, 280);
+    return canvas.renderToBuffer({
+        type: "bar",
+        data: {
+            labels: distribution.map((d) => d.range),
+            datasets: [
+                {
+                    label: "Employees",
+                    data: distribution.map((d) => d.count),
+                    backgroundColor: PALETTE.red,
+                    borderColor: PALETTE.redLight,
+                    borderWidth: 1.5,
+                    borderRadius: 4,
+                },
+            ],
+        },
+        options: {
+            ...GLOBAL_DEFAULTS,
+            plugins: {
+                ...GLOBAL_DEFAULTS.plugins,
+                title: {
+                    display: true,
+                    text: "Deduction Distribution",
                     font: { size: 13, weight: "bold" },
                     color: "#0f172a",
                     padding: { bottom: 10 },

@@ -2,32 +2,32 @@ import PDFDocument from "pdfkit";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
-    brand:     "#1e3a5f",      // deep navy
-    brandMid:  "#2563eb",      // primary blue
-    brandLight:"#eff6ff",      // pale blue bg
-    accent:    "#0ea5e9",      // sky
-    success:   "#10b981",
-    warning:   "#f59e0b",
-    danger:    "#ef4444",
-    dark:      "#0f172a",
-    text:      "#1e293b",
-    muted:     "#64748b",
-    border:    "#e2e8f0",
-    white:     "#ffffff",
-    rowOdd:    "#f8fafc",
-    rowEven:   "#ffffff",
+    brand: "#1e3a5f",      // deep navy
+    brandMid: "#2563eb",      // primary blue
+    brandLight: "#eff6ff",      // pale blue bg
+    accent: "#0ea5e9",      // sky
+    success: "#10b981",
+    warning: "#f59e0b",
+    danger: "#ef4444",
+    dark: "#0f172a",
+    text: "#1e293b",
+    muted: "#64748b",
+    border: "#e2e8f0",
+    white: "#ffffff",
+    rowOdd: "#f8fafc",
+    rowEven: "#ffffff",
 };
 
 const MONTH_NAMES = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December",
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
 ];
 
-function rupee(n) {
+function dollar(n) {
     if (n === undefined || n === null) return "—";
-    return new Intl.NumberFormat("en-IN", {
+    return new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: "INR",
+        currency: "USD",
         maximumFractionDigits: 0,
     }).format(n);
 }
@@ -75,12 +75,14 @@ function kpiBox(doc, x, y, w, h, label, value, subColor = C.brandMid) {
 
     doc.save()
         .font("Helvetica").fontSize(8).fillColor(C.muted)
-        .text(label, x + 10, y + 8, { width: w - 14 })
+        .text(label, x + 10, y + 8, { width: w - 14, lineBreak: false })
         .restore();
     doc.save()
-        .font("Helvetica-Bold").fontSize(13).fillColor(C.dark)
-        .text(value, x + 10, y + 22, { width: w - 14 })
+        .font("Helvetica-Bold").fontSize(11).fillColor(C.dark)
+        .text(value, x + 10, y + 22, { width: w - 14, lineBreak: false })
         .restore();
+    // always leave doc.y below the box
+    doc.y = y + h + 2;
 }
 
 function tableHeader(doc, columns, y) {
@@ -89,10 +91,12 @@ function tableHeader(doc, columns, y) {
     for (const col of columns) {
         doc.save()
             .font("Helvetica-Bold").fontSize(8).fillColor(C.white)
-            .text(col.label, x + 4, y + 6, { width: col.width - 8, align: col.align || "left" })
+            .text(col.label, x + 4, y + 6, { width: col.width - 8, align: col.align || "left", lineBreak: false })
             .restore();
         x += col.width;
     }
+    // explicitly advance past header
+    doc.y = y + 20;
 }
 
 function tableRow(doc, columns, data, y, rowIdx) {
@@ -110,6 +114,8 @@ function tableRow(doc, columns, data, y, rowIdx) {
     // row bottom border
     doc.save().strokeColor(C.border).lineWidth(0.3)
         .moveTo(40, y + 18).lineTo(555, y + 18).stroke().restore();
+    // explicitly advance past row — avoids moveDown drift that causes blank pages
+    doc.y = y + 18;
 }
 
 /**
@@ -147,7 +153,7 @@ export async function generatePayrollPDF(data, charts) {
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({
             size: "A4",
-            margin: 40,
+            margins: { top: 40, bottom: 10, left: 40, right: 40 },
             bufferPages: true,
             info: {
                 Title: `Payroll Analytics Report — ${data.meta.monthName} ${data.meta.year}`,
@@ -192,10 +198,10 @@ export async function generatePayrollPDF(data, charts) {
         // KPI row on cover
         const s = data.summary;
         const kpis = [
-            { label: "Employees Paid",       value: s.employeeCount,           color: C.brandMid },
-            { label: "Total Net Payroll",     value: rupee(s.totalPayroll),     color: C.success  },
-            { label: "Avg. Net Pay",          value: rupee(s.avgNet),           color: C.warning  },
-            { label: "MoM Change",            value: pct(s.momChange),          color: s.momChange >= 0 ? C.success : C.danger },
+            { label: "Employees Paid", value: s.employeeCount, color: C.brandMid },
+            { label: "Total Net Payroll", value: dollar(s.totalPayroll), color: C.success },
+            { label: "Avg. Net Pay", value: dollar(s.avgNet), color: C.warning },
+            { label: "MoM Change", value: pct(s.momChange), color: s.momChange >= 0 ? C.success : C.danger },
         ];
         let kx = 40;
         for (const k of kpis) {
@@ -211,13 +217,13 @@ export async function generatePayrollPDF(data, charts) {
             .font("Helvetica-Bold").fontSize(9).fillColor(C.brand)
             .text("TOP EARNER", 55, 303)
             .font("Helvetica").fillColor(C.text)
-            .text(`${s.topEarner.name}  (${s.topEarner.department})  —  ${rupee(s.topEarner.net)}`, 55, 314)
+            .text(`${s.topEarner.name}  (${s.topEarner.department})  —  ${dollar(s.topEarner.net)}`, 55, 314)
             .restore();
         doc.save()
             .font("Helvetica-Bold").fontSize(9).fillColor(C.brand)
             .text("LOWEST EARNER", 310, 303)
             .font("Helvetica").fillColor(C.text)
-            .text(`${s.bottomEarner.name}  (${s.bottomEarner.department})  —  ${rupee(s.bottomEarner.net)}`, 310, 314)
+            .text(`${s.bottomEarner.name}  (${s.bottomEarner.department})  —  ${dollar(s.bottomEarner.net)}`, 310, 314)
             .restore();
 
         // Confidential footer
@@ -235,24 +241,26 @@ export async function generatePayrollPDF(data, charts) {
 
         const kpiRows = [
             [
-                { label: "Total Employees in Payroll", value: String(s.employeeCount),          color: C.brandMid },
-                { label: "Total Gross Payroll",         value: rupee(s.totalGross),              color: C.brandMid },
-                { label: "Total Net Payroll",           value: rupee(s.totalPayroll),            color: C.success  },
+                { label: "Total Employees in Payroll", value: String(s.employeeCount), color: C.brandMid },
+                { label: "Total Gross Payroll", value: dollar(s.totalGross), color: C.brandMid },
+                { label: "Total Net Payroll", value: dollar(s.totalPayroll), color: C.success },
             ],
             [
-                { label: "Total Bonuses Paid",          value: rupee(s.totalBonuses),            color: C.success  },
-                { label: "Total Deductions",            value: rupee(s.totalDeductions),         color: C.danger   },
-                { label: "Average Net Pay",             value: rupee(s.avgNet),                  color: C.warning  },
+                { label: "Total Bonuses Paid", value: dollar(s.totalBonuses), color: C.success },
+                { label: "Total Deductions", value: dollar(s.totalDeductions), color: C.danger },
+                { label: "Average Net Pay", value: dollar(s.avgNet), color: C.warning },
             ],
         ];
 
         for (const row of kpiRows) {
+            const rowY = doc.y;
             let rx = 40;
             for (const k of row) {
-                kpiBox(doc, rx, doc.y, 163, 58, k.label, k.value, k.color);
+                kpiBox(doc, rx, rowY, 163, 58, k.label, k.value, k.color);
                 rx += 169;
             }
-            doc.moveDown(3.8);
+            // advance past the row height (kpiBox already sets doc.y; pick the bottom)
+            doc.y = rowY + 58 + 10;
         }
 
         doc.moveDown(0.5);
@@ -263,8 +271,8 @@ export async function generatePayrollPDF(data, charts) {
             `► Bonus to Gross ratio: ${s.totalGross > 0 ? ((s.totalBonuses / s.totalGross) * 100).toFixed(1) : 0}%.`,
             `► Deduction rate: ${s.totalGross > 0 ? ((s.totalDeductions / s.totalGross) * 100).toFixed(1) : 0}% of gross payroll.`,
             `► Net payroll ${s.momChange !== null ? (s.momChange >= 0 ? `increased by ${s.momChange}%` : `decreased by ${Math.abs(s.momChange)}%`) : "change data unavailable"} versus the previous month.`,
-            `► Highest paid: ${s.topEarner.name} (${s.topEarner.department}) at ${rupee(s.topEarner.net)}.`,
-            `► Lowest paid: ${s.bottomEarner.name} (${s.bottomEarner.department}) at ${rupee(s.bottomEarner.net)}.`,
+            `► Highest paid: ${s.topEarner.name} (${s.topEarner.department}) at ${dollar(s.topEarner.net)}.`,
+            `► Lowest paid: ${s.bottomEarner.name} (${s.bottomEarner.department}) at ${dollar(s.bottomEarner.net)}.`,
         ];
 
         for (const ins of insights) {
@@ -314,12 +322,15 @@ export async function generatePayrollPDF(data, charts) {
             for (const d of data.deptBreakdown.slice(0, 10)) {
                 const pctShare = ((d.totalNet / data.summary.totalPayroll) * 100).toFixed(1);
                 doc.save().font("Helvetica").fontSize(8).fillColor(C.text)
-                    .text(d.name, deptLegendX, dly, { width: 85, lineBreak: false })
+                    .text(d.name, deptLegendX, dly, { width: 80, lineBreak: false })
                     .restore();
-                doc.save().font("Helvetica").fontSize(8).fillColor(C.text)
-                    .text(`${rupee(d.totalNet)} (${pctShare}%)`, deptLegendX + 90, dly, { width: 70, align: "right", lineBreak: false })
+                doc.save().font("Helvetica").fontSize(7.5).fillColor(C.text)
+                    .text(`${dollar(d.totalNet)}`, deptLegendX, dly + 9, { width: 80, lineBreak: false })
                     .restore();
-                dly += 14;
+                doc.save().font("Helvetica").fontSize(7.5).fillColor(C.muted)
+                    .text(`(${pctShare}%)`, deptLegendX + 82, dly + 9, { width: 30, lineBreak: false })
+                    .restore();
+                dly += 18;
             }
             doc.y = deptChartY + 212 + 12;
         }
@@ -360,11 +371,11 @@ export async function generatePayrollPDF(data, charts) {
             const stddev = Math.sqrt(variance);
 
             const stats = [
-                ["Minimum",   rupee(Math.min(...netArr))],
-                ["Maximum",   rupee(Math.max(...netArr))],
-                ["Median",    rupee(med)],
-                ["Mean",      rupee(data.summary.avgNet)],
-                ["Std Dev",   rupee(stddev)],
+                ["Minimum", dollar(Math.min(...netArr))],
+                ["Maximum", dollar(Math.max(...netArr))],
+                ["Median", dollar(med)],
+                ["Mean", dollar(data.summary.avgNet)],
+                ["Std Dev", dollar(stddev)],
             ];
             for (const [lbl, val] of stats) {
                 doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.muted).text(lbl, sx, sy).restore();
@@ -387,34 +398,35 @@ export async function generatePayrollPDF(data, charts) {
 
         doc.moveDown(0.3);
         const topEarnCols = [
-            { label: "#",          key: "rank",    width: 30,  align: "center" },
-            { label: "Employee",   key: "name",    width: 160 },
-            { label: "Department", key: "dept",    width: 110 },
-            { label: "Gross",      key: "gross",   width: 75,  align: "right" },
-            { label: "Bonus",      key: "bonus",   width: 65,  align: "right" },
-            { label: "Deduction",  key: "deduct",  width: 75,  align: "right" },
+            { label: "#", key: "rank", width: 30, align: "center" },
+            { label: "Employee", key: "name", width: 160 },
+            { label: "Department", key: "dept", width: 110 },
+            { label: "Gross", key: "gross", width: 75, align: "right" },
+            { label: "Bonus", key: "bonus", width: 65, align: "right" },
+            { label: "Deduction", key: "deduct", width: 75, align: "right" },
         ];
 
         tableHeader(doc, topEarnCols, doc.y);
-        doc.moveDown(1.2);
+        // tableHeader now sets doc.y to header bottom; no extra moveDown needed
         for (let i = 0; i < data.topEarners.length; i++) {
+            _ensureSpace(doc, data.meta, 20);
             const e = data.topEarners[i];
             tableRow(doc, topEarnCols, {
                 rank: i + 1,
                 name: e.employeeName,
                 dept: e.department,
-                gross: rupee(e.gross),
-                bonus: rupee(e.totalBonus),
-                deduct: rupee(e.totalDeduction),
+                gross: dollar(e.gross),
+                bonus: dollar(e.totalBonus),
+                deduct: dollar(e.totalDeduction),
             }, doc.y, i);
-            doc.moveDown(1.1);
+            // tableRow now sets doc.y to row bottom; no extra moveDown needed
         }
 
         _pageFooter(doc, data.meta);
 
-        // ══════════ PAGE 7  ─  Bonus & Deduction Analysis ════════════════
+        // ══════════ PAGE 7  ─  Bonus Analysis ════════════════
         doc.addPage();
-        _pageHeader(doc, "Bonus & Deduction Analysis", data.meta);
+        _pageHeader(doc, "Bonus Analysis", data.meta);
 
         if (data.topBonusCategories.length > 0) {
             sectionTitle(doc, "Bonus Categories");
@@ -424,40 +436,170 @@ export async function generatePayrollPDF(data, charts) {
 
                 // bonus total alongside
                 let bx = 397, by = bonusChartY + 5;
-                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Category", bx, by).restore();
-                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Amount", bx + 110, by).restore();
+                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Category", bx, by, { lineBreak: false }).restore();
+                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Amount", bx + 95, by, { lineBreak: false }).restore();
                 by += 14;
                 for (const b of data.topBonusCategories) {
                     doc.save().font("Helvetica").fontSize(8).fillColor(C.text)
-                        .text(b.reason, bx, by, { width: 105, lineBreak: false }).restore();
+                        .text(b.reason, bx, by, { width: 90, lineBreak: false }).restore();
                     doc.save().font("Helvetica").fontSize(8).fillColor(C.success)
-                        .text(rupee(b.amount), bx + 110, by, { width: 48, align: "right", lineBreak: false }).restore();
-                    by += 13;
+                        .text(dollar(b.amount), bx + 95, by, { width: 65, align: "right", lineBreak: false }).restore();
+                    by += 14;
                 }
                 doc.y = bonusChartY + 185 + 12;
             }
         }
 
-        if (data.topDeductionCategories.length > 0) {
+        if (data.bonusDistribution && data.bonusDistribution.length > 0) {
             _ensureSpace(doc, data.meta, 220);
             doc.moveDown(0.3);
+            sectionTitle(doc, "Bonus Distribution");
+            if (charts.bonusDistribution) {
+                const bDistChartY = doc.y;
+                doc.image(charts.bonusDistribution, 38, bDistChartY, { width: 345, height: 185 });
+
+                const sx = 400;
+                let sy = bDistChartY + 5;
+                const bonusArr = data.employees.map((e) => e.totalBonus).filter(b => b > 0).sort((a, b) => a - b);
+                if (bonusArr.length > 0) {
+                    const bMed = bonusArr.length % 2 === 0
+                        ? (bonusArr[bonusArr.length / 2 - 1] + bonusArr[bonusArr.length / 2]) / 2
+                        : bonusArr[Math.floor(bonusArr.length / 2)];
+
+                    const stats = [
+                        ["Minimum", dollar(Math.min(...bonusArr))],
+                        ["Maximum", dollar(Math.max(...bonusArr))],
+                        ["Median", dollar(bMed)],
+                    ];
+                    for (const [lbl, val] of stats) {
+                        doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.muted).text(lbl, sx, sy).restore();
+                        doc.save().font("Helvetica").fontSize(8.5).fillColor(C.dark).text(val, sx + 65, sy).restore();
+                        sy += 18;
+                    }
+                }
+                doc.y = bDistChartY + 185 + 12;
+            }
+        }
+
+        if (data.deptBonusBreakdown && data.deptBonusBreakdown.length > 0) {
+            _ensureSpace(doc, data.meta, 240);
+            doc.moveDown(0.3);
+            sectionTitle(doc, "Bonus by Department");
+            if (charts.deptBonus) {
+                const dbChartY = doc.y;
+                doc.image(charts.deptBonus, 38, dbChartY, { width: 345, height: 212 });
+
+                const deptLegendX = 395;
+                let dly = dbChartY + 5;
+                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Dept.", deptLegendX, dly).restore();
+                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Bonus", deptLegendX + 90, dly).restore();
+                dly += 14;
+
+                const totalBonuses = data.summary.totalBonuses || 1;
+                for (const d of data.deptBonusBreakdown.slice(0, 10)) {
+                    const pctShare = ((d.totalBonus / totalBonuses) * 100).toFixed(1);
+                    doc.save().font("Helvetica").fontSize(8).fillColor(C.text)
+                        .text(d.name, deptLegendX, dly, { width: 80, lineBreak: false })
+                        .restore();
+                    doc.save().font("Helvetica").fontSize(7.5).fillColor(C.success)
+                        .text(`${dollar(d.totalBonus)}`, deptLegendX, dly + 9, { width: 80, lineBreak: false })
+                        .restore();
+                    doc.save().font("Helvetica").fontSize(7.5).fillColor(C.muted)
+                        .text(`(${pctShare}%)`, deptLegendX + 82, dly + 9, { width: 30, lineBreak: false })
+                        .restore();
+                    dly += 18;
+                }
+                doc.y = dbChartY + 212 + 12;
+            }
+        }
+
+        _pageFooter(doc, data.meta);
+
+        // ══════════ PAGE 8  ─  Deduction Analysis ════════════════
+        doc.addPage();
+        _pageHeader(doc, "Deduction Analysis", data.meta);
+
+        if (data.topDeductionCategories.length > 0) {
             sectionTitle(doc, "Deduction Categories");
             if (charts.deductionCategory) {
                 const dedChartY = doc.y;
                 doc.image(charts.deductionCategory, 38, dedChartY, { width: 345, height: 185 });
 
                 let dx = 397, dy = dedChartY + 5;
-                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Category", dx, dy).restore();
-                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Amount", dx + 110, dy).restore();
+                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Category", dx, dy, { lineBreak: false }).restore();
+                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Amount", dx + 95, dy, { lineBreak: false }).restore();
                 dy += 14;
                 for (const d of data.topDeductionCategories) {
                     doc.save().font("Helvetica").fontSize(8).fillColor(C.text)
-                        .text(d.reason, dx, dy, { width: 105, lineBreak: false }).restore();
+                        .text(d.reason, dx, dy, { width: 90, lineBreak: false }).restore();
                     doc.save().font("Helvetica").fontSize(8).fillColor(C.danger)
-                        .text(rupee(d.amount), dx + 110, dy, { width: 48, align: "right", lineBreak: false }).restore();
-                    dy += 13;
+                        .text(dollar(d.amount), dx + 95, dy, { width: 65, align: "right", lineBreak: false }).restore();
+                    dy += 14;
                 }
                 doc.y = dedChartY + 185 + 12;
+            }
+        }
+
+        if (data.deductionDistribution && data.deductionDistribution.length > 0) {
+            _ensureSpace(doc, data.meta, 220);
+            doc.moveDown(0.3);
+            sectionTitle(doc, "Deduction Distribution");
+            if (charts.deductionDistribution) {
+                const dDistChartY = doc.y;
+                doc.image(charts.deductionDistribution, 38, dDistChartY, { width: 345, height: 185 });
+
+                const sx = 400;
+                let sy = dDistChartY + 5;
+                const dedArr = data.employees.map((e) => e.totalDeduction).filter(d => d > 0).sort((a, b) => a - b);
+                if (dedArr.length > 0) {
+                    const dMed = dedArr.length % 2 === 0
+                        ? (dedArr[dedArr.length / 2 - 1] + dedArr[dedArr.length / 2]) / 2
+                        : dedArr[Math.floor(dedArr.length / 2)];
+
+                    const stats = [
+                        ["Minimum", dollar(Math.min(...dedArr))],
+                        ["Maximum", dollar(Math.max(...dedArr))],
+                        ["Median", dollar(dMed)],
+                    ];
+                    for (const [lbl, val] of stats) {
+                        doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.muted).text(lbl, sx, sy).restore();
+                        doc.save().font("Helvetica").fontSize(8.5).fillColor(C.dark).text(val, sx + 65, sy).restore();
+                        sy += 18;
+                    }
+                }
+                doc.y = dDistChartY + 185 + 12;
+            }
+        }
+
+        if (data.deptDeductionBreakdown && data.deptDeductionBreakdown.length > 0) {
+            _ensureSpace(doc, data.meta, 240);
+            doc.moveDown(0.3);
+            sectionTitle(doc, "Deductions by Department");
+            if (charts.deptDeduction) {
+                const ddChartY = doc.y;
+                doc.image(charts.deptDeduction, 38, ddChartY, { width: 345, height: 212 });
+
+                const deptLegendX = 395;
+                let dly = ddChartY + 5;
+                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Dept.", deptLegendX, dly).restore();
+                doc.save().font("Helvetica-Bold").fontSize(8).fillColor(C.brand).text("Deduction", deptLegendX + 90, dly).restore();
+                dly += 14;
+
+                const totalDeductions = data.summary.totalDeductions || 1;
+                for (const d of data.deptDeductionBreakdown.slice(0, 10)) {
+                    const pctShare = ((d.totalDeduction / totalDeductions) * 100).toFixed(1);
+                    doc.save().font("Helvetica").fontSize(8).fillColor(C.text)
+                        .text(d.name, deptLegendX, dly, { width: 80, lineBreak: false })
+                        .restore();
+                    doc.save().font("Helvetica").fontSize(7.5).fillColor(C.danger)
+                        .text(`${dollar(d.totalDeduction)}`, deptLegendX, dly + 9, { width: 80, lineBreak: false })
+                        .restore();
+                    doc.save().font("Helvetica").fontSize(7.5).fillColor(C.muted)
+                        .text(`(${pctShare}%)`, deptLegendX + 82, dly + 9, { width: 30, lineBreak: false })
+                        .restore();
+                    dly += 18;
+                }
+                doc.y = ddChartY + 212 + 12;
             }
         }
 
@@ -469,7 +611,7 @@ export async function generatePayrollPDF(data, charts) {
             doc.switchToPage(i);
             doc.save()
                 .font("Helvetica").fontSize(8).fillColor(C.muted)
-                .text(`Page ${i + 1} of ${totalPages}`, 40, 826, { align: "right", width: 515 })
+                .text(`Page ${i + 1} of ${totalPages}`, 40, 816, { align: "right", width: 515 })
                 .restore();
         }
 

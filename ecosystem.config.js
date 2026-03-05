@@ -53,6 +53,19 @@ module.exports = {
       }
     },
     {
+      name: "nexushr-analytics-worker",
+      cwd: "./workers/analytics",
+      script: "./src/analytics-worker.js",
+      interpreter: "node",
+      exec_mode: "cluster",
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: "production"
+      }
+    },
+    {
       name: "nexushr-client",
       cwd: "./client",
       script: "npm",

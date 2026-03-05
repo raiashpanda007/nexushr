@@ -7,6 +7,7 @@
 ## Table of Contents
 
 - [Overview](#overview)
+- [HR Portal Exclusive Features](#hr-portal-exclusive-features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
@@ -21,6 +22,7 @@
   - [Payroll Generator](#payroll-generator)
   - [Payroll Batch](#payroll-batch)
   - [Image Worker](#image-worker)
+  - [Analytics Worker](#analytics-worker)
 - [Bulk Payroll Processing](#bulk-payroll-processing)
 - [Backend](#backend)
   - [Entry Point & Clustering](#entry-point--clustering)
@@ -67,11 +69,25 @@ NexusHR is a monorepo HRMS application with a **Node.js/Express** backend and a 
 | **Employee** | `/attendance` | Self-service: attendance punch-in/out, own leave requests, own payroll/salary view |
 
 Key highlights:
-- **JWT authentication** with automatic access-token refresh via HTTP-only cookies
+- **JWT authentication** with automatic access-token refresh via HTTP-only cookies (using a dedicated session collection)
 - **Offline-first attendance**: punches are stored in IndexedDB when offline and synced via a Web Worker when connectivity is restored
+- **Secure Face Verification**: photo verification required during punch-out workflows
 - **Clustered backend**: Node.js cluster module forks multiple worker processes for horizontal scaling
-- **BullMQ + Redis** queue for processing offline batch jobs on the server side
+- **BullMQ + Redis / SQS** queue for processing offline batch jobs and analytics generation
 - **Zod validation** on all backend endpoints for runtime type safety
+
+---
+
+## HR Portal Exclusive Features
+
+The NexusHR platform empowers Human Resource administrators with a specialized suite of tools and dashboards tailored for organizational management:
+
+- **Advanced Analytics & Worker Queues**: Trigger background analytics generation for selected months and years via a dedicated Docker LocalStack queue and view the results in comprehensive dashboards.
+- **Enhanced Payroll PDF Reports**: Export detailed payslips featuring visual range charts for bonus/deduction distributions and department-wise statistics.
+- **Domain-Specific Aesthetic Dashboards**: Curated, responsive dashboards with domain-specific color schemes for managing Skills, Departments, and Salaries.
+- **Refined Leave & Attendance Insights**: Visually enhanced leave dashboards featuring segmented bar charts (by leave types) and aesthetic pie charts for quick status assessments.
+- **Events Management**: An interactive organization-wide Events Calendar that HR can manage, seeding and displaying events with detailed dialogs.
+- **Bulk Payroll Processing**: Process payroll for entire departments or the full organization concurrently using distributed background workers (generator and batch writers).
 
 ---
 
@@ -309,6 +325,7 @@ Use the root PM2 ecosystem file to run all services together.
 | Payroll Generator | `nexushr-payroll-worker` | 1 | cluster |
 | Payroll Batch Writer | `nexushr-payroll-batch` | 3 | cluster |
 | Image Worker | `nexushr-image-worker` | 1 | cluster |
+| Analytics Worker | `nexushr-analytics` | 1 | cluster |
 | Client Dev Server | `nexushr-client` | 1 | fork |
 
 The **payroll-batch** worker runs with 3 instances so multiple batches of employee payrolls can be written in parallel for faster processing.
@@ -393,6 +410,12 @@ Long-polls the **publisher SQS queue** for employee batches. On receiving a batc
 **`workers/image-worker/src/image-worker.js`**
 
 Handles image processing tasks (resizing, optimization) via SQS.
+
+### Analytics Worker
+
+**`workers/analytics/...`**
+
+Handles processing of HR analytics data, triggered by a dedicated analytics queue via LocalStack. Evaluates metrics such as departmental bonuses, deductions, and monthly aggregations.
 
 ---
 
@@ -734,6 +757,7 @@ All pages are nested under a shared `<Layout>` component (sidebar + header).
 | `/payroll` | `Payroll.tsx` | Both | HR: generate & view all payrolls. Employee: view own payroll |
 | `/attendance` | `Attendance.tsx` | Both | HR: analytics dashboard. Employee: punch in/out + history |
 | `/leaves` | `Leaves.tsx` | Both | HR: manage types, balances, requests. Employee: apply & track |
+| `/events` | `Events.tsx` | Both | Interactive organization-wide events calendar |
 
 ---
 

@@ -91,7 +91,7 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                     </div>
                     <div className="flex items-center gap-3 ">
                         <div className="text-right bg-background/70 rounded-xl px-4 py-2.5 border border-border/50">
-                            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Salaries</p>
+                            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Salaries on this Page</p>
                             <p className="text-xl font-bold text-foreground flex items-center gap-1">
                                 <DollarSign className="h-4 w-4" />
                                 {totalPayroll.toLocaleString()}

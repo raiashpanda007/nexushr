@@ -22,7 +22,7 @@ const MONTH_NAMES = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function rupeeNum(n) {
+function dollarNum(n) {
     return typeof n === "number" ? Math.round(n) : 0;
 }
 
@@ -84,16 +84,16 @@ function buildSummarySheet(wb, data) {
     const s = data.summary;
     const rows = [
         ["Report Period",              `${data.meta.monthName} ${data.meta.year}`],
-        ["Generated At",              new Date(data.meta.generatedAt).toLocaleString("en-IN")],
+        ["Generated At",              new Date(data.meta.generatedAt).toLocaleString("en-US")],
         ["Employees in Payroll",      s.employeeCount],
-        ["Total Gross Payroll (₹)",   rupeeNum(s.totalGross)],
-        ["Total Net Payroll (₹)",     rupeeNum(s.totalPayroll)],
-        ["Total Bonuses Paid (₹)",    rupeeNum(s.totalBonuses)],
-        ["Total Deductions (₹)",      rupeeNum(s.totalDeductions)],
-        ["Average Net Pay (₹)",       rupeeNum(s.avgNet)],
+        ["Total Gross Payroll ($)",   dollarNum(s.totalGross)],
+        ["Total Net Payroll ($)",     dollarNum(s.totalPayroll)],
+        ["Total Bonuses Paid ($)",    dollarNum(s.totalBonuses)],
+        ["Total Deductions ($)",      dollarNum(s.totalDeductions)],
+        ["Average Net Pay ($)",       dollarNum(s.avgNet)],
         ["MoM Change (%)",            s.momChange !== null ? Number(s.momChange) : "N/A"],
-        ["Top Earner",                `${s.topEarner.name} (${s.topEarner.department}) — ₹${rupeeNum(s.topEarner.net).toLocaleString("en-IN")}`],
-        ["Lowest Earner",             `${s.bottomEarner.name} (${s.bottomEarner.department}) — ₹${rupeeNum(s.bottomEarner.net).toLocaleString("en-IN")}`],
+        ["Top Earner",                `${s.topEarner.name} (${s.topEarner.department}) — $${dollarNum(s.topEarner.net).toLocaleString("en-US")}`],
+        ["Lowest Earner",             `${s.bottomEarner.name} (${s.bottomEarner.department}) — $${dollarNum(s.bottomEarner.net).toLocaleString("en-US")}`],
         ["Bonus-to-Gross Ratio (%)",  s.totalGross > 0 ? +((s.totalBonuses / s.totalGross) * 100).toFixed(2) : 0],
         ["Deduction Rate (%)",        s.totalGross > 0 ? +((s.totalDeductions / s.totalGross) * 100).toFixed(2) : 0],
     ];
@@ -117,7 +117,7 @@ function buildEmployeeSheet(wb, data) {
     const endMonth   = data.trend[data.trend.length - 1]?.label || `${data.meta.monthName} ${data.meta.year}`;
     addSheetTitle(sheet, `Employee Payroll Details — ${startMonth} to ${endMonth}`, colCount);
 
-    const headers = ["Year", "Month", "Employee Name", "Department", "Base (₹)", "HRA (₹)", "LTA (₹)", "Gross (₹)", "Total Bonus (₹)", "Total Deduction (₹)", "Net Pay (₹)", "Email"];
+    const headers = ["Year", "Month", "Employee Name", "Department", "Base ($)", "HRA ($)", "LTA ($)", "Gross ($)", "Total Bonus ($)", "Total Deduction ($)", "Net Pay ($)", "Email"];
     const hRow = sheet.addRow(headers);
     hRow.height = 22;
     hRow.eachCell((c) => applyHeaderStyle(c));
@@ -132,13 +132,13 @@ function buildEmployeeSheet(wb, data) {
             e.monthLabel || e.month,
             e.employeeName,
             e.department,
-            rupeeNum(e.base),
-            rupeeNum(e.hra),
-            rupeeNum(e.lta),
-            rupeeNum(e.gross),
-            rupeeNum(e.totalBonus),
-            rupeeNum(e.totalDeduction),
-            rupeeNum(e.net),
+            dollarNum(e.base),
+            dollarNum(e.hra),
+            dollarNum(e.lta),
+            dollarNum(e.gross),
+            dollarNum(e.totalBonus),
+            dollarNum(e.totalDeduction),
+            dollarNum(e.net),
             e.email,
         ]);
         row.height = 17;
@@ -159,7 +159,7 @@ function buildBonusDeductionSheet(wb, data) {
     const colCount = 7;
     addSheetTitle(sheet, `Bonus & Deduction Line Items — 12 Months`, colCount);
 
-    const headers = ["Year", "Month", "Employee Name", "Department", "Reason", "Amount (₹)", "Type"];
+    const headers = ["Year", "Month", "Employee Name", "Department", "Reason", "Amount ($)", "Type"];
     const hRow = sheet.addRow(headers);
     hRow.height = 22;
     hRow.eachCell((c) => applyHeaderStyle(c));
@@ -170,14 +170,14 @@ function buildBonusDeductionSheet(wb, data) {
 
     for (const e of allRecords) {
         for (const b of e.bonus) {
-            const r = sheet.addRow([e.year, e.monthLabel || e.month, e.employeeName, e.department, b.reason, rupeeNum(Math.abs(b.amount)), "Bonus"]);
+            const r = sheet.addRow([e.year, e.monthLabel || e.month, e.employeeName, e.department, b.reason, dollarNum(Math.abs(b.amount)), "Bonus"]);
             r.height = 17;
             r.eachCell((c, col) => applyDataStyle(c, rowIdx, col === 6 ? "#,##0" : null));
             r.getCell(7).font = { size: 9, color: { argb: CLR.success } };
             rowIdx++;
         }
         for (const d of e.deduction) {
-            const r = sheet.addRow([e.year, e.monthLabel || e.month, e.employeeName, e.department, d.reason, rupeeNum(Math.abs(d.amount)), "Deduction"]);
+            const r = sheet.addRow([e.year, e.monthLabel || e.month, e.employeeName, e.department, d.reason, dollarNum(Math.abs(d.amount)), "Deduction"]);
             r.height = 17;
             r.eachCell((c, col) => applyDataStyle(c, rowIdx, col === 6 ? "#,##0" : null));
             r.getCell(7).font = { size: 9, color: { argb: CLR.danger } };
@@ -196,7 +196,7 @@ function buildDeptSheet(wb, data) {
     const colCount = 6;
     addSheetTitle(sheet, `Department Summary — ${data.meta.monthName} ${data.meta.year}`, colCount);
 
-    const headers = ["Department", "Employees", "Total Gross (₹)", "Total Net (₹)", "Avg Net Pay (₹)", "% of Payroll"];
+    const headers = ["Department", "Employees", "Total Gross ($)", "Total Net ($)", "Avg Net Pay ($)", "% of Payroll"];
     const hRow = sheet.addRow(headers);
     hRow.height = 22;
     hRow.eachCell((c) => applyHeaderStyle(c));
@@ -208,9 +208,9 @@ function buildDeptSheet(wb, data) {
         const row = sheet.addRow([
             d.name,
             d.count,
-            rupeeNum(d.totalGross),
-            rupeeNum(d.totalNet),
-            rupeeNum(d.totalNet / d.count),
+            dollarNum(d.totalGross),
+            dollarNum(d.totalNet),
+            dollarNum(d.totalNet / d.count),
             pctShare,
         ]);
         row.height = 17;
@@ -231,7 +231,7 @@ function buildTrendSheet(wb, data) {
     const colCount = 5;
     addSheetTitle(sheet, "12-Month Payroll Trend", colCount);
 
-    const headers = ["Month", "Employees", "Gross Payroll (₹)", "Net Payroll (₹)", "MoM Change (%)"];
+    const headers = ["Month", "Employees", "Gross Payroll ($)", "Net Payroll ($)", "MoM Change (%)"];
     const hRow = sheet.addRow(headers);
     hRow.height = 22;
     hRow.eachCell((c) => applyHeaderStyle(c));
@@ -245,8 +245,8 @@ function buildTrendSheet(wb, data) {
         const row = sheet.addRow([
             t.label,
             t.count,
-            rupeeNum(t.gross),
-            rupeeNum(t.net),
+            dollarNum(t.gross),
+            dollarNum(t.net),
             momChange !== null ? momChange / 100 : "N/A",
         ]);
         row.height = 17;
@@ -276,12 +276,12 @@ function buildBonusCatSheet(wb, data) {
     const colCount = 2;
     addSheetTitle(sheet, `Top Bonus Categories — ${data.meta.monthName} ${data.meta.year}`, colCount);
 
-    const hRow = sheet.addRow(["Bonus Reason", "Total Amount (₹)"]);
+    const hRow = sheet.addRow(["Bonus Reason", "Total Amount ($)"]);
     hRow.height = 22;
     hRow.eachCell((c) => applyHeaderStyle(c, CLR.success));
 
     data.topBonusCategories.forEach((b, i) => {
-        const row = sheet.addRow([b.reason, rupeeNum(b.amount)]);
+        const row = sheet.addRow([b.reason, dollarNum(b.amount)]);
         row.height = 17;
         applyDataStyle(row.getCell(1), i);
         applyDataStyle(row.getCell(2), i, "#,##0");
@@ -299,12 +299,12 @@ function buildDeductionCatSheet(wb, data) {
     const colCount = 2;
     addSheetTitle(sheet, `Top Deduction Categories — ${data.meta.monthName} ${data.meta.year}`, colCount);
 
-    const hRow = sheet.addRow(["Deduction Reason", "Total Amount (₹)"]);
+    const hRow = sheet.addRow(["Deduction Reason", "Total Amount ($)"]);
     hRow.height = 22;
     hRow.eachCell((c) => applyHeaderStyle(c, CLR.danger));
 
     data.topDeductionCategories.forEach((d, i) => {
-        const row = sheet.addRow([d.reason, rupeeNum(d.amount)]);
+        const row = sheet.addRow([d.reason, dollarNum(d.amount)]);
         row.height = 17;
         applyDataStyle(row.getCell(1), i);
         applyDataStyle(row.getCell(2), i, "#,##0");

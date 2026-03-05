@@ -110,13 +110,17 @@ async function GetPayrollAnalyticsData(db, month, year) {
     const deptBreakdown = {};
     for (const e of enriched) {
         if (!deptBreakdown[e.department]) {
-            deptBreakdown[e.department] = { name: e.department, count: 0, totalNet: 0, totalGross: 0 };
+            deptBreakdown[e.department] = { name: e.department, count: 0, totalNet: 0, totalGross: 0, totalBonus: 0, totalDeduction: 0 };
         }
         deptBreakdown[e.department].count++;
         deptBreakdown[e.department].totalNet += e.net;
         deptBreakdown[e.department].totalGross += e.gross;
+        deptBreakdown[e.department].totalBonus += e.totalBonus;
+        deptBreakdown[e.department].totalDeduction += e.totalDeduction;
     }
     const deptArray = Object.values(deptBreakdown).sort((a, b) => b.totalNet - a.totalNet);
+    const deptBonusArray = Object.values(deptBreakdown).filter(d => d.totalBonus > 0).sort((a, b) => b.totalBonus - a.totalBonus);
+    const deptDeductionArray = Object.values(deptBreakdown).filter(d => d.totalDeduction > 0).sort((a, b) => b.totalDeduction - a.totalDeduction);
 
     // ─── 6. Monthly trend (last 12 months incl. current) ─────────────────
     const trendMonths = [];
@@ -229,17 +233,30 @@ async function GetPayrollAnalyticsData(db, month, year) {
         .map(([reason, amount]) => ({ reason, amount }));
 
     // ─── 8. Salary distribution buckets ──────────────────────────────────
-    const nets = enriched.map((e) => e.net);
-    const minNet = Math.min(...nets);
-    const maxNet = Math.max(...nets);
-    const bucketSize = Math.max(Math.ceil((maxNet - minNet) / 6), 1);
-    const buckets = {};
-    for (const net of nets) {
-        const bucketStart = Math.floor((net - minNet) / bucketSize) * bucketSize + minNet;
-        const label = `₹${(bucketStart / 1000).toFixed(0)}k–₹${((bucketStart + bucketSize) / 1000).toFixed(0)}k`;
-        buckets[label] = (buckets[label] || 0) + 1;
+    function makeDistribution(values, filterZero = false) {
+        const valSet = filterZero ? values.filter(v => v > 0) : values;
+        if (valSet.length === 0) return [];
+        const minVal = Math.min(...valSet);
+        const maxVal = Math.max(...valSet);
+        if (minVal === maxVal) {
+            const fmt = minVal >= 1000 ? `$${(minVal / 1000).toFixed(0)}k` : `$${minVal}`;
+            return [{ range: fmt, count: valSet.length }];
+        }
+        const bucketSize = Math.max(Math.ceil((maxVal - minVal) / 6), 1);
+        const buckets = {};
+        for (const v of valSet) {
+            const bucketStart = Math.floor((v - minVal) / bucketSize) * bucketSize + minVal;
+            const bStartLabel = bucketStart >= 1000 ? `$${(bucketStart / 1000).toFixed(0)}k` : `$${bucketStart}`;
+            const bEndLabel = (bucketStart + bucketSize) >= 1000 ? `$${((bucketStart + bucketSize) / 1000).toFixed(0)}k` : `$${bucketStart + bucketSize}`;
+            const label = `${bStartLabel}–${bEndLabel}`;
+            buckets[label] = (buckets[label] || 0) + 1;
+        }
+        return Object.entries(buckets).map(([range, count]) => ({ range, count }));
     }
-    const distribution = Object.entries(buckets).map(([range, count]) => ({ range, count }));
+
+    const distribution = makeDistribution(enriched.map((e) => e.net));
+    const bonusDistribution = makeDistribution(enriched.map((e) => e.totalBonus), true);
+    const deductionDistribution = makeDistribution(enriched.map((e) => e.totalDeduction), true);
 
     // ─── 9. All-months individual payroll records (for Excel Full History) ─
     const rawAllMonths = await payrolls
@@ -249,10 +266,10 @@ async function GetPayrollAnalyticsData(db, month, year) {
 
     // Resolve any salary/user/dept IDs that weren't in the current-month maps
     const allSalaryIds = [...new Set(rawAllMonths.map((p) => p.salary?.toString()).filter(Boolean))];
-    const allUserIds   = [...new Set(rawAllMonths.map((p) => p.user?.toString()).filter(Boolean))];
+    const allUserIds = [...new Set(rawAllMonths.map((p) => p.user?.toString()).filter(Boolean))];
 
     const newSalaryIds = allSalaryIds.filter((id) => !salaryMap[id]);
-    const newUserIds   = allUserIds.filter((id)   => !userMap[id]);
+    const newUserIds = allUserIds.filter((id) => !userMap[id]);
 
     const [extraSalaries, extraUsers] = await Promise.all([
         newSalaryIds.length > 0
@@ -262,28 +279,28 @@ async function GetPayrollAnalyticsData(db, month, year) {
             ? users.find(
                 { _id: { $in: newUserIds.map((id) => new ObjectId(id)) } },
                 { projection: { firstName: 1, lastName: 1, email: 1, deptId: 1, profilePhoto: 1 } },
-              ).toArray()
+            ).toArray()
             : Promise.resolve([]),
     ]);
 
     for (const s of extraSalaries) salaryMap[s._id.toString()] = s;
-    for (const u of extraUsers)   userMap[u._id.toString()]   = u;
+    for (const u of extraUsers) userMap[u._id.toString()] = u;
 
     const allPayrolls = rawAllMonths.map((p) => {
         const salary = salaryMap[p.salary?.toString()] || {};
-        const user   = userMap[p.user?.toString()]     || {};
-        const dept   = deptMap[user.deptId?.toString()] || {};
-        const calcs  = calcNet({ ...p, salary });
+        const user = userMap[p.user?.toString()] || {};
+        const dept = deptMap[user.deptId?.toString()] || {};
+        const calcs = calcNet({ ...p, salary });
         return {
-            _id:          p._id.toString(),
-            month:        p.month,
-            year:         p.year,
-            monthLabel:   MONTH_NAMES[p.month - 1],
+            _id: p._id.toString(),
+            month: p.month,
+            year: p.year,
+            monthLabel: MONTH_NAMES[p.month - 1],
             employeeName: `${user.firstName || "Unknown"} ${user.lastName || ""}`.trim(),
-            email:        user.email || "",
-            department:   dept.name || "Unknown",
-            bonus:        p.bonus || [],
-            deduction:    p.deduction || [],
+            email: user.email || "",
+            department: dept.name || "Unknown",
+            bonus: p.bonus || [],
+            deduction: p.deduction || [],
             salary,
             ...calcs,
         };
@@ -310,10 +327,14 @@ async function GetPayrollAnalyticsData(db, month, year) {
         employees: enriched,           // sorted by name for table
         topEarners: sorted.slice(0, 10),
         deptBreakdown: deptArray,
+        deptBonusBreakdown: deptBonusArray,
+        deptDeductionBreakdown: deptDeductionArray,
         trend,
         topBonusCategories,
         topDeductionCategories,
         distribution,
+        bonusDistribution,
+        deductionDistribution,
         allPayrolls,                   // all 12 months individual records (for Excel Full History)
     };
 }
