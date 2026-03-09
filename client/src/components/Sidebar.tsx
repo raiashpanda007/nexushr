@@ -13,6 +13,7 @@ import {
     Award,
     Banknote,
     Package,
+    BriefcaseBusiness,
     type LucideIcon,
 } from "lucide-react"
 
@@ -26,6 +27,7 @@ const iconMap: Record<string, LucideIcon> = {
     Award,
     Banknote,
     Package,
+    BriefcaseBusiness,
 }
 
 export default function Sidebar() {

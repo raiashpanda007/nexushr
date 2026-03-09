@@ -20,7 +20,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
         deptId: "",
         note: "",
     });
-    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+    const [selectedSkills, setSelectedSkills] = useState<Array<{ skillId: string; amount: number }>>([]);
 
     // Image upload
     const {
@@ -72,9 +72,35 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
         if (initialData) {
             const deptId = typeof initialData.deptId === 'object' ? initialData.deptId?._id : initialData.deptId;
 
-            let initialSkills: string[] = [];
+            let initialSkills: Array<{ skillId: string; amount: number }> = [];
             if (initialData.skills && Array.isArray(initialData.skills)) {
-                initialSkills = initialData.skills.map(s => typeof s === 'object' ? s._id : s);
+                initialSkills = initialData.skills
+                    .map((skillItem: any) => {
+                        if (typeof skillItem === "string") {
+                            return { skillId: skillItem, amount: 1 };
+                        }
+
+                        if (!skillItem || typeof skillItem !== "object") {
+                            return null;
+                        }
+
+                        const resolvedSkillId =
+                            typeof skillItem.skillId === "string"
+                                ? skillItem.skillId
+                                : typeof skillItem.skillId === "object"
+                                    ? skillItem.skillId?._id
+                                    : skillItem._id;
+
+                        if (!resolvedSkillId) {
+                            return null;
+                        }
+
+                        return {
+                            skillId: resolvedSkillId,
+                            amount: typeof skillItem.amount === "number" && skillItem.amount > 0 ? skillItem.amount : 1,
+                        };
+                    })
+                    .filter((skill): skill is { skillId: string; amount: number } => Boolean(skill));
             }
 
             setFormData({
@@ -113,9 +139,19 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
 
     const toggleSkill = (skillId: string) => {
         setSelectedSkills(prev =>
-            prev.includes(skillId)
-                ? prev.filter(id => id !== skillId)
-                : [...prev, skillId]
+            prev.some(skill => skill.skillId === skillId)
+                ? prev.filter(skill => skill.skillId !== skillId)
+                : [...prev, { skillId, amount: 1 }]
+        );
+    };
+
+    const updateSkillAmount = (skillId: string, amount: number) => {
+        setSelectedSkills(prev =>
+            prev.map(skill =>
+                skill.skillId === skillId
+                    ? { ...skill, amount: Number.isFinite(amount) && amount > 0 ? amount : 1 }
+                    : skill
+            )
         );
     };
 
@@ -201,6 +237,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
         handleChange,
         handleDeptChange,
         toggleSkill,
+        updateSkillAmount,
         handleSubmit,
         previewUrl,
         uploading,

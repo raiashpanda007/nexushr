@@ -16,6 +16,7 @@ export function useSidebar() {
         { name: "Skills", path: "/skills", icon: "Award" },
         { name: "Payroll", path: "/payroll", icon: "Banknote" },
         { name: "Assets", path: "/assets", icon: "Package" },
+        { name: "Hiring", path: "/hiring", icon: "BriefcaseBusiness" },
     ]
 
     const employeeItems = [

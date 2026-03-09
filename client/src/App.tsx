@@ -14,6 +14,8 @@ import EventDetails from "./pages/dashboard/EventDetails"
 import EmployeeDetails from "./pages/dashboard/EmployeeDetails"
 import Assets from "./pages/dashboard/Assets"
 import AssetDetails from "./pages/dashboard/AssetDetails"
+import Hiring from "./pages/dashboard/Hiring"
+import HiringDetails from "./pages/dashboard/HiringDetails"
 import { Toaster } from "sonner"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -58,6 +60,8 @@ function App() {
           <Route path="events/:id" element={<EventDetails />} />
           <Route path="assets" element={<Assets />} />
           <Route path="assets/:id" element={<AssetDetails />} />
+          <Route path="hiring" element={<Hiring />} />
+          <Route path="hiring/:id" element={<HiringDetails />} />
         </Route>
 
         {/* Catch all - redirect to home (which redirects based on role) */}

@@ -7,7 +7,10 @@ export const CreateEmployeValidationSchema = zod.object({
   deptId: zod.string().trim(),
   profilePhoto: zod.string(),
   note: zod.string().optional(),
-  skills: zod.array(zod.string())
+  skills: zod.array(zod.object({
+    skillId: zod.string().trim().min(1, "Skill id is required"),
+    amount: zod.number().min(1, "Skill amount must be at least 1").max(5, "Skill amount cannot be more than 5")
+  }))
 })
 export const CreateHRValidationSchema = zod.object({
   email: zod.email(),
@@ -29,7 +32,10 @@ export const UserUpdatesValidationSchema = zod.object({
   deptId: zod.string().trim().optional(),
   profilePhoto: zod.string().optional(),
   note: zod.string().trim().optional(),
-  skills: zod.array(zod.string()).optional()
+  skills: zod.array(zod.object({
+    skillId: zod.string().trim().min(1, "Skill id is required"),
+    amount: zod.number().min(1, "Skill amount must be at least 1").max(5, "Skill amount cannot be more than 5")
+  })).optional()
 })
 
 

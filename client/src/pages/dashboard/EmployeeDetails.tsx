@@ -491,7 +491,31 @@ export default function EmployeeDetails() {
 
     const skillNames = useMemo(() => {
         const skills = employee?.skills ?? [];
-        return skills.map((s: any) => (typeof s === "string" ? s : s?.name)).filter(Boolean);
+        return skills
+            .map((skillItem: any) => {
+                if (typeof skillItem === "string") {
+                    return skillItem;
+                }
+
+                if (!skillItem || typeof skillItem !== "object") {
+                    return null;
+                }
+
+                const resolvedSkillName =
+                    typeof skillItem.name === "string"
+                        ? skillItem.name
+                        : typeof skillItem.skillId === "object"
+                            ? skillItem.skillId?.name
+                            : undefined;
+
+                if (!resolvedSkillName) {
+                    return null;
+                }
+
+                const amount = typeof skillItem.amount === "number" ? skillItem.amount : null;
+                return amount !== null ? `${resolvedSkillName} (${amount})` : resolvedSkillName;
+            })
+            .filter(Boolean);
     }, [employee?.skills]);
 
     const attendancePages = Math.ceil(attendanceTotal / attendanceLimit);

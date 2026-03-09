@@ -10,6 +10,7 @@ import SyncRoutes from "./modules/Sync/Routes/sync.routes.js";
 import SearchRoutes from "./modules/Search/Routes/search.routes.js";
 import EventRoutes from "./modules/Events/Routes/events.routes.js";
 import AssetsRoutes from "./modules/Assets/Routes/assets.routes.js";
+import HiringRoutes from "./modules/Hiring/Routers/hiring.routes.js";
 
 class Routes {
     constructor() {
@@ -25,6 +26,7 @@ class Routes {
         this.searchRoutes = new SearchRoutes().routes();
         this.eventRoutes = new EventRoutes().routes();
         this.assetsRoutes = new AssetsRoutes().routes();
+        this.hiringRoutes = new HiringRoutes().routes();
     }
     routes() {
         this.router.use("/", this.userRoutes);
@@ -38,6 +40,7 @@ class Routes {
         this.router.use("/events", this.eventRoutes);
         this.router.use("/search", this.searchRoutes);
         this.router.use("/assets", this.assetsRoutes);
+        this.router.use("/hiring", this.hiringRoutes);
         return this.router;
     }
 }

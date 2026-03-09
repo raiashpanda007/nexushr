@@ -61,9 +61,17 @@ const UserSchema = new mongoose.Schema(
     },
     skills: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Skills",
-        required: true
+        skillId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Skills",
+          required: true
+        },
+        amount: {
+          type: Number,
+          min: 1,
+          max: 5,
+          required: true
+        }
       }
     ],
 

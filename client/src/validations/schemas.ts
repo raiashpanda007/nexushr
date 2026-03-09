@@ -9,7 +9,12 @@ export const CreateEmployeeSchema = z.object({
     deptId: z.string().min(1, "Please select a department"),
     profilePhoto: z.string().min(1, "Profile photo is required"),
     note: z.string().optional(),
-    skills: z.array(z.string()).optional(),
+    skills: z.array(
+        z.object({
+            skillId: z.string().min(1, "Please select a skill"),
+            amount: z.number().min(1, "Skill amount must be at least 1"),
+        })
+    ).optional(),
 });
 
 export const UpdateEmployeeSchema = z.object({
@@ -19,7 +24,12 @@ export const UpdateEmployeeSchema = z.object({
     deptId: z.string().optional(),
     profilePhoto: z.string().optional(),
     note: z.string().optional(),
-    skills: z.array(z.string()).optional(),
+    skills: z.array(
+        z.object({
+            skillId: z.string().min(1, "Please select a skill"),
+            amount: z.number().min(1, "Skill amount must be at least 1"),
+        })
+    ).optional(),
 });
 
 // ============ Department Validations ============

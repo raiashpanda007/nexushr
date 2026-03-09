@@ -9,6 +9,7 @@ import { CreatePayrollValidationSchema, GenerateBulkPayrollValidationSchema } fr
 import { CreateEventSchema, UpdateEventSchema } from "./event.types.js"
 import { CreateAttendanceValidationSchema } from "./attendance.types.js"
 import { CreateAssetValidationSchema, UpdateAssetValidationSchema } from "./asset.types.js"
+import { CreateOpeningValidationSchema } from "./Hiring/opening.types.js"
 import { OfflineQueueValidationSchema } from "./sync.types.js"
 import { ErrorTypes } from "./error.types.js"
 
@@ -60,6 +61,9 @@ const Types = {
   Assets: {
     Create: CreateAssetValidationSchema,
     Update: UpdateAssetValidationSchema
+  },
+  Openings: {
+    Create: CreateOpeningValidationSchema
   },
   OfflineQueue: OfflineQueueValidationSchema,
   Errors: ErrorTypes

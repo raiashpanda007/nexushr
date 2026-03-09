@@ -49,9 +49,33 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
         return dept.name;
     };
 
-    const getSkillsList = (skills: (string | { _id: string; name: string })[] | undefined) => {
+    const getSkillsList = (skills: Employee["skills"]) => {
         if (!skills || skills.length === 0) return [];
-        return skills.map(s => (typeof s === 'string' ? s : s.name));
+        return skills
+            .map((skillItem: any) => {
+                if (typeof skillItem === "string") {
+                    return skillItem;
+                }
+
+                if (!skillItem || typeof skillItem !== "object") {
+                    return null;
+                }
+
+                const resolvedSkillName =
+                    typeof skillItem.name === "string"
+                        ? skillItem.name
+                        : typeof skillItem.skillId === "object"
+                            ? skillItem.skillId?.name
+                            : undefined;
+
+                if (!resolvedSkillName) {
+                    return null;
+                }
+
+                const amount = typeof skillItem.amount === "number" ? skillItem.amount : null;
+                return amount !== null ? `${resolvedSkillName} (${amount})` : resolvedSkillName;
+            })
+            .filter((skill): skill is string => Boolean(skill));
     };
 
     const onlineCount = employees.filter(e => e.online).length;

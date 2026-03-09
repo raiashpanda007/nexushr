@@ -33,6 +33,7 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
         handleChange,
         handleDeptChange,
         toggleSkill,
+        updateSkillAmount,
         handleSubmit,
         previewUrl,
         uploading,
@@ -147,11 +148,11 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
                                 >
                                     {selectedSkills.length > 0
                                         ? <div className="flex flex-wrap gap-1">
-                                            {selectedSkills.map(id => {
-                                                const skill = skills.find(s => s._id === id);
+                                            {selectedSkills.map((selectedSkill) => {
+                                                const skill = skills.find(s => s._id === selectedSkill.skillId);
                                                 return skill ? (
-                                                    <span key={id} className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded-md text-xs">
-                                                        {skill.name}
+                                                    <span key={selectedSkill.skillId} className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded-md text-xs">
+                                                        {skill.name} ({selectedSkill.amount})
                                                     </span>
                                                 ) : null;
                                             })}
@@ -175,7 +176,7 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
                                                     <Check
                                                         className={cn(
                                                             "mr-2 h-4 w-4",
-                                                            selectedSkills.includes(skill._id) ? "opacity-100" : "opacity-0"
+                                                            selectedSkills.some(selectedSkill => selectedSkill.skillId === skill._id) ? "opacity-100" : "opacity-0"
                                                         )}
                                                     />
                                                     {skill.name}
@@ -186,6 +187,27 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
                                 </Command>
                             </PopoverContent>
                         </Popover>
+                        {selectedSkills.length > 0 && (
+                            <div className="space-y-2">
+                                {selectedSkills.map((selectedSkill) => {
+                                    const skill = skills.find((s) => s._id === selectedSkill.skillId);
+                                    if (!skill) return null;
+
+                                    return (
+                                        <div key={selectedSkill.skillId} className="flex items-center gap-2">
+                                            <span className="text-sm text-muted-foreground flex-1 truncate">{skill.name}</span>
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                value={selectedSkill.amount}
+                                                onChange={(e) => updateSkillAmount(selectedSkill.skillId, Number(e.target.value))}
+                                                className="w-24"
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid gap-2">

@@ -11,6 +11,9 @@ import AttendanceModel from "./modules/Attendance/Models/attendance.model.js";
 import PayrollModal from "./modules/Payroll/Models/payroll.model.js";
 import EventModel from "./modules/Events/Models/Events.models.js";
 import AssetModel from "./modules/Assets/Models/assets.models.js";
+import Openings from "./modules/Hiring/Models/openings.model.js";
+import QuestionModel from "./modules/Hiring/Models/questions.model.js";
+import RoundsModel from "./modules/Hiring/Models/rounds.model.js";
 import bcrypt from "bcrypt";
 
 const TARGET = 10000;
@@ -263,7 +266,7 @@ const seed = async () => {
                 passwordHash: "password123",
                 role: "HR",
                 deptId: finalDepartments.find(d => d.name === "Human Resources")?._id,
-                skills: finalSkills.slice(0, 2).map(s => s._id),
+                skills: finalSkills.slice(0, 2).map((s, idx) => ({ skillId: s._id, amount: idx + 3 })),
                 online: true
             });
             console.log(`\nCREATED ADMIN USER: ${adminEmail}`);
@@ -295,7 +298,10 @@ const seed = async () => {
 
             if (!user) {
                 const dept = finalDepartments.find(d => d.name === emp.dept) || finalDepartments[0];
-                const empSkills = [finalSkills[i % finalSkills.length]._id, finalSkills[(i + 1) % finalSkills.length]._id];
+                const empSkills = [
+                    { skillId: finalSkills[i % finalSkills.length]._id, amount: 2 + (i % 4) },
+                    { skillId: finalSkills[(i + 1) % finalSkills.length]._id, amount: 2 + ((i + 1) % 4) }
+                ];
 
                 user = await UserModel.create({
                     email,
@@ -380,7 +386,19 @@ const seed = async () => {
                 const dept = finalDepartments[i % finalDepartments.length];
                 const skl1 = finalSkills[i % finalSkills.length];
                 const skl2 = finalSkills[(i + 1) % finalSkills.length];
-                usersBatch.push({ email, firstName: first, lastName: last, passwordHash: bulkPasswordHash, role: 'EMPLOYEE', deptId: dept._id, skills: [skl1._id, skl2._id], online: false });
+                usersBatch.push({
+                    email,
+                    firstName: first,
+                    lastName: last,
+                    passwordHash: bulkPasswordHash,
+                    role: 'EMPLOYEE',
+                    deptId: dept._id,
+                    skills: [
+                        { skillId: skl1._id, amount: 2 + (i % 4) },
+                        { skillId: skl2._id, amount: 2 + ((i + 1) % 4) }
+                    ],
+                    online: false
+                });
                 if (usersBatch.length >= 1000) {
                     await batchInsert(UserModel, usersBatch);
                     usersBatch.length = 0;
@@ -571,6 +589,134 @@ const seed = async () => {
 
                 await EventModel.create(eventPayload);
                 console.log(`Created Event: ${ev.name}`);
+            }
+        }
+
+        // 7. Seed Hiring Questions and Rounds
+        console.log("\n--- Seeding Hiring Questions ---");
+        const questionData = [
+            { questionText: "What is your experience with backend development?", questionType: "TEXT", options: [] },
+            { questionText: "Which frontend framework do you prefer?", questionType: "MULTIPLE_CHOICE", options: ["React", "Vue", "Angular", "Svelte"] },
+            { questionText: "Describe your approach to problem-solving", questionType: "TEXT", options: [] },
+            { questionText: "What databases have you worked with?", questionType: "MULTIPLE_CHOICE", options: ["MongoDB", "PostgreSQL", "MySQL", "Redis"] },
+            { questionText: "Tell us about a challenging project you completed", questionType: "TEXT", options: [] },
+            { questionText: "How do you handle tight deadlines?", questionType: "TEXT", options: [] },
+            { questionText: "What design patterns are you familiar with?", questionType: "MULTIPLE_CHOICE", options: ["MVC", "Repository", "Singleton", "Observer"] },
+            { questionText: "Describe your experience with cloud platforms", questionType: "TEXT", options: [] },
+            { questionText: "How do you approach code review?", questionType: "TEXT", options: [] },
+            { questionText: "Which testing frameworks do you use?", questionType: "MULTIPLE_CHOICE", options: ["Jest", "Mocha", "Jasmine", "Vitest"] },
+            { questionText: "Tell us about your team collaboration experience", questionType: "TEXT", options: [] },
+            { questionText: "What are your strengths as a developer?", questionType: "TEXT", options: [] }
+        ];
+
+        const finalQuestions = [];
+        for (const q of questionData) {
+            let question = await QuestionModel.findOne({ questionText: q.questionText });
+            if (!question) {
+                question = await QuestionModel.create(q);
+                console.log(`Created Question: ${q.questionText.substring(0, 50)}...`);
+            }
+            finalQuestions.push(question);
+        }
+
+        console.log("\n--- Seeding Hiring Rounds ---");
+        const roundData = [
+            { name: "Phone Screening", description: "Initial phone screening with HR", type: "INTERVIEW" },
+            { name: "Technical Test", description: "Coding assessment and technical skills evaluation", type: "TEST" },
+            { name: "System Design", description: "System design and architecture discussion", type: "INTERVIEW" },
+            { name: "Behavioral Round", description: "Behavioral competencies and culture fit", type: "INTERVIEW" },
+            { name: "Take-Home Assignment", description: "Practical project assignment", type: "ASSIGNMENT" },
+            { name: "Final Round", description: "Final interview with senior management", type: "INTERVIEW" },
+            { name: "Case Study", description: "Analysis and problem-solving case study", type: "ASSIGNMENT" },
+            { name: "Technical Interview", description: "In-depth technical discussion", type: "INTERVIEW" }
+        ];
+
+        const finalRounds = [];
+        for (const r of roundData) {
+            let round = await RoundsModel.findOne({ name: r.name });
+            if (!round) {
+                round = await RoundsModel.create(r);
+                console.log(`Created Round: ${r.name}`);
+            }
+            finalRounds.push(round);
+        }
+
+        // 7. Seed Job Openings (at most 20)
+        console.log("\n--- Seeding Job Openings ---");
+        const openingTitles = [
+            { title: "Senior Software Engineer", dept: "Engineering", desc: "Lead engineering role with 5+ years experience" },
+            { title: "Frontend Developer", dept: "Engineering", desc: "React/TypeScript specialist needed for web platform" },
+            { title: "Backend Developer", dept: "Engineering", desc: "Node.js/MongoDB expert to build APIs" },
+            { title: "DevOps Engineer", dept: "Engineering", desc: "Infrastructure and deployment automation specialist" },
+            { title: "Product Manager", dept: "General Management", desc: "Drive product strategy and roadmap" },
+            { title: "UX/UI Designer", dept: "Engineering", desc: "Design beautiful and intuitive user interfaces" },
+            { title: "Data Analyst", dept: "Finance", desc: "Analyze business metrics and generate insights" },
+            { title: "Marketing Manager", dept: "Marketing", desc: "Lead marketing campaigns and brand strategy" },
+            { title: "Content Writer", dept: "Marketing", desc: "Create engaging content for multiple channels" },
+            { title: "Sales Executive", dept: "Sales", desc: "Drive sales growth and client acquisition" },
+            { title: "Financial Analyst", dept: "Finance", desc: "Support financial planning and analysis" },
+            { title: "HR Specialist", dept: "Human Resources", desc: "Support recruitment and employee relations" },
+            { title: "Operations Manager", dept: "Operations", desc: "Optimize operational efficiency and processes" },
+            { title: "QA Engineer", dept: "Engineering", desc: "Ensure product quality through comprehensive testing" },
+            { title: "Solutions Architect", dept: "Engineering", desc: "Design scalable solutions for enterprise clients" },
+            { title: "Business Analyst", dept: "General Management", desc: "Analyze business requirements and document specs" },
+            { title: "Customer Success Manager", dept: "Sales", desc: "Ensure client satisfaction and retention" },
+            { title: "Graphics Designer", dept: "Marketing", desc: "Create visual assets for marketing materials" },
+            { title: "Full Stack Developer", dept: "Engineering", desc: "Build end-to-end web applications" },
+            { title: "Research Analyst", dept: "General Management", desc: "Conduct market and user research" }
+        ];
+
+        for (let i = 0; i < Math.min(20, openingTitles.length); i++) {
+            const op = openingTitles[i];
+            const existingOpening = await Openings.findOne({ title: op.title });
+            if (!existingOpening) {
+                // Find department
+                const dept = finalDepartments.find(d => d.name === op.dept) || finalDepartments[0];
+                
+                // Find a hiring manager from that department
+                const hiringManager = await UserModel.findOne({ deptId: dept._id, role: 'EMPLOYEE' }).lean();
+                if (!hiringManager) {
+                    console.log(`Skipping opening ${op.title}: no hiring manager found in department`);
+                    continue;
+                }
+
+                // Select 2-3 random skills
+                const skillCount = 2 + Math.floor(Math.random() * 2);
+                const selectedSkills = [];
+                for (let j = 0; j < skillCount; j++) {
+                    selectedSkills.push({
+                        skillId: finalSkills[(i + j) % finalSkills.length]._id,
+                        proficiencyLevel: 3 + Math.floor(Math.random() * 3)
+                    });
+                }
+
+                // Select 2-4 random questions
+                const questionCount = 2 + Math.floor(Math.random() * 3);
+                const selectedQuestions = [];
+                for (let j = 0; j < questionCount; j++) {
+                    selectedQuestions.push(finalQuestions[(i * 7 + j) % finalQuestions.length]._id);
+                }
+
+                // Select 1-3 random rounds
+                const roundCount = 1 + Math.floor(Math.random() * 3);
+                const selectedRounds = [];
+                for (let j = 0; j < roundCount; j++) {
+                    selectedRounds.push(finalRounds[(i * 5 + j) % finalRounds.length]._id);
+                }
+
+                const opening = await Openings.create({
+                    title: op.title,
+                    description: op.desc,
+                    departmentId: dept._id,
+                    skills: selectedSkills,
+                    HiringManager: hiringManager._id,
+                    Status: ['OPEN', 'OPEN', 'OPEN', 'PAUSED', 'CLOSED'][Math.floor(Math.random() * 5)],
+                    note: `Opening for ${op.title} in ${dept.name}`,
+                    questions: selectedQuestions,
+                    rounds: selectedRounds,
+                    applicants: []
+                });
+                console.log(`Created Opening: ${opening.title} (${dept.name}) - ${selectedRounds.length} rounds, ${selectedQuestions.length} questions`);
             }
         }
 

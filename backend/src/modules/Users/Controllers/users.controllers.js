@@ -152,7 +152,7 @@ class UserController {
         select: "name", // only department name
       },
       {
-        path: "skills",
+        path: "skills.skillId",
         select: "name", // only skill name
       },
     ];
