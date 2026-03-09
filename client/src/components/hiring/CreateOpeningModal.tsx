@@ -98,6 +98,15 @@ export default function CreateOpeningModal({
         isManagerOpen,
         setIsManagerOpen,
         selectManager,
+        skillQuery,
+        setSkillQuery,
+        skillResults,
+        skillLoading,
+        isSkillOpen,
+        setIsSkillOpen,
+        addSkill,
+        removeSkill,
+        updateSkillLevel,
         handleStep1Change,
         handleStatusChange,
         addRound,
@@ -115,8 +124,8 @@ export default function CreateOpeningModal({
     } = useCreateOpeningModal({ isOpen, onSuccess });
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-155 max-h-[92vh] overflow-y-auto">
+        <Dialog open={isOpen} onOpenChange={onClose} >
+            <DialogContent className="sm:max-w-255 max-h-[92vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <BriefcaseBusiness className="h-5 w-5 text-primary" />
@@ -326,6 +335,155 @@ export default function CreateOpeningModal({
                                 onChange={handleStep1Change}
                                 placeholder="Any internal notes about this opening..."
                             />
+                        </div>
+
+                        {/* Expected Joining Date */}
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="expectedJoiningDate">Expected Joining Date (optional)</Label>
+                            <Input
+                                id="expectedJoiningDate"
+                                name="expectedJoiningDate"
+                                type="date"
+                                value={formData.expectedJoiningDate}
+                                onChange={handleStep1Change}
+                            />
+                        </div>
+
+                        {/* Salary Range */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="salaryMin">Min Salary (optional)</Label>
+                                <Input
+                                    id="salaryMin"
+                                    name="salaryMin"
+                                    type="number"
+                                    value={formData.salaryMin}
+                                    onChange={handleStep1Change}
+                                    placeholder="e.g. 50000"
+                                    min="0"
+                                />
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="salaryMax">Max Salary (optional)</Label>
+                                <Input
+                                    id="salaryMax"
+                                    name="salaryMax"
+                                    type="number"
+                                    value={formData.salaryMax}
+                                    onChange={handleStep1Change}
+                                    placeholder="e.g. 100000"
+                                    min="0"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Skills */}
+                        <div className="grid gap-2">
+                            <Label>
+                                Required Skills <span className="text-red-500">*</span>
+                            </Label>
+                            <Popover open={isSkillOpen} onOpenChange={setIsSkillOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        className={cn(
+                                            "w-full justify-between font-normal",
+                                            !skillQuery && "text-muted-foreground",
+                                            fieldErrors.skills && "border-red-400",
+                                        )}
+                                    >
+                                        <span>Search and add skills...</span>
+                                        <ChevronRight className="h-4 w-4 opacity-50 shrink-0" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                    <Command>
+                                        <CommandInput
+                                            placeholder="Search skills..."
+                                            value={skillQuery}
+                                            onValueChange={setSkillQuery}
+                                        />
+                                        <CommandList>
+                                            {skillLoading ? (
+                                                <div className="flex items-center justify-center py-4">
+                                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <CommandEmpty>No skills found</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {skillResults
+                                                            .filter(
+                                                                (s) =>
+                                                                    !formData.skills.some(
+                                                                        (fs) => fs.skillId === s._id
+                                                                    )
+                                                            )
+                                                            .map((skill) => (
+                                                                <CommandItem
+                                                                    key={skill._id}
+                                                                    value={skill.name}
+                                                                    onSelect={() => {
+                                                                        addSkill(skill, 3);
+                                                                    }}
+                                                                >
+                                                                    {skill.name}
+                                                                </CommandItem>
+                                                            ))}
+                                                    </CommandGroup>
+                                                </>
+                                            )}
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                            {fieldErrors.skills && (
+                                <p className="text-red-500 text-xs">{fieldErrors.skills}</p>
+                            )}
+
+                            {/* Selected Skills */}
+                            {formData.skills.length > 0 && (
+                                <div className="space-y-2">
+                                    {formData.skills.map((skill) => (
+                                        <div
+                                            key={skill.skillId}
+                                            className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-muted/40 border border-border/50"
+                                        >
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium">{skill.skillName}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Select
+                                                    value={skill.proficiencyLevel.toString()}
+                                                    onValueChange={(val) =>
+                                                        updateSkillLevel(skill.skillId, parseInt(val))
+                                                    }
+                                                >
+                                                    <SelectTrigger className="w-20 h-8 text-xs">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="1">Level 1</SelectItem>
+                                                        <SelectItem value="2">Level 2</SelectItem>
+                                                        <SelectItem value="3">Level 3</SelectItem>
+                                                        <SelectItem value="4">Level 4</SelectItem>
+                                                        <SelectItem value="5">Level 5</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
+                                                    onClick={() => removeSkill(skill.skillId)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Hiring Manager */}

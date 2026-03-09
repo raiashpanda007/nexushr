@@ -9,6 +9,7 @@ class OpeningRoutes {
     }
 
     routes () {
+        this.router.get("/public/:id", this.controller.GetPublic);
         this.router.post("/", VerifyMiddleware, this.controller.Create);
         this.router.get("/", VerifyMiddleware, this.controller.Get);
         this.router.get("/:id", VerifyMiddleware, this.controller.Get);

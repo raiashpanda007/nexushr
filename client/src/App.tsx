@@ -16,6 +16,7 @@ import Assets from "./pages/dashboard/Assets"
 import AssetDetails from "./pages/dashboard/AssetDetails"
 import Hiring from "./pages/dashboard/Hiring"
 import HiringDetails from "./pages/dashboard/HiringDetails"
+import JobApply from "./pages/JobApply"
 import { Toaster } from "sonner"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,9 @@ function App() {
     <>
       <Routes>
         <Route path="/login" element={<Login />} />
+
+        {/* Public Routes */}
+        <Route path="/job-opening/:id" element={<JobApply />} />
 
         {/* Protected Routes */}
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>

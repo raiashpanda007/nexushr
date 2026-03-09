@@ -40,6 +40,11 @@ export interface Opening {
     questions: Question[];
     rounds: Round[];
     applicants: Applicant[];
+    expectedJoiningDate?: string | Date;
+    salaryRange?: {
+        min?: number;
+        max?: number;
+    };
     createdAt?: string;
     updatedAt?: string;
 }
@@ -58,6 +63,12 @@ export interface QuestionFormItem {
     options: string[];
 }
 
+export interface SkillFormItem {
+    skillId: string;
+    skillName: string;
+    proficiencyLevel: number;
+}
+
 export interface CreateOpeningFormData {
     // Step 1
     title: string;
@@ -68,6 +79,10 @@ export interface CreateOpeningFormData {
     note: string;
     HiringManager: string;
     HiringManagerName: string;
+    expectedJoiningDate: string;
+    salaryMin: string;
+    salaryMax: string;
+    skills: SkillFormItem[];
     // Step 2
     rounds: RoundFormItem[];
     // Step 3

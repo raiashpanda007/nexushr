@@ -5,8 +5,9 @@ import type {
     CreateOpeningFormData,
     RoundFormItem,
     QuestionFormItem,
+    SkillFormItem,
 } from "@/types/hiring";
-import type { Department, Employee } from "@/types";
+import type { Department, Employee, Skill } from "@/types";
 
 interface UseCreateOpeningModalProps {
     isOpen: boolean;
@@ -22,6 +23,10 @@ const INITIAL_FORM: CreateOpeningFormData = {
     note: "",
     HiringManager: "",
     HiringManagerName: "",
+    expectedJoiningDate: "",
+    salaryMin: "",
+    salaryMax: "",
+    skills: [],
     rounds: [],
     questions: [],
 };
@@ -170,6 +175,61 @@ export function useCreateOpeningModal({
         setDeptQuery("");
     };
 
+    // ---- Skill search ----
+    const [skillQuery, setSkillQuery] = useState("");
+    const [skillResults, setSkillResults] = useState<Skill[]>([]);
+    const [skillLoading, setSkillLoading] = useState(false);
+    const [isSkillOpen, setIsSkillOpen] = useState(false);
+
+    const fetchAllSkills = async () => {
+        setSkillLoading(true);
+        try {
+            const result = await ApiCaller<null, any>({
+                requestType: "GET",
+                paths: ["api", "v1", "skills"],
+                queryParams: { page: "1", limit: "100" },
+            });
+            if (result.ok) {
+                const data = result.response.data;
+                const list = Array.isArray(data)
+                    ? data
+                    : Array.isArray(data?.data)
+                    ? data.data
+                    : [];
+                setSkillResults(list);
+            }
+        } finally {
+            setSkillLoading(false);
+        }
+    };
+
+    const searchSkills = async (q: string) => {
+        setSkillLoading(true);
+        try {
+            const result = await ApiCaller<null, any>({
+                requestType: "GET",
+                paths: ["api", "v1", "search", "skills"],
+                queryParams: { query: q },
+            });
+            if (result.ok) {
+                const data = result.response.data;
+                setSkillResults(Array.isArray(data) ? data : data?.data ?? []);
+            }
+        } finally {
+            setSkillLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!skillQuery.trim()) {
+            fetchAllSkills();
+            return;
+        }
+        const tid = setTimeout(() => searchSkills(skillQuery), 300);
+        return () => clearTimeout(tid);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [skillQuery]);
+
     const selectManager = (emp: Employee) => {
         setFormData((prev) => ({
             ...prev,
@@ -178,6 +238,45 @@ export function useCreateOpeningModal({
         }));
         setIsManagerOpen(false);
         setManagerQuery("");
+    };
+
+    // ---- Skill management ----
+    const addSkill = (skill: Skill, proficiencyLevel: number) => {
+        if (formData.skills.some((s) => s.skillId === skill._id)) {
+            toast.error("Skill already added");
+            return;
+        }
+        setFormData((prev) => ({
+            ...prev,
+            skills: [
+                ...prev.skills,
+                {
+                    skillId: skill._id,
+                    skillName: skill.name,
+                    proficiencyLevel: Math.max(1, Math.min(5, proficiencyLevel)),
+                },
+            ],
+        }));
+        setIsSkillOpen(false);
+        setSkillQuery("");
+    };
+
+    const removeSkill = (skillId: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            skills: prev.skills.filter((s) => s.skillId !== skillId),
+        }));
+    };
+
+    const updateSkillLevel = (skillId: string, level: number) => {
+        setFormData((prev) => ({
+            ...prev,
+            skills: prev.skills.map((s) =>
+                s.skillId === skillId
+                    ? { ...s, proficiencyLevel: Math.max(1, Math.min(5, level)) }
+                    : s
+            ),
+        }));
     };
 
     // ---- Step 1 field change ----
@@ -202,6 +301,7 @@ export function useCreateOpeningModal({
         if (!formData.status) errs.status = "Status is required";
         if (!formData.departmentId) errs.departmentId = "Department is required";
         if (!formData.HiringManager) errs.HiringManager = "Hiring manager is required";
+        if (formData.skills.length === 0) errs.skills = "At least one skill is required";
         setFieldErrors(errs);
         return Object.keys(errs).length === 0;
     };
@@ -332,7 +432,18 @@ export function useCreateOpeningModal({
                 departmentId: formData.departmentId,
                 note: formData.note || undefined,
                 HiringManager: formData.HiringManager,
-                skills: [],
+                skills: formData.skills.map((s) => ({
+                    skillId: s.skillId,
+                    proficiencyLevel: s.proficiencyLevel,
+                })),
+                expectedJoiningDate: formData.expectedJoiningDate || undefined,
+                salaryRange:
+                    formData.salaryMin || formData.salaryMax
+                        ? {
+                              min: formData.salaryMin ? parseInt(formData.salaryMin) : undefined,
+                              max: formData.salaryMax ? parseInt(formData.salaryMax) : undefined,
+                          }
+                        : undefined,
                 rounds: formData.rounds
                     .filter((r) => r.name.trim() && r.type)
                     .map((r) => ({
@@ -390,6 +501,16 @@ export function useCreateOpeningModal({
         isManagerOpen,
         setIsManagerOpen,
         selectManager,
+        // skill search
+        skillQuery,
+        setSkillQuery,
+        skillResults,
+        skillLoading,
+        isSkillOpen,
+        setIsSkillOpen,
+        addSkill,
+        removeSkill,
+        updateSkillLevel,
         // step 1
         handleStep1Change,
         handleStatusChange,

@@ -69,10 +69,12 @@ class OpeningsController {
             title: openingData.title,
             description: openingData.description,
             departmentId: openingData.departmentId,
-            skills: openingData.skills,
+            skills: openingData.skills || [],
             HiringManager: openingData.HiringManager,
             Status: openingData.status,
             note: openingData.note,
+            expectedJoiningDate: openingData.expectedJoiningDate,
+            salaryRange: openingData.salaryRange,
             questions: questionIds,
             rounds: roundIds,
           },
@@ -177,6 +179,26 @@ class OpeningsController {
     return res
       .status(200)
       .json(new ApiResponse(200, opening, "Opening updated successfully"));
+  });
+
+  // Public endpoint - no auth required
+  GetPublic = AsyncHandler(async (req, res) => {
+    const openingId = req.params.id;
+    if (!openingId) {
+      throw new ApiError(Types.Errors.BadRequest, "Opening ID is required");
+    }
+    const opening = await this.repo
+      .findById(openingId)
+      .populate("departmentId", "name")
+      .populate("HiringManager", "firstName lastName")
+      .populate("questions")
+      .select("-applicants");
+    if (!opening) {
+      throw new ApiError(Types.Errors.NotFound, "Opening not found");
+    }
+    return res
+      .status(200)
+      .json(new ApiResponse(200, opening, "Opening retrieved successfully"));
   });
 
   Delete = AsyncHandler(async (req, res) => {
