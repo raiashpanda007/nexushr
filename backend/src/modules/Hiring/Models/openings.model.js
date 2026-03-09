@@ -69,6 +69,19 @@ const OpeningSchema = new mongoose.Schema(
         ref: "Rounds",
       },
     ],
+    expectedJoiningDate: {
+      type: Date,
+    },
+    salaryRange: {
+      min: {
+        type: Number,
+        min: 0,
+      },
+      max: {
+        type: Number,
+        min: 0,
+      },
+    },
   },
   {
     timestamps: true,
@@ -76,19 +89,21 @@ const OpeningSchema = new mongoose.Schema(
 );
 
 OpeningSchema.pre("save", async function () {
-    if (this.isModified("HiringManager") || this.isModified("departmentId")) {
-        const manager = await Users.findById(this.HiringManager).select("deptId").lean();
-        if (!manager) {
-            throw new Error("Hiring Manager not found");
-        }
-        if (manager.deptId?.toString() !== this.departmentId?.toString()) {
-            throw new Error("Hiring Manager does not belong to the selected department");
-        }
+  if (this.isModified("HiringManager") || this.isModified("departmentId")) {
+    const manager = await Users.findById(this.HiringManager)
+      .select("deptId")
+      .lean();
+    if (!manager) {
+      throw new Error("Hiring Manager not found");
     }
+    if (manager.deptId?.toString() !== this.departmentId?.toString()) {
+      throw new Error(
+        "Hiring Manager does not belong to the selected department",
+      );
+    }
+  }
 });
 
 const Openings = mongoose.model("Openings", OpeningSchema);
-
-
 
 export default Openings;

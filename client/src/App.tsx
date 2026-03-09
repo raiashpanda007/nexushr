@@ -16,6 +16,7 @@ import Assets from "./pages/dashboard/Assets"
 import AssetDetails from "./pages/dashboard/AssetDetails"
 import Hiring from "./pages/dashboard/Hiring"
 import HiringDetails from "./pages/dashboard/HiringDetails"
+import ApplicantDetails from "./pages/dashboard/ApplicantDetails"
 import JobApply from "./pages/JobApply"
 import { Toaster } from "sonner"
 
@@ -66,6 +67,7 @@ function App() {
           <Route path="assets/:id" element={<AssetDetails />} />
           <Route path="hiring" element={<Hiring />} />
           <Route path="hiring/:id" element={<HiringDetails />} />
+          <Route path="hiring/applicant/:applicantId" element={<ApplicantDetails />} />
         </Route>
 
         {/* Catch all - redirect to home (which redirects based on role) */}

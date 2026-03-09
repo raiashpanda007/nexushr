@@ -246,47 +246,45 @@ export default function HiringDetails() {
                             <p className="text-sm text-muted-foreground">{opening.note}</p>
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* Meta row: Department + Manager */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Card className="rounded-2xl border-border/50 shadow-sm">
-                    <CardContent className="flex items-center gap-4 p-5">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-muted/50 border border-border/50 shrink-0">
-                            <Building2 className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                                Department
-                            </p>
-                            <p className="text-sm font-semibold text-foreground mt-0.5">
-                                {getDepartmentName(opening.departmentId)}
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+                    <Separator className="my-5" />
 
-                <Card className="rounded-2xl border-border/50 shadow-sm">
-                    <CardContent className="flex items-center gap-4 p-5">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-muted/50 border border-border/50 shrink-0">
-                            <UserCircle2 className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                                Hiring Manager
-                            </p>
-                            <p className="text-sm font-semibold text-foreground mt-0.5">
-                                {getManagerName(opening.HiringManager)}
-                            </p>
-                            {getManagerEmail(opening.HiringManager) && (
-                                <p className="text-xs text-muted-foreground">
-                                    {getManagerEmail(opening.HiringManager)}
+                    {/* Department + Manager inline */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-muted/50 border border-border/50 shrink-0">
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                    Department
                                 </p>
-                            )}
+                                <p className="text-sm font-semibold text-foreground mt-0.5">
+                                    {getDepartmentName(opening.departmentId)}
+                                </p>
+                            </div>
                         </div>
-                    </CardContent>
-                </Card>
+
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-muted/50 border border-border/50 shrink-0">
+                                <UserCircle2 className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                    Hiring Manager
+                                </p>
+                                <p className="text-sm font-semibold text-foreground mt-0.5">
+                                    {getManagerName(opening.HiringManager)}
+                                </p>
+                                {getManagerEmail(opening.HiringManager) && (
+                                    <p className="text-xs text-muted-foreground">
+                                        {getManagerEmail(opening.HiringManager)}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Rounds */}
@@ -431,14 +429,24 @@ export default function HiringDetails() {
                                     <TableHead className="font-semibold">Applicant</TableHead>
                                     <TableHead className="font-semibold">Phone</TableHead>
                                     <TableHead className="font-semibold">Status</TableHead>
-                                    <TableHead className="font-semibold">Applied</TableHead>
+                                    <TableHead className="font-semibold">Current Round</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {opening.applicants.map((applicant, idx) => (
+                                {opening.applicants.map((applicant, idx) => {
+                                    const currentRoundId =
+                                        applicant.currentRound &&
+                                        typeof applicant.currentRound === "object"
+                                            ? applicant.currentRound._id
+                                            : applicant.currentRound;
+                                    const currentRound = currentRoundId
+                                        ? opening.rounds?.find((r) => r._id === currentRoundId)
+                                        : null;
+                                    return (
                                     <TableRow
                                         key={applicant._id ?? idx}
-                                        className="hover:bg-muted/30 transition-colors"
+                                        className="hover:bg-muted/30 transition-colors cursor-pointer"
+                                        onClick={() => navigate(`/hiring/applicant/${applicant._id}`)}
                                     >
                                         <TableCell className="pl-5 text-muted-foreground text-sm font-mono">
                                             {idx + 1}
@@ -474,17 +482,29 @@ export default function HiringDetails() {
                                                 {applicant.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">
-                                            {applicant.createdAt
-                                                ? new Date(applicant.createdAt).toLocaleDateString("en-US", {
-                                                      month: "short",
-                                                      day: "numeric",
-                                                      year: "numeric",
-                                                  })
-                                                : "—"}
+                                        <TableCell>
+                                            {currentRound ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "text-xs border",
+                                                            ROUND_TYPE_STYLES[currentRound.type] ??
+                                                                "bg-muted text-muted-foreground border-border",
+                                                        )}
+                                                    >
+                                                        {currentRound.name}
+                                                    </Badge>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground italic">
+                                                    Process not started
+                                                </span>
+                                            )}
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -509,7 +529,7 @@ export default function HiringDetails() {
                 )}
             </Card>
 
-            {/* Empty states for rounds/questions */}
+           
             {(!opening.rounds || opening.rounds.length === 0) &&
                 (!opening.questions || opening.questions.length === 0) && (
                     <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground border-2 border-dashed border-border rounded-2xl">

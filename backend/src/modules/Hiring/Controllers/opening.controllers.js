@@ -117,7 +117,7 @@ class OpeningsController {
         .populate("HiringManager", "firstName lastName email")
         .populate("questions")
         .populate("rounds")
-        .populate("applicants", "name email phone status");
+        .populate("applicants", "name email phone status currentRound");
 
       if (limitQuery !== "all") {
         queryOptions = queryOptions.skip(skip).limit(limit);

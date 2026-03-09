@@ -19,6 +19,7 @@ export interface Applicant {
     phone: string;
     resume: string;
     status: "APPLIED" | "INTERVIEWING" | "OFFERED" | "REJECTED";
+    currentRound?: string | Round;
     note?: string;
     createdAt?: string;
 }
@@ -47,6 +48,30 @@ export interface Opening {
     };
     createdAt?: string;
     updatedAt?: string;
+}
+
+export interface ApplicantDetail {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    resume: string;
+    status: "APPLIED" | "INTERVIEWING" | "OFFERED" | "REJECTED";
+    currentRound?: Round | null;
+    note?: string;
+    createdAt?: string;
+    questions: Array<{
+        questionId: { _id: string; questionText: string } | string;
+        answer: string;
+    }>;
+    openingId: {
+        _id: string;
+        title: string;
+        description: string;
+        departmentId: { _id: string; name: string } | string;
+        HiringManager: { _id: string; firstName: string; lastName: string; email: string } | string;
+        rounds: Round[];
+    };
 }
 
 // ------ Form-layer types -------

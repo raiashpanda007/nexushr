@@ -17,4 +17,5 @@ export const CreateApplicantValidationSchema = zod.object({
 export const UpdateApplicantValidationSchema = zod.object({
     status: zod.enum(["APPLIED", "INTERVIEWING", "OFFERED", "REJECTED"]).optional(),
     note: zod.string().trim().optional(),
+    currentRound: zod.string().trim().optional(),
 });

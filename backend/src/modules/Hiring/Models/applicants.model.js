@@ -51,7 +51,12 @@ const ApplicantSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    currentRound: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Rounds",
+    },
   },
+
   {
     timestamps: true,
   },

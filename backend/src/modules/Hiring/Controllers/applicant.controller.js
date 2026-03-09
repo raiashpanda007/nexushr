@@ -20,10 +20,17 @@ class ApplicantController {
   Create = AsyncHandler(async (req, res) => {
     const parsedData = Types.Applicants.Create.safeParse(req.body);
     if (!parsedData.success) {
-      const errorMessages = (parsedData.error.issues ?? parsedData.error.errors ?? [])
+      const errorMessages = (
+        parsedData.error.issues ??
+        parsedData.error.errors ??
+        []
+      )
         .map((err) => err.message)
         .join(", ");
-      throw new ApiError(Types.Errors.BadRequest, `Validation failed: ${errorMessages}`);
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        `Validation failed: ${errorMessages}`,
+      );
     }
     const { name, email, phone, openingId, resumeUrl, questions } =
       parsedData.data;
@@ -34,7 +41,10 @@ class ApplicantController {
     }
 
     if (opening.Status !== "OPEN") {
-      throw new ApiError(Types.Errors.BadRequest, "Cannot apply to a closed opening");
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        "Cannot apply to a closed opening",
+      );
     }
 
     const existingApplicant = await ApplicantModel.findOne({
@@ -42,10 +52,12 @@ class ApplicantController {
       openingId,
     });
     if (existingApplicant) {
-      throw new ApiError(Types.Errors.BadRequest, "You have already applied for this opening");
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        "You have already applied for this opening",
+      );
     }
 
-    // Validate that all opening questions are answered
     if (opening.questions.length > 0) {
       if (!questions || questions.length === 0) {
         throw new ApiError(
@@ -78,7 +90,6 @@ class ApplicantController {
       }
     }
 
-    // Wrap applicant creation and opening update in a transaction
     const session = await mongoose.startSession();
     let applicant;
     try {
@@ -157,10 +168,17 @@ class ApplicantController {
 
     const parsedData = Types.Applicants.Update.safeParse(req.body);
     if (!parsedData.success) {
-      const errorMessages = (parsedData.error.issues ?? parsedData.error.errors ?? [])
+      const errorMessages = (
+        parsedData.error.issues ??
+        parsedData.error.errors ??
+        []
+      )
         .map((err) => err.message)
         .join(", ");
-      throw new ApiError(Types.Errors.BadRequest, `Validation failed: ${errorMessages}`);
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        `Validation failed: ${errorMessages}`,
+      );
     }
     const { status, note } = parsedData.data;
 
@@ -182,11 +200,17 @@ class ApplicantController {
     const { fileName, contentType } = req.body;
 
     if (!fileName || !contentType) {
-      throw new ApiError(Types.Errors.BadRequest, "fileName and contentType are required");
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        "fileName and contentType are required",
+      );
     }
 
     if (contentType !== "application/pdf") {
-      throw new ApiError(Types.Errors.BadRequest, "Only PDF files are allowed for resumes");
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        "Only PDF files are allowed for resumes",
+      );
     }
 
     const signedUrl = await GenerateUploadUrl(fileName, contentType, "resumes");
@@ -199,6 +223,47 @@ class ApplicantController {
           "Signed URL generated successfully",
         ),
       );
+  });
+
+  Get = AsyncHandler(async (req, res) => {
+    const applicantId = req.params.applicantId;
+    if (!applicantId) {
+      throw new ApiError(Types.Errors.BadRequest, "applicantId is required");
+    }
+    const applicant = await this.repo.findById(applicantId)
+      .populate({
+        path: "openingId",
+        select: "title description departmentId HiringManager rounds",
+        populate: [
+          {
+            path: "departmentId",
+            select: "name",
+          },
+          {
+            path: "HiringManager",
+            select: "firstName lastName email",
+          },
+          {
+            path: "rounds",
+            select: "name description type",
+          },
+        ],
+      })
+      .populate({
+        path: "questions.questionId",
+        select: "questionText",
+      })
+      .populate({
+        path: "currentRound",
+        select: "name description type",
+      });
+    if (!applicant) {
+      throw new ApiError(Types.Errors.NotFound, "Applicant not found");
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { applicant }, "Applicant retrieved successfully"));
   });
 }
 
