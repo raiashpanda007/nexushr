@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ApiCaller from "@/utils/ApiCaller";
 import type { MyInterview } from "@/types/hiring";
 import { toast } from "sonner";
@@ -46,6 +46,36 @@ export function useMyReviews() {
         return true;
     });
 
+    const [markingId, setMarkingId] = useState<string | null>(null);
+
+    const markResult = useCallback(async (interviewId: string, result: "PASSED" | "FAILED") => {
+        setMarkingId(interviewId);
+        try {
+            const res = await ApiCaller<object, { interview: MyInterview }>({
+                requestType: "PATCH",
+                paths: ["api", "v1", "hiring", "interviews", interviewId],
+                body: { result },
+            });
+            if (res.ok) {
+                toast.success(result === "PASSED" ? "Applicant passed" : "Applicant rejected");
+                setInterviews((prev) =>
+                    prev.map((iv) =>
+                        iv._id === interviewId ? { ...iv, result } : iv,
+                    ),
+                );
+            } else {
+                toast.error(
+                    (res.response as unknown as { message?: string })?.message ||
+                        "Failed to update result",
+                );
+            }
+        } catch {
+            toast.error("Failed to update result");
+        } finally {
+            setMarkingId(null);
+        }
+    }, []);
+
     return {
         interviews: filteredInterviews,
         allInterviews: interviews,
@@ -53,5 +83,7 @@ export function useMyReviews() {
         filter,
         setFilter,
         refetch: fetchInterviews,
+        markResult,
+        markingId,
     };
 }

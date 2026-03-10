@@ -7,6 +7,18 @@ import QuestionModel from "../Models/questions.model.js";
 import RoundsModel from "../Models/rounds.model.js";
 import ApplicantModel from "../Models/applicants.model.js";
 
+// Transforms stored { round: doc, rank } pairs into a flat sorted Round array
+const normalizeRounds = (rounds) =>
+  (rounds || [])
+    .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
+    .map(r => ({
+      _id: r.round?._id,
+      name: r.round?.name,
+      description: r.round?.description,
+      type: r.round?.type,
+      rank: r.rank,
+    }));
+
 class OpeningsController {
   constructor() {
     this.repo = OpeningModel;
@@ -60,7 +72,7 @@ class OpeningsController {
           session,
           ordered: true,
         });
-        roundIds = createdRounds.map((round) => round._id);
+        roundIds = createdRounds.map((round, idx) => ({ round: round._id, rank: idx + 1 }));
       }
 
       const [opening] = await OpeningModel.create(
@@ -113,17 +125,19 @@ class OpeningsController {
 
       let queryOptions = this.repo
         .find(filter)
+        .sort({ createdAt: -1 })
         .populate("departmentId", "name")
         .populate("HiringManager", "firstName lastName email")
         .populate("questions")
-        .populate("rounds")
+        .populate({ path: "rounds.round", select: "name description type" })
         .populate("applicants", "name email phone status currentRound");
 
       if (limitQuery !== "all") {
         queryOptions = queryOptions.skip(skip).limit(limit);
       }
 
-      const openings = await queryOptions;
+      const openingsRaw = await queryOptions.lean();
+      const openings = openingsRaw.map(o => ({ ...o, rounds: normalizeRounds(o.rounds) }));
       const total = await this.repo.countDocuments(filter);
 
       return res
@@ -136,16 +150,18 @@ class OpeningsController {
           ),
         );
     }
-    const opening = await this.repo
+    const openingRaw = await this.repo
       .findById(openingId)
       .populate("departmentId", "name")
       .populate("HiringManager", "firstName lastName email")
       .populate("questions")
-      .populate("rounds")
-      .populate("applicants", "name email phone status");
-    if (!opening) {
+      .populate({ path: "rounds.round", select: "name description type" })
+      .populate("applicants", "name email phone status")
+      .lean();
+    if (!openingRaw) {
        throw new ApiError(Types.Errors.NotFound, "Opening not found"); 
     }
+    const opening = { ...openingRaw, rounds: normalizeRounds(openingRaw.rounds) };
     return res
       .status(200)
       .json(new ApiResponse(200, opening, "Opening retrieved successfully"));

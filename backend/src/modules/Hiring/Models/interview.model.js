@@ -52,6 +52,12 @@ const InterviewSchema = new mongoose.Schema(
       enum: ["PASSED", "FAILED", "PENDING"],
       default: "PENDING",
     },
+    zoomMeetingId: {
+      type: String,
+    },
+    zoomJoinUrl: {
+      type: String,
+    },
   },
   {
     timestamps: true,

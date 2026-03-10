@@ -31,6 +31,7 @@ import {
     XCircle,
     AlertCircle,
     Pencil,
+    Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useInterview } from "@/hooks/hiring/useInterview";
@@ -69,6 +70,7 @@ interface InterviewPanelProps {
     round: Round;
     departmentId: string | null;
     onStatusChange?: () => void;
+    isBlocked?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -78,6 +80,7 @@ export default function InterviewPanel({
     round,
     departmentId,
     onStatusChange,
+    isBlocked = false,
 }: InterviewPanelProps) {
     const {
         interview,
@@ -242,6 +245,28 @@ export default function InterviewPanel({
                     </div>
                 )}
 
+                {/* Zoom link */}
+                {interview.zoomJoinUrl && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+                        <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                            <Video className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">
+                                Zoom Meeting
+                            </p>
+                            <a
+                                href={interview.zoomJoinUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline truncate block"
+                            >
+                                {interview.zoomJoinUrl}
+                            </a>
+                        </div>
+                    </div>
+                )}
+
                 {/* Feedback */}
                 {interview.feedback && (
                     <>
@@ -265,6 +290,21 @@ export default function InterviewPanel({
 
     // ── No interview yet ─────────────────────────────────────────────────────
     if (!interview && !showForm) {
+        if (isBlocked) {
+            return (
+                <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                    <AlertCircle className="h-10 w-10 text-muted-foreground/30" />
+                    <div>
+                        <p className="text-sm font-medium text-muted-foreground">
+                            Previous round not completed
+                        </p>
+                        <p className="text-xs text-muted-foreground/60 mt-0.5">
+                            The current round must be completed with a result before scheduling this round
+                        </p>
+                    </div>
+                </div>
+            );
+        }
         return (
             <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
                 <CalendarDays className="h-10 w-10 text-muted-foreground/30" />
@@ -374,7 +414,7 @@ export default function InterviewPanel({
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0 w-72" align="start">
-                        <Command>
+                        <Command shouldFilter={false}>
                             <CommandInput
                                 placeholder="Search employees..."
                                 value={reviewerQuery}
@@ -393,6 +433,7 @@ export default function InterviewPanel({
                                             {reviewerResults.map((emp) => (
                                                 <CommandItem
                                                     key={emp._id}
+                                                    value={`${emp.firstName ?? ""} ${emp.lastName ?? ""} ${emp.email}`}
                                                     onSelect={() => addReviewer(emp)}
                                                     className="flex items-center gap-2"
                                                 >

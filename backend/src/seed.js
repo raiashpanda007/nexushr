@@ -702,7 +702,10 @@ const seed = async () => {
                 const roundCount = 1 + Math.floor(Math.random() * 3);
                 const selectedRounds = [];
                 for (let j = 0; j < roundCount; j++) {
-                    selectedRounds.push(finalRounds[(i * 5 + j) % finalRounds.length]._id);
+                    selectedRounds.push({
+                        round: finalRounds[(i * 5 + j) % finalRounds.length]._id,
+                        rank: j + 1
+                    });
                 }
 
                 const opening = await Openings.create({
@@ -748,7 +751,7 @@ const seed = async () => {
                         questions.push({ questionId: qPool[(k + qq) % (qPool.length || 1)], answer: 'Sample answer' });
                     }
 
-                    const currentRound = (op.rounds && op.rounds.length) ? op.rounds[0] : null;
+                    const currentRound = (op.rounds && op.rounds.length) ? op.rounds[0].round : null;
                     try {
                         const applicant = await ApplicantModel.create({ name, email, phone, resume, openingId: op._id, questions, currentRound });
                         createdApplicants.push(applicant);

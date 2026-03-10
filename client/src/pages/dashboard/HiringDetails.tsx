@@ -188,7 +188,6 @@ export default function HiringDetails() {
                 </Button>
             </div>
 
-            {/* Hero card */}
             <div className="relative overflow-hidden rounded-2xl bg-card p-6 sm:p-8 shadow-sm border border-border/50">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
                 <div className="relative z-10">
@@ -291,7 +290,7 @@ export default function HiringDetails() {
                                 className="flex items-start gap-4 p-4 rounded-xl bg-muted/30 border border-border/50"
                             >
                                 <div className="flex items-center justify-center h-8 w-8 rounded-full bg-background border border-border text-xs font-bold text-muted-foreground shrink-0">
-                                    {idx + 1}
+                                    {round.rank ?? idx + 1}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">

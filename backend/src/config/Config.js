@@ -19,6 +19,11 @@ const EnvSchema = zod.object({
   SQS_ACCESS_KEY: zod.string().min(1),
   SQS_SECRET_KEY: zod.string().min(1),
   ANALYTICS_SQS_URL: zod.string().min(1),
+  ZOOM_ACCOUNT_ID: zod.string().min(1),
+  ZOOM_CLIENT_ID: zod.string().min(1),
+  ZOOM_CLIENT_SECRET: zod.string().min(1),
+  ZOOM_SECRET_TOKEN: zod.string().min(1),
+  MAILSERVER_QUEUE_URL: zod.string().min(1),
 });
 
 class Config {

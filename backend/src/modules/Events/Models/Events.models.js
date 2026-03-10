@@ -42,6 +42,9 @@ const EventSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Interview",
     },
+    meetLink: {
+      type: String,
+    }
   },
   {
     timestamps: true,

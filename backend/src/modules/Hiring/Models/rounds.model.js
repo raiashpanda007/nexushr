@@ -15,7 +15,6 @@ const RoundsSchema = new mongoose.Schema({
     enum: ["INTERVIEW", "TEST", "ASSIGNMENT"],
     required: true,
   },
-
 });
 
 

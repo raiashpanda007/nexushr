@@ -10,6 +10,7 @@ export interface Round {
     name: string;
     description: string;
     type: "INTERVIEW" | "TEST" | "ASSIGNMENT";
+    rank?: number;
 }
 
 export interface Reviewer {
@@ -35,6 +36,8 @@ export interface Interview {
     reviewDate: string;
     grades: InterviewGrade[];
     result: "PASSED" | "FAILED" | "PENDING";
+    zoomMeetingId?: string;
+    zoomJoinUrl?: string;
     createdAt?: string;
     updatedAt?: string;
 }

@@ -14,7 +14,9 @@ import {
     XCircle,
     AlertCircle,
     Inbox,
+    Video,
 } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useMyReviews } from "@/hooks/hiring/useMyReviews";
 import type { MyInterview, Reviewer } from "@/types/hiring";
@@ -91,7 +93,13 @@ function getDeptName(opening: MyInterview["opening"]): string {
 
 // ─── Interview card ───────────────────────────────────────────────────────────
 
-function InterviewCard({ interview }: { interview: MyInterview }) {
+interface InterviewCardProps {
+    interview: MyInterview;
+    onMarkResult: (id: string, result: "PASSED" | "FAILED") => Promise<void>;
+    isMarking: boolean;
+}
+
+function InterviewCard({ interview, onMarkResult, isMarking }: InterviewCardProps) {
     const date = new Date(interview.reviewDate);
     const dateStr = date.toLocaleDateString("en-US", {
         weekday: "short",
@@ -230,6 +238,57 @@ function InterviewCard({ interview }: { interview: MyInterview }) {
                         </div>
                     </div>
                 )}
+
+                {/* Pass / Reject — shown when interview date has passed and result is PENDING */}
+                {new Date(interview.reviewDate) < new Date() &&
+                    interview.result === "PENDING" && (
+                        <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 border border-border/50">
+                            <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0" />
+                            <p className="text-xs text-muted-foreground flex-1">
+                                Interview time has passed. Mark the outcome:
+                            </p>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1.5 text-xs border-green-300 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20"
+                                disabled={isMarking}
+                                onClick={() => onMarkResult(interview._id, "PASSED")}
+                            >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Pass
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1.5 text-xs border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+                                disabled={isMarking}
+                                onClick={() => onMarkResult(interview._id, "FAILED")}
+                            >
+                                <XCircle className="h-3.5 w-3.5" />
+                                Reject
+                            </Button>
+                        </div>
+                    )}
+
+                {/* Zoom link */}
+                {interview.zoomJoinUrl && (
+                    <div className="mt-3 flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+                        <Video className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">
+                                Zoom Meeting
+                            </p>
+                            <a
+                                href={interview.zoomJoinUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline truncate block"
+                            >
+                                {interview.zoomJoinUrl}
+                            </a>
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
@@ -244,7 +303,14 @@ const FILTERS = [
 ];
 
 export default function Reviews() {
-    const { interviews, allInterviews, loading, filter, setFilter } = useMyReviews();
+    const { interviews, allInterviews, loading, filter, setFilter, markResult, markingId } = useMyReviews();
+    const [activeMark, setActiveMark] = useState<string | null>(null);
+
+    const handleMarkResult = async (id: string, result: "PASSED" | "FAILED") => {
+        setActiveMark(id);
+        await markResult(id, result);
+        setActiveMark(null);
+    };
 
     return (
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8 px-2 sm:px-3">
@@ -318,7 +384,12 @@ export default function Reviews() {
             ) : (
                 <div className="flex flex-col gap-4">
                     {interviews.map((iv) => (
-                        <InterviewCard key={iv._id} interview={iv} />
+                        <InterviewCard
+                            key={iv._id}
+                            interview={iv}
+                            onMarkResult={handleMarkResult}
+                            isMarking={activeMark === iv._id || markingId === iv._id}
+                        />
                     ))}
                 </div>
             )}

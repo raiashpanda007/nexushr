@@ -23,6 +23,11 @@ ANALYTICS_QUEUE_NAME="analytics-generation"
 ANALYTICS_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$ANALYTICS_QUEUE_NAME"
 ANALYTICS_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$ANALYTICS_QUEUE_NAME"
 
+#Mail Queue
+MAIL_QUEUE_NAME="mail-processor"
+MAIL_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$MAIL_QUEUE_NAME"
+MAIL_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$MAIL_QUEUE_NAME"
+
 echo "Creating S3 buckets..."
 awslocal --region $REGION s3 mb s3://register-photos || true
 awslocal --region $REGION s3 mb s3://punch-photos || true
@@ -76,6 +81,10 @@ awslocal --region $REGION sqs create-queue \
 # Create analytics queue
 awslocal --region $REGION sqs create-queue \
   --queue-name $ANALYTICS_QUEUE_NAME || true
+
+# Create mail queue
+awslocal --region $REGION sqs create-queue \
+  --queue-name $MAIL_QUEUE_NAME || true
 
 echo "Attaching SQS policy to allow S3 to publish..."
 

@@ -90,8 +90,8 @@ export function useInterview({ applicantId, roundId, departmentId, onStatusChang
                     const list = Array.isArray(data)
                         ? data
                         : Array.isArray(data?.data)
-                        ? data.data
-                        : [];
+                            ? data.data
+                            : [];
                     // Exclude already-selected reviewers
                     const selectedIds = formData.reviewers.map((r) => r._id);
                     setReviewerResults(list.filter((e: Employee) => !selectedIds.includes(e._id)));
@@ -179,6 +179,11 @@ export function useInterview({ applicantId, roundId, departmentId, onStatusChang
 
         const reviewDate = new Date(`${formData.reviewDate}T${formData.reviewTime}`);
 
+        if (reviewDate <= new Date()) {
+            toast.error("Please select a future date and time");
+            return;
+        }
+
         setCreating(true);
         try {
             const result = await ApiCaller<object, { interview: Interview }>({
@@ -199,7 +204,7 @@ export function useInterview({ applicantId, roundId, departmentId, onStatusChang
             } else {
                 toast.error(
                     (result.response as unknown as { message?: string })?.message ||
-                        "Failed to schedule interview",
+                    "Failed to schedule interview",
                 );
             }
         } catch {
@@ -226,6 +231,11 @@ export function useInterview({ applicantId, roundId, departmentId, onStatusChang
 
         const reviewDate = new Date(`${formData.reviewDate}T${formData.reviewTime}`);
 
+        if (reviewDate <= new Date()) {
+            toast.error("Please select a future date and time");
+            return;
+        }
+
         setCreating(true);
         try {
             const result = await ApiCaller<object, { interview: Interview }>({
@@ -245,7 +255,7 @@ export function useInterview({ applicantId, roundId, departmentId, onStatusChang
             } else {
                 toast.error(
                     (result.response as unknown as { message?: string })?.message ||
-                        "Failed to update interview",
+                    "Failed to update interview",
                 );
             }
         } catch {
@@ -271,7 +281,7 @@ export function useInterview({ applicantId, roundId, departmentId, onStatusChang
             } else {
                 toast.error(
                     (res.response as unknown as { message?: string })?.message ||
-                        "Failed to update result",
+                    "Failed to update result",
                 );
             }
         } catch {

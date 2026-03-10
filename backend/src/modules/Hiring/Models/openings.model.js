@@ -65,8 +65,14 @@ const OpeningSchema = new mongoose.Schema(
     ],
     rounds: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Rounds",
+        round: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Rounds",
+        },
+        rank: {
+          type: Number,
+          min: 1,
+        },
       },
     ],
     expectedJoiningDate: {
@@ -103,6 +109,9 @@ OpeningSchema.pre("save", async function () {
     }
   }
 });
+
+OpeningSchema.index({createdAt: -1, updatedAt: -1});
+
 
 const Openings = mongoose.model("Openings", OpeningSchema);
 

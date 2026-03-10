@@ -316,6 +316,11 @@ export default function ApplicantDetails() {
             : null;
 
     const selectedRound: Round | null = rounds[selectedRoundIdx] ?? null;
+    const activeRoundIdx = currentRound ? rounds.findIndex((r) => r._id === currentRound._id) : -1;
+    // Use rank-based comparison when available, fall back to array index
+    const selectedRank = selectedRound?.rank ?? selectedRoundIdx + 1;
+    const activeRank = activeRoundIdx >= 0 ? (rounds[activeRoundIdx]?.rank ?? activeRoundIdx + 1) : 1;
+    const isSelectedRoundBlocked = selectedRank > activeRank;
 
     const appliedDate = applicant.createdAt
         ? new Date(applicant.createdAt).toLocaleDateString("en-US", {
@@ -552,6 +557,7 @@ export default function ApplicantDetails() {
                                                 : (opening?.departmentId as string | null) ?? null
                                         }
                                         onStatusChange={fetchApplicant}
+                                        isBlocked={isSelectedRoundBlocked}
                                     />
                                 </CardContent>
                             </TabsContent>
