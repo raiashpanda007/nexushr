@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ApiCaller from "@/utils/ApiCaller";
 import type { ApplicantDetail, Round } from "@/types/hiring";
@@ -249,37 +249,38 @@ export default function ApplicantDetails() {
     const [error, setError] = useState<string | null>(null);
     const [selectedRoundIdx, setSelectedRoundIdx] = useState(0);
 
-    useEffect(() => {
+    const fetchApplicant = useCallback(async () => {
         if (!applicantId) return;
-        const fetchApplicant = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const result = await ApiCaller<null, { applicant: ApplicantDetail }>({
-                    requestType: "GET",
-                    paths: ["api", "v1", "hiring", "applicants", applicantId],
-                });
-                if (result.ok) {
-                    const data = result.response.data.applicant;
-                    setApplicant(data);
-                    // Pre-select current round
-                    if (data.currentRound && data.openingId?.rounds?.length) {
-                        const idx = data.openingId.rounds.findIndex(
-                            (r) => r._id === (data.currentRound as Round)._id,
-                        );
-                        if (idx >= 0) setSelectedRoundIdx(idx);
-                    }
-                } else {
-                    setError((result.response as unknown as { message?: string })?.message || "Applicant not found");
+        setLoading(true);
+        setError(null);
+        try {
+            const result = await ApiCaller<null, { applicant: ApplicantDetail }>({
+                requestType: "GET",
+                paths: ["api", "v1", "hiring", "applicants", applicantId],
+            });
+            if (result.ok) {
+                const data = result.response.data.applicant;
+                setApplicant(data);
+                // Pre-select current round
+                if (data.currentRound && data.openingId?.rounds?.length) {
+                    const idx = data.openingId.rounds.findIndex(
+                        (r) => r._id === (data.currentRound as Round)._id,
+                    );
+                    if (idx >= 0) setSelectedRoundIdx(idx);
                 }
-            } catch {
-                setError("Failed to fetch applicant details");
-            } finally {
-                setLoading(false);
+            } else {
+                setError((result.response as unknown as { message?: string })?.message || "Applicant not found");
             }
-        };
-        fetchApplicant();
+        } catch {
+            setError("Failed to fetch applicant details");
+        } finally {
+            setLoading(false);
+        }
     }, [applicantId]);
+
+    useEffect(() => {
+        fetchApplicant();
+    }, [fetchApplicant]);
 
     if (loading) {
         return (
@@ -550,6 +551,7 @@ export default function ApplicantDetails() {
                                                 ? opening.departmentId._id
                                                 : (opening?.departmentId as string | null) ?? null
                                         }
+                                        onStatusChange={fetchApplicant}
                                     />
                                 </CardContent>
                             </TabsContent>

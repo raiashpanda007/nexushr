@@ -68,6 +68,7 @@ interface InterviewPanelProps {
     applicantId: string;
     round: Round;
     departmentId: string | null;
+    onStatusChange?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -76,6 +77,7 @@ export default function InterviewPanel({
     applicantId,
     round,
     departmentId,
+    onStatusChange,
 }: InterviewPanelProps) {
     const {
         interview,
@@ -99,7 +101,7 @@ export default function InterviewPanel({
         cancelForm,
         createInterview,
         updateInterview,
-    } = useInterview({ applicantId, roundId: round._id, departmentId });
+    } = useInterview({ applicantId, roundId: round._id, departmentId, onStatusChange });
 
     // ── Loading ──────────────────────────────────────────────────────────────
     if (loading) {

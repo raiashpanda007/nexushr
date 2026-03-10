@@ -8,6 +8,7 @@ interface UseInterviewParams {
     applicantId: string;
     roundId: string | null;
     departmentId: string | null;
+    onStatusChange?: () => void;
 }
 
 interface InterviewFormData {
@@ -24,7 +25,7 @@ const INITIAL_FORM: InterviewFormData = {
     feedback: "",
 };
 
-export function useInterview({ applicantId, roundId, departmentId }: UseInterviewParams) {
+export function useInterview({ applicantId, roundId, departmentId, onStatusChange }: UseInterviewParams) {
     const [interview, setInterview] = useState<Interview | null>(null);
     const [loading, setLoading] = useState(false);
     const [creating, setCreating] = useState(false);
@@ -266,6 +267,7 @@ export function useInterview({ applicantId, roundId, departmentId }: UseIntervie
             if (res.ok) {
                 toast.success(result === "PASSED" ? "Applicant passed" : "Applicant rejected");
                 setInterview(res.response.data.interview);
+                onStatusChange?.();
             } else {
                 toast.error(
                     (res.response as unknown as { message?: string })?.message ||
