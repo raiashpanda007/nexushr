@@ -1,4 +1,4 @@
-import { mongoose } from "mongoose";
+import mongoose from "mongoose";
 
 const EventSchema = new mongoose.Schema(
   {
@@ -38,12 +38,18 @@ const EventSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
     },
+    interviewId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Interview",
+    },
   },
   {
     timestamps: true,
   },
 );
 
+
+EventSchema.index({interviewId: 1}, { unique: true, sparse: true });
 const EventModel = mongoose.model("Event", EventSchema);
 
 export default EventModel;

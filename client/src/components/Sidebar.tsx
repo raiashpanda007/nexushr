@@ -14,6 +14,7 @@ import {
     Banknote,
     Package,
     BriefcaseBusiness,
+    ClipboardList,
     type LucideIcon,
 } from "lucide-react"
 
@@ -28,6 +29,7 @@ const iconMap: Record<string, LucideIcon> = {
     Banknote,
     Package,
     BriefcaseBusiness,
+    ClipboardList,
 }
 
 export default function Sidebar() {

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import InterviewPanel from "@/components/hiring/InterviewPanel";
 import {
     ArrowLeft,
     Loader2,
@@ -21,6 +22,7 @@ import {
     StickyNote,
     CheckCircle2,
     AlignLeft,
+    CalendarCheck2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -219,11 +221,11 @@ function ResumePanel({ resumeUrl }: { resumeUrl: string }) {
                 </div>
             </div>
             {show ? (
-                <div className="rounded-lg overflow-hidden border border-border/50 bg-muted/20 flex-1 min-h-80">
+                <div className="rounded-lg overflow-hidden border border-border/50 bg-muted/20 flex-1 min-h-175">
                     <iframe
                         src={resumeUrl}
                         title="Resume PDF"
-                        className="w-full h-full min-h-80 rounded-lg"
+                        className="w-full h-full min-h-175 rounded-lg"
                     />
                 </div>
             ) : (
@@ -323,7 +325,7 @@ export default function ApplicantDetails() {
         : null;
 
     return (
-        <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
+        <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8 px-2 sm:px-3">
 
             {/* Back */}
             <div className="flex items-center justify-between">
@@ -342,7 +344,7 @@ export default function ApplicantDetails() {
             </div>
 
             {/* Candidate card */}
-            <div className="relative overflow-hidden rounded-2xl bg-card p-6 sm:p-8 shadow-sm border border-border/50">
+            <div className="relative overflow-hidden rounded-2xl bg-card px-4 py-5 sm:px-5 sm:py-6 shadow-sm border border-border/50">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
                 <div className="relative z-10">
                     <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -428,7 +430,7 @@ export default function ApplicantDetails() {
             {/* Opening card */}
             {opening && (
                 <Card className="rounded-2xl border-border/50 shadow-sm">
-                    <CardContent className="p-6 sm:p-8">
+                    <CardContent className="px-4 py-5 sm:px-5">
                         <h2 className="text-lg font-semibold text-foreground mb-1">
                             {opening.title}
                         </h2>
@@ -478,12 +480,12 @@ export default function ApplicantDetails() {
             {/* Round progress bar */}
             {rounds.length > 0 && (
                 <Card className="rounded-2xl border-border/50 shadow-sm overflow-hidden">
-                    <CardHeader className="pb-3">
+                    <CardHeader className="px-4 sm:px-5 pb-3">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                             Interview Rounds Progress
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-0 pb-4">
+                    <CardContent className="px-4 sm:px-5 pt-0 pb-4">
                         <RoundProgressBar
                             rounds={rounds}
                             currentRound={currentRound}
@@ -501,12 +503,18 @@ export default function ApplicantDetails() {
             {(rounds.length > 0 || applicant.resume) && (
                 <Card className="rounded-2xl border-border/50 shadow-sm">
                     <Tabs defaultValue={rounds.length > 0 ? "round" : "resume"}>
-                        <CardHeader className="pb-0">
+                        <CardHeader className="px-4 sm:px-5 pb-0">
                             <TabsList className="w-full sm:w-auto">
                                 {rounds.length > 0 && selectedRound && (
                                     <TabsTrigger value="round" className="gap-1.5">
                                         <AlignLeft className="h-3.5 w-3.5" />
                                         Round Status
+                                    </TabsTrigger>
+                                )}
+                                {rounds.length > 0 && selectedRound && (
+                                    <TabsTrigger value="interview" className="gap-1.5">
+                                        <CalendarCheck2 className="h-3.5 w-3.5" />
+                                        Interview
                                     </TabsTrigger>
                                 )}
                                 {applicant.resume && (
@@ -520,7 +528,7 @@ export default function ApplicantDetails() {
                         <Separator className="mt-3" />
                         {rounds.length > 0 && selectedRound && (
                             <TabsContent value="round" className="mt-0">
-                                <CardContent className="pt-4">
+                                <CardContent className="px-4 sm:px-5 pt-4">
                                     <RoundInfoPanel
                                         round={selectedRound}
                                         isCurrent={
@@ -530,9 +538,25 @@ export default function ApplicantDetails() {
                                 </CardContent>
                             </TabsContent>
                         )}
+                        {rounds.length > 0 && selectedRound && (
+                            <TabsContent value="interview" className="mt-0">
+                                <CardContent className="px-4 sm:px-5 pt-4">
+                                    <InterviewPanel
+                                        applicantId={applicant._id}
+                                        round={selectedRound}
+                                        departmentId={
+                                            opening?.departmentId &&
+                                            typeof opening.departmentId === "object"
+                                                ? opening.departmentId._id
+                                                : (opening?.departmentId as string | null) ?? null
+                                        }
+                                    />
+                                </CardContent>
+                            </TabsContent>
+                        )}
                         {applicant.resume && (
                             <TabsContent value="resume" className="mt-0">
-                                <CardContent className="pt-4">
+                                <CardContent className="px-4 sm:px-5 pt-4">
                                     <ResumePanel resumeUrl={applicant.resume} />
                                 </CardContent>
                             </TabsContent>
@@ -544,7 +568,7 @@ export default function ApplicantDetails() {
             {/* Screening Q&A */}
             {Array.isArray(applicant.questions) && applicant.questions.length > 0 && (
                 <Card className="rounded-2xl border-border/50 shadow-sm">
-                    <CardHeader className="pb-3">
+                    <CardHeader className="px-4 sm:px-5 pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                             <AlignLeft className="h-4 w-4 text-muted-foreground" />
                             Screening Answers
@@ -554,7 +578,7 @@ export default function ApplicantDetails() {
                         </CardTitle>
                     </CardHeader>
                     <Separator />
-                    <CardContent className="pt-4 grid gap-3">
+                    <CardContent className="px-4 sm:px-5 pt-4 grid gap-3">
                         {applicant.questions.map((q, idx) => {
                             const questionText =
                                 q.questionId && typeof q.questionId === "object"

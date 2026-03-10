@@ -12,6 +12,44 @@ export interface Round {
     type: "INTERVIEW" | "TEST" | "ASSIGNMENT";
 }
 
+export interface Reviewer {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    email: string;
+}
+
+export interface InterviewGrade {
+    skillId: string | { _id: string; name: string };
+    score: number;
+}
+
+export interface Interview {
+    _id: string;
+    applicantId: { _id: string; name: string; email: string } | string;
+    roundId: { _id: string; name: string; type: string } | string;
+    reviewers: Reviewer[];
+    feedback?: string;
+    status: "SCHEDULED" | "COMPLETED" | "CANCELED";
+    reviewDate: string;
+    grades: InterviewGrade[];
+    result: "PASSED" | "FAILED" | "PENDING";
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface MyInterview extends Interview {
+    opening?: {
+        _id: string;
+        title: string;
+        departmentId: { _id: string; name: string } | string;
+        HiringManager:
+            | { _id: string; firstName: string; lastName: string; email: string }
+            | string;
+    } | null;
+}
+
 export interface Applicant {
     _id: string;
     name: string;

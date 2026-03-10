@@ -14,6 +14,7 @@ import AssetModel from "./modules/Assets/Models/assets.models.js";
 import Openings from "./modules/Hiring/Models/openings.model.js";
 import QuestionModel from "./modules/Hiring/Models/questions.model.js";
 import RoundsModel from "./modules/Hiring/Models/rounds.model.js";
+import ApplicantModel from "./modules/Hiring/Models/applicants.model.js";
 import bcrypt from "bcrypt";
 
 const TARGET = 10000;
@@ -717,6 +718,50 @@ const seed = async () => {
                     applicants: []
                 });
                 console.log(`Created Opening: ${opening.title} (${dept.name}) - ${selectedRounds.length} rounds, ${selectedQuestions.length} questions`);
+            }
+        }
+
+        // 8. Seed Applicants for each Opening (2-3 applicants each)
+        console.log("\n--- Seeding Applicants for Openings (2-3 each) ---");
+        const openingsList = await Openings.find().limit(20).lean();
+        for (const op of openingsList) {
+            try {
+                const existingApplicantsCount = await ApplicantModel.countDocuments({ openingId: op._id });
+                const targetForOpening = 2 + Math.floor(Math.random() * 2); // 2-3
+                const needed = Math.max(0, targetForOpening - existingApplicantsCount);
+                if (needed <= 0) continue;
+
+                const createdApplicants = [];
+                for (let k = 0; k < needed; k++) {
+                    const idx = Date.now() % 100000 + k;
+                    const baseTag = (op.title || 'opening').toString().split(' ')[0].toLowerCase();
+                    const name = `Applicant ${baseTag} ${idx}`;
+                    const email = `${baseTag}.applicant${idx}@example.com`;
+                    const phone = `9${Math.floor(100000000 + Math.random() * 900000000)}`;
+                    const resume = `https://placehold.co/600x800?text=Resume+${idx}`;
+
+                    // assemble questions (1-3) from opening questions or global finalQuestions
+                    const qPool = (op.questions && op.questions.length) ? op.questions : finalQuestions.map(q => q._id);
+                    const qCount = Math.min(qPool.length || 0, 1 + Math.floor(Math.random() * 3));
+                    const questions = [];
+                    for (let qq = 0; qq < qCount; qq++) {
+                        questions.push({ questionId: qPool[(k + qq) % (qPool.length || 1)], answer: 'Sample answer' });
+                    }
+
+                    const currentRound = (op.rounds && op.rounds.length) ? op.rounds[0] : null;
+                    try {
+                        const applicant = await ApplicantModel.create({ name, email, phone, resume, openingId: op._id, questions, currentRound });
+                        createdApplicants.push(applicant);
+                        // add to opening applicants array
+                        await Openings.findByIdAndUpdate(op._id, { $push: { applicants: applicant._id } });
+                    } catch (err) {
+                        // likely duplicate email/phone or validation error - skip
+                    }
+                }
+
+                console.log(`Seeded ${createdApplicants.length} applicants for opening ${op.title}`);
+            } catch (err) {
+                console.log(`Failed seeding applicants for opening ${op.title}:`, err.message);
             }
         }
 

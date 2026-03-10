@@ -14,7 +14,9 @@ class ApplicantRoutes {
     this.router.delete("/:applicantId", this.controller.Delete);
     this.router.put("/:applicantId", this.controller.Update);
     this.router.post("/signed-url", this.controller.GetSignedURL);
+    this.router.get("/", this.controller.Get);
     this.router.get("/:applicantId", VerifyMiddleware, this.controller.Get);
+
     return this.router;
   }
 }

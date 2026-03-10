@@ -12,6 +12,7 @@ import { CreateAssetValidationSchema, UpdateAssetValidationSchema } from "./asse
 import { CreateOpeningValidationSchema } from "./Hiring/opening.types.js"
 import { OfflineQueueValidationSchema } from "./sync.types.js"
 import { CreateApplicantValidationSchema , UpdateApplicantValidationSchema} from "./Hiring/applicant.types.js"
+import { CreateInterviewSchema, UpdateInterviewSchema } from "./Hiring/interview.types.js"
 import { ErrorTypes } from "./error.types.js"
 
 
@@ -69,6 +70,10 @@ const Types = {
   Applicants: {
     Create: CreateApplicantValidationSchema,
     Update: UpdateApplicantValidationSchema
+  },
+  Interviews: {
+    Create: CreateInterviewSchema,
+    Update: UpdateInterviewSchema
   },
   OfflineQueue: OfflineQueueValidationSchema,
   Errors: ErrorTypes

@@ -17,6 +17,7 @@ export function useSidebar() {
         { name: "Payroll", path: "/payroll", icon: "Banknote" },
         { name: "Assets", path: "/assets", icon: "Package" },
         { name: "Hiring", path: "/hiring", icon: "BriefcaseBusiness" },
+        { name: "Reviews", path: "/reviews", icon: "ClipboardList" },
     ]
 
     const employeeItems = [
@@ -26,6 +27,7 @@ export function useSidebar() {
         { name: "Payroll", path: "/payroll", icon: "Banknote" },
         { name: "Salaries", path: "/salaries", icon: "BadgeCommon" },
         { name: "Assets", path: "/assets", icon: "Package" },
+        { name: "Reviews", path: "/reviews", icon: "ClipboardList" },
     ]
 
     const items = role === "HR" ? hrItems : (role === "EMPLOYEE" ? employeeItems : [])

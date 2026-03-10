@@ -183,7 +183,7 @@ class ApplicantController {
     const { status, note } = parsedData.data;
 
     if (status) {
-      applicant.Status = status;
+      applicant.status = status;
     }
     if (note !== undefined) {
       applicant.note = note;
@@ -228,9 +228,58 @@ class ApplicantController {
   Get = AsyncHandler(async (req, res) => {
     const applicantId = req.params.applicantId;
     if (!applicantId) {
-      throw new ApiError(Types.Errors.BadRequest, "applicantId is required");
+      const status = req.query.status;
+      const openingId = req.query.openingId;
+      const roundId = req.query.roundId;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+
+      if (!openingId) {
+        throw new ApiError(
+          Types.Errors.BadRequest,
+          "openingId query parameter is required to filter applicants",
+        );
+      }
+
+      const filter = {};
+      filter.openingId = openingId;
+      if (status) {
+        filter.Status = status;
+      }
+
+      if (roundId) {
+        filter.currentRound = roundId;
+      }
+
+      const skip = (page - 1) * limit;
+      const applicants = await this.repo
+        .find(filter)
+        .skip(skip)
+        .limit(limit);
+      
+      const totalCount = await this.repo.countDocuments(filter);
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { 
+              applicants,
+              pagination: {
+                currentPage: page,
+                pageSize: limit,
+                totalCount,
+                totalPages,
+              }
+            },
+            "Applicants retrieved successfully",
+          ),
+        );
     }
-    const applicant = await this.repo.findById(applicantId)
+    const applicant = await this.repo
+      .findById(applicantId)
       .populate({
         path: "openingId",
         select: "title description departmentId HiringManager rounds",
@@ -263,7 +312,9 @@ class ApplicantController {
 
     return res
       .status(200)
-      .json(new ApiResponse(200, { applicant }, "Applicant retrieved successfully"));
+      .json(
+        new ApiResponse(200, { applicant }, "Applicant retrieved successfully"),
+      );
   });
 }
 

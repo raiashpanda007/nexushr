@@ -31,7 +31,7 @@ const ApplicantSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["APPLIED", "INTERVIEWING", "OFFERED", "REJECTED"],
+      enum: ["APPLIED", "INTERVIEWING", "OFFERED", "OFFERING", "REJECTED"],
       default: "APPLIED",
     },
     questions: [

@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import ApiCaller from "@/utils/ApiCaller";
+import { useHiringDetails } from "@/hooks/Hiring/useHiringDetails";
 import type { Opening } from "@/types/hiring";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +42,14 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+const APPLICANT_STATUS_STYLES: Record<string, string> = {
+    APPLIED: "bg-muted text-muted-foreground border-border",
+    INTERVIEWING: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+    OFFERED: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
+    OFFERING: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
+    REJECTED: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+};
+
 const STATUS_STYLES: Record<string, string> = {
     OPEN: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
     CLOSED: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
@@ -70,70 +77,47 @@ function getManagerEmail(mgr: Opening["HiringManager"]): string {
     return mgr.email;
 }
 
+function getPaginationButtons(currentPage: number, totalPages: number): (number | string)[] {
+    if (totalPages <= 5) {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const buttons: (number | string)[] = [1];
+    const startPage = Math.max(2, currentPage - 1);
+    const endPage = Math.min(totalPages - 1, currentPage + 1);
+    if (startPage > 2) buttons.push("...");
+    for (let i = startPage; i <= endPage; i++) buttons.push(i);
+    if (endPage < totalPages - 1) buttons.push("...");
+    buttons.push(totalPages);
+    return buttons;
+}
+
 export default function HiringDetails() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
-    const [opening, setOpening] = useState<Opening | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [deleteLoading, setDeleteLoading] = useState(false);
-    const [linkCopied, setLinkCopied] = useState(false);
-
-    const handleCopyLink = () => {
-        const link = `${window.location.origin}/job-opening/${id}`;
-        navigator.clipboard.writeText(link).then(() => {
-            setLinkCopied(true);
-            toast.success("Link copied to clipboard");
-            setTimeout(() => setLinkCopied(false), 2000);
-        });
-    };
-
-    useEffect(() => {
-        if (!id) return;
-        const fetch = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const result = await ApiCaller<null, Opening>({
-                    requestType: "GET",
-                    paths: ["api", "v1", "hiring", "openings", id],
-                });
-                if (result.ok) {
-                    setOpening(result.response.data);
-                } else {
-                    setError((result.response as any)?.message || "Opening not found");
-                }
-            } catch {
-                setError("Failed to fetch opening details");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetch();
-    }, [id]);
-
-    const handleDelete = async () => {
-        if (!id) return;
-        setDeleteLoading(true);
-        try {
-            const result = await ApiCaller<null, null>({
-                requestType: "DELETE",
-                paths: ["api", "v1", "hiring", "openings", id],
-            });
-            if (result.ok) {
-                toast.success("Opening deleted");
-                navigate("/hiring");
-            } else {
-                toast.error((result.response as any)?.message || "Failed to delete");
-                setDeleteLoading(false);
-            }
-        } catch {
-            toast.error("An error occurred");
-            setDeleteLoading(false);
-        }
-    };
+    const {
+        opening,
+        loading,
+        error,
+        isDeleteDialogOpen,
+        setIsDeleteDialogOpen,
+        deleteLoading,
+        handleDelete,
+        linkCopied,
+        handleCopyLink,
+        applicantsList,
+        applicantsLoading,
+        applicantsError,
+        currentPage,
+        setCurrentPage,
+        totalPages,
+        totalCount,
+        pageSize,
+        statusFilter,
+        setStatusFilter,
+        roundFilter,
+        setRoundFilter,
+    } = useHiringDetails(id);
 
     if (loading) {
         return (
@@ -412,106 +396,206 @@ export default function HiringDetails() {
                     <CardTitle className="flex items-center gap-2 text-lg">
                         <Users className="h-5 w-5 text-muted-foreground" />
                         Applicants
-                        {Array.isArray(opening.applicants) && opening.applicants.length > 0 && (
+                        {totalCount > 0 && (
                             <Badge variant="secondary" className="ml-auto">
-                                {opening.applicants.length}
+                                {totalCount}
                             </Badge>
                         )}
                     </CardTitle>
                 </CardHeader>
                 <Separator />
-                {Array.isArray(opening.applicants) && opening.applicants.length > 0 ? (
-                    <CardContent className="p-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead className="font-semibold pl-5">#</TableHead>
-                                    <TableHead className="font-semibold">Applicant</TableHead>
-                                    <TableHead className="font-semibold">Phone</TableHead>
-                                    <TableHead className="font-semibold">Status</TableHead>
-                                    <TableHead className="font-semibold">Current Round</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {opening.applicants.map((applicant, idx) => {
-                                    const currentRoundId =
-                                        applicant.currentRound &&
-                                        typeof applicant.currentRound === "object"
-                                            ? applicant.currentRound._id
-                                            : applicant.currentRound;
-                                    const currentRound = currentRoundId
-                                        ? opening.rounds?.find((r) => r._id === currentRoundId)
-                                        : null;
-                                    return (
-                                    <TableRow
-                                        key={applicant._id ?? idx}
-                                        className="hover:bg-muted/30 transition-colors cursor-pointer"
-                                        onClick={() => navigate(`/hiring/applicant/${applicant._id}`)}
-                                    >
-                                        <TableCell className="pl-5 text-muted-foreground text-sm font-mono">
-                                            {idx + 1}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                                                    {applicant.name?.[0]?.toUpperCase() ?? "A"}
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-foreground">{applicant.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{applicant.email}</p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground">
-                                            {applicant.phone || "—"}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant="outline"
-                                                className={cn(
-                                                    "text-xs font-semibold border",
-                                                    applicant.status === "OFFERED"
-                                                        ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
-                                                        : applicant.status === "REJECTED"
-                                                        ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
-                                                        : applicant.status === "INTERVIEWING"
-                                                        ? "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
-                                                        : "bg-muted text-muted-foreground border-border",
-                                                )}
+
+                {/* Filters and Actions */}
+                <div className="px-5 py-4 bg-muted/20 border-b border-border/50 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between flex-wrap">
+                    <div className="flex gap-2 flex-wrap items-center">
+                        {/* Status Filter */}
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="px-3 py-1.5 rounded-md border border-border bg-background text-sm text-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        >
+                            <option value="">All Status</option>
+                            <option value="APPLIED">Applied</option>
+                            <option value="INTERVIEWING">Interviewing</option>
+                            <option value="OFFERING">Offering</option>
+                            <option value="OFFERED">Offered</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+
+                        {/* Round Filter */}
+                        <select
+                            value={roundFilter}
+                            onChange={(e) => setRoundFilter(e.target.value)}
+                            className="px-3 py-1.5 rounded-md border border-border bg-background text-sm text-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        >
+                            <option value="">All Rounds</option>
+                            {opening?.rounds?.map((round) => (
+                                <option key={round._id} value={round._id}>
+                                    {round.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Generate ATS Score Button */}
+                    <Button
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                            toast.info("Generating latest ATS scores...");
+                            // TODO: Implement ATS score generation
+                        }}
+                    >
+                        <Layers className="h-4 w-4" />
+                        Generate Latest ATS Score
+                    </Button>
+                </div>
+
+                {applicantsLoading && currentPage === 1 ? (
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">Loading applicants...</p>
+                    </CardContent>
+                ) : applicantsError ? (
+                    <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
+                        <Users className="h-8 w-8 opacity-30" />
+                        <p className="text-sm">{applicantsError}</p>
+                    </CardContent>
+                ) : applicantsList.length > 0 ? (
+                    <>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                                        <TableHead className="font-semibold pl-5">#</TableHead>
+                                        <TableHead className="font-semibold">Applicant</TableHead>
+                                        <TableHead className="font-semibold">Phone</TableHead>
+                                        <TableHead className="font-semibold">Status</TableHead>
+                                        <TableHead className="font-semibold">Current Round</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {applicantsList.map((applicant, idx) => {
+                                        const currentRoundId =
+                                            applicant.currentRound &&
+                                            typeof applicant.currentRound === "object"
+                                                ? applicant.currentRound._id
+                                                : applicant.currentRound;
+                                        const currentRound = currentRoundId
+                                            ? opening?.rounds?.find((r) => r._id === currentRoundId)
+                                            : null;
+                                        return (
+                                            <TableRow
+                                                key={applicant._id ?? idx}
+                                                className="hover:bg-muted/30 transition-colors cursor-pointer"
+                                                onClick={() => navigate(`/hiring/applicant/${applicant._id}`)}
                                             >
-                                                {applicant.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {currentRound ? (
-                                                <div className="flex items-center gap-1.5">
+                                                <TableCell className="pl-5 text-muted-foreground text-sm font-mono">
+                                                    {(currentPage - 1) * pageSize + idx + 1}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                                                            {applicant.name?.[0]?.toUpperCase() ?? "A"}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-foreground">{applicant.name}</p>
+                                                            <p className="text-xs text-muted-foreground">{applicant.email}</p>
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground">
+                                                    {applicant.phone || "—"}
+                                                </TableCell>
+                                                <TableCell>
                                                     <Badge
                                                         variant="outline"
                                                         className={cn(
-                                                            "text-xs border",
-                                                            ROUND_TYPE_STYLES[currentRound.type] ??
-                                                                "bg-muted text-muted-foreground border-border",
+                                                            "text-xs font-semibold border",
+                                                            APPLICANT_STATUS_STYLES[applicant.status] ?? "bg-muted text-muted-foreground border-border",
                                                         )}
                                                     >
-                                                        {currentRound.name}
+                                                        {applicant.status}
                                                     </Badge>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground italic">
-                                                    Process not started
+                                                </TableCell>
+                                                <TableCell>
+                                                    {currentRound ? (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    "text-xs border",
+                                                                    ROUND_TYPE_STYLES[currentRound.type] ??
+                                                                        "bg-muted text-muted-foreground border-border",
+                                                                )}
+                                                            >
+                                                                {currentRound.name}
+                                                            </Badge>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground italic">
+                                                            Process not started
+                                                        </span>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+
+                        {/* Pagination */}
+                        <div className="px-5 py-4 bg-muted/20 border-t border-border/50 flex items-center justify-between flex-wrap gap-4">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} applicants
+                            </div>
+                            {totalPages > 1 && (
+                                <div className="flex items-center gap-1">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={currentPage === 1 || applicantsLoading}
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <div className="flex items-center gap-0.5">
+                                        {getPaginationButtons(currentPage, totalPages).map((page, idx) => (
+                                            page === "..." ? (
+                                                <span key={`ellipsis-${idx}`} className="px-2 py-1.5 text-xs text-muted-foreground">
+                                                    ...
                                                 </span>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
+                                            ) : (
+                                                <Button
+                                                    key={page}
+                                                    variant={currentPage === page ? "default" : "outline"}
+                                                    size="sm"
+                                                    className="w-8 h-8 p-0"
+                                                    disabled={applicantsLoading}
+                                                    onClick={() => setCurrentPage(page as number)}
+                                                >
+                                                    {page}
+                                                </Button>
+                                            )
+                                        ))}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={currentPage === totalPages || applicantsLoading}
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </>
                 ) : (
                     <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
                         <Users className="h-8 w-8 opacity-30" />
-                        <p className="text-sm">No applicants yet</p>
+                        <p className="text-sm">No applicants found</p>
                         <p className="text-xs text-muted-foreground/70">Share the job link to start receiving applications</p>
                         <Button
                             variant="outline"
