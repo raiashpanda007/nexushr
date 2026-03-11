@@ -180,13 +180,16 @@ class ApplicantController {
         `Validation failed: ${errorMessages}`,
       );
     }
-    const { status, note } = parsedData.data;
+    const { status, note, currentRound } = parsedData.data;
 
     if (status) {
       applicant.status = status;
     }
     if (note !== undefined) {
       applicant.note = note;
+    }
+    if (currentRound !== undefined) {
+      applicant.currentRound = currentRound;
     }
 
     await applicant.save();

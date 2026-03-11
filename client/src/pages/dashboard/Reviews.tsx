@@ -17,6 +17,7 @@ import {
     Video,
 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useMyReviews } from "@/hooks/hiring/useMyReviews";
 import type { MyInterview, Reviewer } from "@/types/hiring";
@@ -78,6 +79,12 @@ function getApplicantName(applicantId: MyInterview["applicantId"]): string {
     return "—";
 }
 
+function getApplicantId(applicantId: MyInterview["applicantId"]): string | null {
+    if (typeof applicantId === "object" && applicantId !== null) return applicantId._id;
+    if (typeof applicantId === "string") return applicantId;
+    return null;
+}
+
 function getOpeningTitle(opening: MyInterview["opening"]): string {
     if (!opening) return "—";
     return opening.title;
@@ -97,9 +104,11 @@ interface InterviewCardProps {
     interview: MyInterview;
     onMarkResult: (id: string, result: "PASSED" | "FAILED") => Promise<void>;
     isMarking: boolean;
+    navigate?: ReturnType<typeof useNavigate>;
 }
 
-function InterviewCard({ interview, onMarkResult, isMarking }: InterviewCardProps) {
+function InterviewCard({ interview, onMarkResult, isMarking, navigate: navProp }: InterviewCardProps) {
+    const navigate = navProp || useNavigate();
     const date = new Date(interview.reviewDate);
     const dateStr = date.toLocaleDateString("en-US", {
         weekday: "short",
@@ -114,8 +123,13 @@ function InterviewCard({ interview, onMarkResult, isMarking }: InterviewCardProp
 
     const roundType = getRoundType(interview.roundId);
 
+    const applicantId = getApplicantId(interview.applicantId);
+
     return (
-        <Card className="rounded-2xl border-border/50 shadow-sm hover:shadow-md transition-shadow duration-200">
+        <Card
+            className="rounded-2xl border-border/50 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
+            onClick={() => applicantId && navigate(`/hiring/applicant/${applicantId}`, { state: { from: 'reviews' } })}
+        >
             <CardContent className="px-4 py-4 sm:px-5">
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -252,7 +266,7 @@ function InterviewCard({ interview, onMarkResult, isMarking }: InterviewCardProp
                                 variant="outline"
                                 className="gap-1.5 text-xs border-green-300 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20"
                                 disabled={isMarking}
-                                onClick={() => onMarkResult(interview._id, "PASSED")}
+                                onClick={(e) => { e.stopPropagation(); onMarkResult(interview._id, "PASSED"); }}
                             >
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                 Pass
@@ -262,7 +276,7 @@ function InterviewCard({ interview, onMarkResult, isMarking }: InterviewCardProp
                                 variant="outline"
                                 className="gap-1.5 text-xs border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
                                 disabled={isMarking}
-                                onClick={() => onMarkResult(interview._id, "FAILED")}
+                                onClick={(e) => { e.stopPropagation(); onMarkResult(interview._id, "FAILED"); }}
                             >
                                 <XCircle className="h-3.5 w-3.5" />
                                 Reject
@@ -283,6 +297,7 @@ function InterviewCard({ interview, onMarkResult, isMarking }: InterviewCardProp
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline truncate block"
+                                onClick={(e) => e.stopPropagation()}
                             >
                                 {interview.zoomJoinUrl}
                             </a>
@@ -303,6 +318,7 @@ const FILTERS = [
 ];
 
 export default function Reviews() {
+    const navigate = useNavigate();
     const { interviews, allInterviews, loading, filter, setFilter, markResult, markingId } = useMyReviews();
     const [activeMark, setActiveMark] = useState<string | null>(null);
 
@@ -389,6 +405,7 @@ export default function Reviews() {
                             interview={iv}
                             onMarkResult={handleMarkResult}
                             isMarking={activeMark === iv._id || markingId === iv._id}
+                            navigate={navigate}
                         />
                     ))}
                 </div>

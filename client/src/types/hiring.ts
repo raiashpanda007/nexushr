@@ -59,7 +59,7 @@ export interface Applicant {
     email: string;
     phone: string;
     resume: string;
-    status: "APPLIED" | "INTERVIEWING" | "OFFERED" | "REJECTED";
+    status: "APPLIED" | "INTERVIEWING" | "OFFERED" | "OFFERING" | "REJECTED";
     currentRound?: string | Round;
     note?: string;
     createdAt?: string;
@@ -97,7 +97,7 @@ export interface ApplicantDetail {
     email: string;
     phone: string;
     resume: string;
-    status: "APPLIED" | "INTERVIEWING" | "OFFERED" | "REJECTED";
+    status: "APPLIED" | "INTERVIEWING" | "OFFERED" | "OFFERING" | "REJECTED";
     currentRound?: Round | null;
     note?: string;
     createdAt?: string;

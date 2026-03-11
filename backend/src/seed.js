@@ -698,14 +698,17 @@ const seed = async () => {
                     selectedQuestions.push(finalQuestions[(i * 7 + j) % finalQuestions.length]._id);
                 }
 
-                // Select 1-3 random rounds
+                // Select 1-3 random rounds with sequential ranks
                 const roundCount = 1 + Math.floor(Math.random() * 3);
                 const selectedRounds = [];
+                const roundDetails = [];
                 for (let j = 0; j < roundCount; j++) {
+                    const selectedRound = finalRounds[(i * 5 + j) % finalRounds.length];
                     selectedRounds.push({
-                        round: finalRounds[(i * 5 + j) % finalRounds.length]._id,
-                        rank: j + 1
+                        round: selectedRound._id,
+                        rank: j + 1  // Rank starts from 1 (left to right progression)
                     });
+                    roundDetails.push(`${j + 1}. ${selectedRound.name}`);
                 }
 
                 const opening = await Openings.create({
@@ -720,7 +723,9 @@ const seed = async () => {
                     rounds: selectedRounds,
                     applicants: []
                 });
-                console.log(`Created Opening: ${opening.title} (${dept.name}) - ${selectedRounds.length} rounds, ${selectedQuestions.length} questions`);
+                console.log(`Created Opening: ${opening.title} (${dept.name})`);
+                console.log(`  Rounds (${selectedRounds.length}): ${roundDetails.join(' → ')}`);
+                console.log(`  Questions: ${selectedQuestions.length}`);
             }
         }
 

@@ -145,16 +145,13 @@ export default function EventDetails() {
                 Back to Events
             </Button>
             <div className="w-full flex justify-end gap-2">
-
                 <Button className="w-fit" variant={"ghost"} onClick={() => setIsEditModalOpen(true)}>
                     <Pencil className="h-4 w-4" />
                 </Button>
-
                 <Button variant={"destructive"} className="w-fit" onClick={() => setIsDeleteDialogOpen(true)}>
                     <Trash className="h-4 w-4" />
                 </Button>
             </div>
-
             <EditEventModal
                 open={isEditModalOpen}
                 setOpen={setIsEditModalOpen}
@@ -170,10 +167,9 @@ export default function EventDetails() {
                     });
                 }}
             />
-
             {/* Delete confirmation dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if (!v) setDeleteError(null); }}>
-                <DialogContent className="sm:max-w-[400px]">
+                <DialogContent className="sm:max-w-100">
                     <DialogHeader>
                         <DialogTitle>Delete Event</DialogTitle>
                         <DialogDescription>
@@ -197,10 +193,8 @@ export default function EventDetails() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
             <div className="relative overflow-hidden rounded-2xl bg-card p-6 sm:p-8 shadow-sm border border-border/50">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-foreground/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-
                 <div className="relative z-10">
                     <div className="flex items-start justify-between gap-4 mb-4">
                         <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
@@ -213,11 +207,9 @@ export default function EventDetails() {
                             {event.type}
                         </Badge>
                     </div>
-
                     <p className="text-muted-foreground text-base leading-relaxed mb-6">
                         {event.description}
                     </p>
-
                     <div className="flex flex-wrap gap-4">
                         <div className="flex items-center gap-2 text-sm text-foreground">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -237,10 +229,22 @@ export default function EventDetails() {
                                 <span>Company-wide event</span>
                             </div>
                         )}
+                        {event.meetLink && (
+                            <div className="flex items-center gap-2 text-sm text-foreground">
+                                <Globe className="h-4 w-4 text-muted-foreground" />
+                                <a
+                                    href={event.meetLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 underline hover:text-blue-800"
+                                >
+                                    {event.meetLink}
+                                </a>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
-
             {/* Participants */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Employees */}
@@ -257,7 +261,7 @@ export default function EventDetails() {
                         </CardHeader>
                         <Separator />
                         <CardContent className="pt-4">
-                            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                            <div className="space-y-3 max-h-75 overflow-y-auto">
                                 {event.employeeDetails.map((emp) => (
                                     <div
                                         key={emp._id}
@@ -281,7 +285,6 @@ export default function EventDetails() {
                         </CardContent>
                     </Card>
                 )}
-
                 {/* Departments */}
                 {event.departmentDetails && event.departmentDetails.length > 0 && (
                     <Card className="rounded-2xl border-border/50 shadow-sm">
@@ -296,7 +299,7 @@ export default function EventDetails() {
                         </CardHeader>
                         <Separator />
                         <CardContent className="pt-4">
-                            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                            <div className="space-y-3 max-h-75 overflow-y-auto">
                                 {event.departmentDetails.map((dept) => (
                                     <div
                                         key={dept._id}
@@ -315,7 +318,6 @@ export default function EventDetails() {
                     </Card>
                 )}
             </div>
-
             {/* Metadata */}
             {(event.createdAt || event.updatedAt) && (
                 <div className="text-xs text-muted-foreground flex gap-4">

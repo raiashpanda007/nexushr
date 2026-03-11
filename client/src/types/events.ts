@@ -23,4 +23,5 @@ export interface EventItem {
     }[];
     createdAt?: string;
     updatedAt?: string;
+    meetLink?: string;
 }

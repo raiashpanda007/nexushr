@@ -114,10 +114,11 @@ class InterviewController {
         ],
         { session },
       );
-      const applicantUpdate = {
-        status: "INTERVIEWING",
-        currentRound: roundId,
-      };
+      // Only promote to INTERVIEWING from APPLIED; never downgrade a more-advanced status
+      const applicantUpdate = { currentRound: roundId };
+      if (applicant.status === "APPLIED") {
+        applicantUpdate.status = "INTERVIEWING";
+      }
       await this.applicantsModel.findByIdAndUpdate(applicantId, applicantUpdate, {
         session,
       });

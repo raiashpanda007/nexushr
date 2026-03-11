@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ApiCaller from "@/utils/ApiCaller";
 import type { ApplicantDetail, Round } from "@/types/hiring";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InterviewPanel from "@/components/hiring/InterviewPanel";
+import OfferDialog from "@/components/hiring/OfferDialog";
 import {
     ArrowLeft,
     Loader2,
@@ -86,23 +87,32 @@ function RoundProgressBar({
 }: RoundProgressBarProps) {
     if (!rounds || rounds.length === 0) return null;
 
-    // Find active (current) round index
+    // Sort rounds by rank to ensure left-to-right order (smallest rank = left, largest rank = right)
+    const sortedRounds = [...rounds].sort((a, b) => {
+        const rankA = (a as any)?.rank ?? 0;
+        const rankB = (b as any)?.rank ?? 0;
+        return rankA - rankB;
+    });
+
+    // Find active (current) round index from sorted rounds
     const activeIdx = currentRound
-        ? rounds.findIndex((r) => r._id === currentRound._id)
+        ? sortedRounds.findIndex((r) => r._id === currentRound._id)
         : -1;
 
     return (
         <div className="flex w-full items-stretch h-10 select-none">
-            {rounds.map((round, idx) => {
+            {sortedRounds.map((round, idx) => {
                 const isPast = activeIdx >= 0 && idx < activeIdx;
                 const isActive = idx === activeIdx;
                 const isSelected = idx === selectedIdx;
-                const isLast = idx === rounds.length - 1;
+                const isLast = idx === sortedRounds.length - 1;
+                const isBlocked = activeIdx >= 0 && idx > activeIdx;
 
                 return (
                     <button
                         key={round._id ?? idx}
-                        onClick={() => onSelect(idx)}
+                        onClick={() => !isBlocked && onSelect(idx)}
+                        disabled={isBlocked}
                         className={cn(
                             "relative flex flex-1 items-center justify-center text-xs font-semibold transition-all duration-200 focus:outline-none",
                             // chevron shape via clip-path except last element
@@ -114,10 +124,12 @@ function RoundProgressBar({
                                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
                                 : isSelected
                                 ? "bg-muted-foreground/20 text-foreground"
+                                : isBlocked
+                                ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed opacity-50"
                                 : "bg-muted text-muted-foreground hover:bg-muted/80",
-                            isSelected && "ring-2 ring-primary ring-inset",
+                            isSelected && !isBlocked && "ring-2 ring-primary ring-inset",
                         )}
-                        title={round.name}
+                        title={isBlocked ? "Complete previous rounds first" : round.name}
                         style={{ clipPath: !isLast ? "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)" : "polygon(0 0, 100% 0, 100% 100%, 0 100%, 12px 50%)" }}
                     >
                         <span className="truncate px-4">
@@ -243,12 +255,23 @@ function ResumePanel({ resumeUrl }: { resumeUrl: string }) {
 export default function ApplicantDetails() {
     const { applicantId } = useParams<{ applicantId: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const from = (location.state as any)?.from;
 
     const [applicant, setApplicant] = useState<ApplicantDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedRoundIdx, setSelectedRoundIdx] = useState(0);
+    const [showOfferDialog, setShowOfferDialog] = useState(false);
 
+    // Show dialog if status is OFFERING
+    useEffect(() => {
+        if (applicant && applicant.status === "OFFERING") {
+            setShowOfferDialog(true);
+        } else {
+            setShowOfferDialog(false);
+        }
+    }, [applicant]);
     const fetchApplicant = useCallback(async () => {
         if (!applicantId) return;
         setLoading(true);
@@ -315,11 +338,18 @@ export default function ApplicantDetails() {
             ? (applicant.currentRound as Round)
             : null;
 
-    const selectedRound: Round | null = rounds[selectedRoundIdx] ?? null;
-    const activeRoundIdx = currentRound ? rounds.findIndex((r) => r._id === currentRound._id) : -1;
+    // Sort rounds by rank for consistent left-to-right order (smallest rank = left, largest rank = right)
+    const sortedRounds = [...rounds].sort((a, b) => {
+        const rankA = (a as any)?.rank ?? 0;
+        const rankB = (b as any)?.rank ?? 0;
+        return rankA - rankB;
+    });
+
+    const selectedRound: Round | null = sortedRounds[selectedRoundIdx] ?? null;
+    const activeRoundIdx = currentRound ? sortedRounds.findIndex((r) => r._id === currentRound._id) : -1;
     // Use rank-based comparison when available, fall back to array index
     const selectedRank = selectedRound?.rank ?? selectedRoundIdx + 1;
-    const activeRank = activeRoundIdx >= 0 ? (rounds[activeRoundIdx]?.rank ?? activeRoundIdx + 1) : 1;
+    const activeRank = activeRoundIdx >= 0 ? (sortedRounds[activeRoundIdx]?.rank ?? activeRoundIdx + 1) : 1;
     const isSelectedRoundBlocked = selectedRank > activeRank;
 
     const appliedDate = applicant.createdAt
@@ -332,20 +362,34 @@ export default function ApplicantDetails() {
 
     return (
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8 px-2 sm:px-3">
+            {/* Offer Dialog for OFFERING status */}
+            {applicant && (
+                <OfferDialog
+                    open={showOfferDialog}
+                    onOpenChange={setShowOfferDialog}
+                    applicantId={applicant._id}
+                    applicantName={applicant.name}
+                    onSuccess={fetchApplicant}
+                />
+            )}
 
             {/* Back */}
             <div className="flex items-center justify-between">
                 <Button
                     variant="ghost"
                     className="gap-2 text-muted-foreground hover:text-foreground"
-                    onClick={() =>
-                        opening?._id
-                            ? navigate(`/hiring/${opening._id}`)
-                            : navigate(-1)
-                    }
+                    onClick={() => {
+                        if (from === 'reviews') {
+                            navigate('/reviews');
+                        } else if (opening?._id) {
+                            navigate(`/hiring/${opening._id}`);
+                        } else {
+                            navigate(-1);
+                        }
+                    }}
                 >
                     <ArrowLeft className="h-4 w-4" />
-                    Back to Opening
+                    Back to {from === 'reviews' ? 'Reviews' : 'Opening'}
                 </Button>
             </div>
 
@@ -493,7 +537,7 @@ export default function ApplicantDetails() {
                     </CardHeader>
                     <CardContent className="px-4 sm:px-5 pt-0 pb-4">
                         <RoundProgressBar
-                            rounds={rounds}
+                            rounds={sortedRounds}
                             currentRound={currentRound}
                             selectedIdx={selectedRoundIdx}
                             onSelect={setSelectedRoundIdx}
