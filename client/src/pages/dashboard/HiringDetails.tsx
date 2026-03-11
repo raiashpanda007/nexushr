@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useHiringDetails } from "@/hooks/Hiring/useHiringDetails";
 import type { Opening } from "@/types/hiring";
+import ApiCaller from "@/utils/ApiCaller";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -93,6 +94,20 @@ function getPaginationButtons(currentPage: number, totalPages: number): (number 
 
 export default function HiringDetails() {
     const { id } = useParams<{ id: string }>();
+    if (!id) {
+        return (
+            <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center py-24 gap-4">
+                <BriefcaseBusiness className="h-12 w-12 text-muted-foreground/40" />
+                <p className="text-lg font-medium text-muted-foreground">
+                    No opening specified
+                </p>
+                <Button variant="outline" onClick={() => navigate("/hiring")}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Hiring
+                </Button>
+            </div>
+        );
+    }
     const navigate = useNavigate();
 
     const {
@@ -436,13 +451,25 @@ export default function HiringDetails() {
                         </select>
                     </div>
 
-                    {/* Generate ATS Score Button */}
+     
                     <Button
                         size="sm"
                         className="gap-2"
-                        onClick={() => {
-                            toast.info("Generating latest ATS scores...");
-                            // TODO: Implement ATS score generation
+                        onClick={async () => {
+                            try {
+                                const result = await ApiCaller<null, null>({
+                                    requestType: "POST",
+                                    paths: ["api", "v1", "hiring", "applicants", "generate-ats", id],
+                                });
+                                
+                                if (result.ok) {
+                                    toast.success("ATS score generation initiated! Scores will update shortly.");
+                                } else {
+                                    toast.error((result.response as any)?.message || "Failed to generate ATS scores");
+                                }
+                            } catch (error) {
+                                toast.error(error instanceof Error ? error.message : "Failed to generate ATS scores");
+                            }
                         }}
                     >
                         <Layers className="h-4 w-4" />

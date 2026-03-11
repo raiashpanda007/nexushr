@@ -17,7 +17,7 @@ class ApplicantRoutes {
     this.router.post("/signed-url", this.controller.GetSignedURL);
     this.router.get("/", this.controller.Get);
     this.router.get("/:applicantId", VerifyMiddleware, this.controller.Get);
-
+    this.router.post("/generate-ats/:id", VerifyMiddleware, this.controller.GenerateATSscore);
     return this.router;
   }
 }

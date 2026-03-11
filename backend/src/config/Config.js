@@ -24,6 +24,7 @@ const EnvSchema = zod.object({
   ZOOM_CLIENT_SECRET: zod.string().min(1),
   ZOOM_SECRET_TOKEN: zod.string().min(1),
   MAILSERVER_QUEUE_URL: zod.string().min(1),
+  RESUME_PROCESSOR_QUEUE_URL: zod.string().min(1),
 });
 
 class Config {

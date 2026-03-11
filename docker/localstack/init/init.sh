@@ -28,6 +28,11 @@ MAIL_QUEUE_NAME="mail-processor"
 MAIL_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$MAIL_QUEUE_NAME"
 MAIL_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$MAIL_QUEUE_NAME"
 
+# Resume Queue
+RESUME_QUEUE_NAME="resume-processor"
+RESUME_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$RESUME_QUEUE_NAME"
+RESUME_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$RESUME_QUEUE_NAME"
+
 echo "Creating S3 buckets..."
 awslocal --region $REGION s3 mb s3://register-photos || true
 awslocal --region $REGION s3 mb s3://punch-photos || true
@@ -85,6 +90,10 @@ awslocal --region $REGION sqs create-queue \
 # Create mail queue
 awslocal --region $REGION sqs create-queue \
   --queue-name $MAIL_QUEUE_NAME || true
+
+# Create resume queue
+awslocal --region $REGION sqs create-queue \
+  --queue-name $RESUME_QUEUE_NAME || true
 
 echo "Attaching SQS policy to allow S3 to publish..."
 

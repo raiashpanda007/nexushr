@@ -7,10 +7,10 @@ import {
 } from "../../../utils/index.js";
 import ApplicantModel from "../Models/applicants.model.js";
 import OpeningModel from "../Models/openings.model.js";
-import QuestionModel from "../Models/questions.model.js";
-import RoundsModel from "../Models/rounds.model.js";
+
 
 import Types from "../../../types/index.js";
+import { SendResumeEvent } from "../../../queue/ats.queue.js";
 
 class ApplicantController {
   constructor() {
@@ -259,7 +259,7 @@ class ApplicantController {
         .find(filter)
         .skip(skip)
         .limit(limit);
-      
+
       const totalCount = await this.repo.countDocuments(filter);
       const totalPages = Math.ceil(totalCount / limit);
 
@@ -268,7 +268,7 @@ class ApplicantController {
         .json(
           new ApiResponse(
             200,
-            { 
+            {
               applicants,
               pagination: {
                 currentPage: page,
@@ -332,6 +332,23 @@ class ApplicantController {
       .json(
         new ApiResponse(200, { applicant: applicantObj }, "Applicant retrieved successfully"),
       );
+  });
+
+  GenerateATSscore = AsyncHandler(async (req, res) => {
+    if (req.user.role != "HR") {
+      throw new ApiError(Types.Errors.Unauthroized, "Only HR can generate ATS score");
+    }
+    const openingId = req.params.id;
+
+    await SendResumeEvent(openingId);
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        null,
+        "ATS score generation initiated successfully. It may take a few moments for the scores to be updated.",
+      ),
+    );
   });
 }
 
