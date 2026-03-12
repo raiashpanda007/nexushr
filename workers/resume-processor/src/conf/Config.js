@@ -9,6 +9,8 @@ const EnvSchema = zod.object({
   AWS_REGION: zod.string().min(1),
   MONGO_DB_URL: zod.string().min(1),
   DB_NAME: zod.string().min(1),
+  OPENROUTER_API_KEY: zod.string().min(1),
+  REDIS_URL: zod.string().min(1),
 });
 
 class Config {

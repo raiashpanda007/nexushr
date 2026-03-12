@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ApiCaller from "@/utils/ApiCaller";
 import type { Opening } from "@/types/hiring";
@@ -32,6 +32,11 @@ export function useHiringDetails(id: string | undefined) {
     // Filters
     const [statusFilter, setStatusFilterState] = useState<string>("");
     const [roundFilter, setRoundFilterState] = useState<string>("");
+
+    // ATS
+    const [atsLoading, setAtsLoading] = useState(false);
+    const [atsResults, setAtsResults] = useState<any[] | null>(null);
+    const atsPollingRef = useRef(false);
 
     const setStatusFilter = useCallback((value: string) => {
         setStatusFilterState(value);
@@ -137,6 +142,64 @@ export function useHiringDetails(id: string | undefined) {
         });
     };
 
+    const generateATS = useCallback(async () => {
+        if (!id) return;
+        setAtsLoading(true);
+        setAtsResults(null);
+        atsPollingRef.current = true;
+
+        try {
+            // Trigger ATS generation
+            const triggerResult = await ApiCaller<null, null>({
+                requestType: "POST",
+                paths: ["api", "v1", "hiring", "applicants", "generate-ats", id],
+            });
+
+            if (!triggerResult.ok) {
+                toast.error((triggerResult.response as any)?.message || "Failed to start ATS scoring");
+                setAtsLoading(false);
+                atsPollingRef.current = false;
+                return;
+            }
+
+            toast.info("ATS scoring started, waiting for results...");
+
+            // Long-poll for results
+            const pollResult = await ApiCaller<null, { status: string; results?: any[] }>({
+                requestType: "GET",
+                paths: ["api", "v1", "hiring", "applicants", "ats-result", id],
+            });
+
+            if (!atsPollingRef.current) return;
+
+            if (pollResult.ok) {
+                const data = pollResult.response.data;
+                if (data.status === "ready" && data.results) {
+                    setAtsResults(data.results);
+                    toast.success("ATS scoring complete!");
+                    // Refresh applicants list to show updated scores
+                    fetchApplicants();
+                } else {
+                    toast.warning("ATS scoring is still in progress. Try again shortly.");
+                }
+            } else {
+                toast.error("Failed to retrieve ATS results");
+            }
+        } catch {
+            toast.error("An error occurred during ATS scoring");
+        } finally {
+            setAtsLoading(false);
+            atsPollingRef.current = false;
+        }
+    }, [id, fetchApplicants]);
+
+    // Cancel polling on unmount
+    useEffect(() => {
+        return () => {
+            atsPollingRef.current = false;
+        };
+    }, []);
+
     return {
         // Opening
         opening,
@@ -164,5 +227,9 @@ export function useHiringDetails(id: string | undefined) {
         setStatusFilter,
         roundFilter,
         setRoundFilter,
+        // ATS
+        atsLoading,
+        atsResults,
+        generateATS,
     };
 }

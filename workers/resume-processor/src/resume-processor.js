@@ -3,10 +3,11 @@ import {
   ReceiveMessageCommand,
   DeleteMessageCommand,
 } from "@aws-sdk/client-sqs";
+import { createClient } from "redis";
 import { ObjectId } from "mongodb";
 import { Cfg } from "./conf/Config.js";
 import DB from "./utils/Db.js";
-import DownloadPdf from "./utils/DownloadResume.js";
+import ATSEngine from "./engine/index.js";
 
 const SQS_CLIENT = new SQSClient({
   region: Cfg.AWS_REGION,
@@ -21,8 +22,12 @@ const command = new ReceiveMessageCommand({
 });
 
 const db = new DB(Cfg.MONGO_DB_URL, Cfg.DB_NAME);
-
 await db.connect();
+
+const redisClient = createClient({ url: Cfg.REDIS_URL });
+redisClient.on("error", (err) => console.error("Redis error:", err));
+await redisClient.connect();
+console.log("Redis connected in resume-processor");
 
 async function main() {
   while (true) {
@@ -41,17 +46,58 @@ async function main() {
         console.log("Received Event :: ", event);
         const { openingId } = event;
 
-
-        const allResumeLinks = await db.getCollection("applicants").find({ openingId: new ObjectId(openingId) }).project({ _id: 1, resume: 1 }).toArray();
+        const allResumeLinks = await db
+          .getCollection("applicants")
+          .find({ openingId: new ObjectId(openingId) })
+          .project({ _id: 1, resume: 1 })
+          .toArray();
         console.log("All Resume Links :: ", allResumeLinks);
 
+        const openingSkills = await db
+          .getCollection("openings")
+          .aggregate([
+            { $match: { _id: new ObjectId(openingId) } },
+            { $unwind: "$skills" },
+            {
+              $lookup: {
+                from: "skills",
+                localField: "skills.skillId",
+                foreignField: "_id",
+                as: "skillDetails",
+              },
+            },
+            { $unwind: "$skillDetails" },
+            {
+              $project: {
+                _id: 0,
+                name: "$skillDetails.name",
+                proficiencyLevel: "$skills.proficiencyLevel",
+              },
+            },
+          ])
+          .toArray();
+        console.log("Opening Skills :: ", openingSkills);
 
-        await Promise.all(allResumeLinks.map(async (applicant) => {
-          const { _id, resume } = applicant;
-          const filePath = await DownloadPdf(resume, _id.toString(), openingId);
-          console.log(`Resume for Applicant ${_id} downloaded at ${filePath}`);
-        }));
+        const response = await ATSEngine(openingId, allResumeLinks, openingSkills);
 
+        console.log("ATS Engine Response :: ", response);
+
+        // Persist scores to MongoDB for each applicant
+        if (response && response.length > 0) {
+          const bulkOps = response.map(({ applicantId, normalizedScore }) => ({
+            updateOne: {
+              filter: { _id: applicantId },
+              update: { $set: { score: normalizedScore } },
+            },
+          }));
+          await db.getCollection("applicants").bulkWrite(bulkOps);
+          console.log(`[ATS] Updated scores in DB for ${bulkOps.length} applicants`);
+        }
+
+        // Store results in Redis keyed by openingId with 1-hour TTL
+        const redisKey = `ats:result:${openingId}`;
+        await redisClient.set(redisKey, JSON.stringify(response), { EX: 3600 });
+        console.log(`[ATS] Stored results in Redis under key: ${redisKey}`);
 
         await SQS_CLIENT.send(
           new DeleteMessageCommand({

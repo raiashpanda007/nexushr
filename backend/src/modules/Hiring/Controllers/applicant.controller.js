@@ -7,7 +7,8 @@ import {
 } from "../../../utils/index.js";
 import ApplicantModel from "../Models/applicants.model.js";
 import OpeningModel from "../Models/openings.model.js";
-
+import RedisClient from "../../../config/Redis.js";
+import { Cfg } from "../../../config/env.js";
 
 import Types from "../../../types/index.js";
 import { SendResumeEvent } from "../../../queue/ats.queue.js";
@@ -348,6 +349,40 @@ class ApplicantController {
         null,
         "ATS score generation initiated successfully. It may take a few moments for the scores to be updated.",
       ),
+    );
+  });
+
+  GetATSResult = AsyncHandler(async (req, res) => {
+    if (req.user.role !== "HR") {
+      throw new ApiError(Types.Errors.Forbidden, "Only HR can view ATS results");
+    }
+
+    const { openingId } = req.params;
+
+    const redisInstance = RedisClient.GetInstance(Cfg.REDIS_URL);
+    const client = redisInstance.GetClient();
+
+    const MAX_WAIT_MS = 120_000; // 2 minutes max wait
+    const POLL_INTERVAL_MS = 3_000; // check every 3 seconds
+    const startTime = Date.now();
+    const redisKey = `ats:result:${openingId}`;
+
+    while (Date.now() - startTime < MAX_WAIT_MS) {
+      const result = await client.get(redisKey);
+
+      if (result !== null) {
+        const rankedScores = JSON.parse(result);
+        await client.del(redisKey);
+        return res.status(200).json(
+          new ApiResponse(200, { status: "ready", results: rankedScores }, "ATS results ready")
+        );
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    }
+
+    return res.status(200).json(
+      new ApiResponse(200, { status: "pending" }, "ATS processing is still in progress, please try again shortly")
     );
   });
 }

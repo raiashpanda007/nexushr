@@ -55,6 +55,9 @@ const ApplicantSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Rounds",
     },
+    score: {
+      type: Number,
+    },
   },
 
   {

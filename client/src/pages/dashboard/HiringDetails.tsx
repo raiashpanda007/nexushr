@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useHiringDetails } from "@/hooks/Hiring/useHiringDetails";
 import type { Opening } from "@/types/hiring";
-import ApiCaller from "@/utils/ApiCaller";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -39,6 +38,8 @@ import {
     AlignLeft,
     Link2,
     Check,
+    Sparkles,
+    Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -132,6 +133,9 @@ export default function HiringDetails() {
         setStatusFilter,
         roundFilter,
         setRoundFilter,
+        atsLoading,
+        atsResults,
+        generateATS,
     } = useHiringDetails(id);
 
     if (loading) {
@@ -455,25 +459,20 @@ export default function HiringDetails() {
                     <Button
                         size="sm"
                         className="gap-2"
-                        onClick={async () => {
-                            try {
-                                const result = await ApiCaller<null, null>({
-                                    requestType: "POST",
-                                    paths: ["api", "v1", "hiring", "applicants", "generate-ats", id],
-                                });
-                                
-                                if (result.ok) {
-                                    toast.success("ATS score generation initiated! Scores will update shortly.");
-                                } else {
-                                    toast.error((result.response as any)?.message || "Failed to generate ATS scores");
-                                }
-                            } catch (error) {
-                                toast.error(error instanceof Error ? error.message : "Failed to generate ATS scores");
-                            }
-                        }}
+                        disabled={atsLoading}
+                        onClick={generateATS}
                     >
-                        <Layers className="h-4 w-4" />
-                        Generate Latest ATS Score
+                        {atsLoading ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Scoring...
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles className="h-4 w-4" />
+                                Generate Latest ATS Score
+                            </>
+                        )}
                     </Button>
                 </div>
 
@@ -498,6 +497,7 @@ export default function HiringDetails() {
                                         <TableHead className="font-semibold">Phone</TableHead>
                                         <TableHead className="font-semibold">Status</TableHead>
                                         <TableHead className="font-semibold">Current Round</TableHead>
+                                        <TableHead className="font-semibold text-right pr-5">ATS Score</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -562,6 +562,28 @@ export default function HiringDetails() {
                                                         <span className="text-xs text-muted-foreground italic">
                                                             Process not started
                                                         </span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-right pr-5">
+                                                    {applicant.score != null ? (() => {
+                                                        const pct = Math.round(applicant.score * 100);
+                                                        return (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    "text-xs font-semibold border tabular-nums",
+                                                                    pct >= 60
+                                                                        ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
+                                                                        : pct >= 30
+                                                                        ? "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                                                        : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400"
+                                                                )}
+                                                            >
+                                                                {pct}%
+                                                            </Badge>
+                                                        );
+                                                    })() : (
+                                                        <span className="text-xs text-muted-foreground/50">—</span>
                                                     )}
                                                 </TableCell>
                                             </TableRow>
@@ -639,7 +661,116 @@ export default function HiringDetails() {
                 )}
             </Card>
 
-           
+            {/* ATS Results */}
+            {atsLoading && (
+                <Card className="rounded-2xl border-border/50 shadow-sm">
+                    <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm font-medium text-muted-foreground">
+                            Running ATS engine — analysing resumes against opening skills...
+                        </p>
+                        <p className="text-xs text-muted-foreground/60">This may take up to 2 minutes</p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {!atsLoading && atsResults && atsResults.length > 0 && (
+                <Card className="rounded-2xl border-border/50 shadow-sm">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <Trophy className="h-5 w-5 text-muted-foreground" />
+                            ATS Ranking
+                            <Badge variant="secondary" className="ml-auto">
+                                {atsResults.length} candidates
+                            </Badge>
+                        </CardTitle>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-muted/40 hover:bg-muted/40">
+                                    <TableHead className="font-semibold pl-5 w-16">Rank</TableHead>
+                                    <TableHead className="font-semibold">Applicant</TableHead>
+                                    <TableHead className="font-semibold text-right pr-5">Score</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {atsResults.map((result) => {
+                                    const applicant = applicantsList.find(
+                                        (a) => a._id === result.applicantId?.toString()
+                                    );
+                                    const scorePercent = Math.round(result.normalizedScore * 100);
+                                    return (
+                                        <TableRow
+                                            key={result.applicantId?.toString()}
+                                            className="hover:bg-muted/30 transition-colors"
+                                        >
+                                            <TableCell className="pl-5">
+                                                <div
+                                                    className={cn(
+                                                        "flex items-center justify-center h-7 w-7 rounded-full text-xs font-bold",
+                                                        result.rank === 1
+                                                            ? "bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                                            : result.rank === 2
+                                                            ? "bg-slate-100 text-slate-600 border border-slate-300 dark:bg-slate-800 dark:text-slate-300"
+                                                            : result.rank === 3
+                                                            ? "bg-orange-100 text-orange-700 border border-orange-300 dark:bg-orange-900/30 dark:text-orange-400"
+                                                            : "bg-muted text-muted-foreground border border-border"
+                                                    )}
+                                                >
+                                                    {result.rank}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                {applicant ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                                                            {applicant.name?.[0]?.toUpperCase() ?? "A"}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-foreground">{applicant.name}</p>
+                                                            <p className="text-xs text-muted-foreground">{applicant.email}</p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-muted-foreground font-mono">
+                                                        {result.applicantId?.toString()}
+                                                    </span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-right pr-5">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <div className="hidden sm:flex w-24 h-1.5 rounded-full bg-muted overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-full bg-primary transition-all"
+                                                            style={{ width: `${Math.min(scorePercent, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "text-xs font-semibold border tabular-nums",
+                                                            scorePercent >= 60
+                                                                ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
+                                                                : scorePercent >= 30
+                                                                ? "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                                                : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400"
+                                                        )}
+                                                    >
+                                                        {scorePercent}%
+                                                    </Badge>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
+
             {(!opening.rounds || opening.rounds.length === 0) &&
                 (!opening.questions || opening.questions.length === 0) && (
                     <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground border-2 border-dashed border-border rounded-2xl">
