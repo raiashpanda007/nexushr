@@ -48,16 +48,6 @@ class ApplicantController {
       );
     }
 
-    const existingApplicant = await ApplicantModel.findOne({
-      email,
-      openingId,
-    });
-    if (existingApplicant) {
-      throw new ApiError(
-        Types.Errors.BadRequest,
-        "You have already applied for this opening",
-      );
-    }
 
     if (opening.questions.length > 0) {
       if (!questions || questions.length === 0) {

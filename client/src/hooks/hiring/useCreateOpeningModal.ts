@@ -397,9 +397,15 @@ export function useCreateOpeningModal({
                 setError("All questions must have text and a type");
                 return false;
             }
-            if (q.type === "MULTIPLE_CHOICE" && q.options.length < 2) {
-                setError("Multiple choice questions need at least 2 options");
-                return false;
+            if (q.type === "MULTIPLE_CHOICE") {
+                if (q.options.length < 2) {
+                    setError("Multiple choice questions need at least 2 options");
+                    return false;
+                }
+                if (q.options.some((o) => !o.trim())) {
+                    setError("Multiple choice options cannot be empty");
+                    return false;
+                }
             }
         }
         setError(null);
@@ -426,11 +432,11 @@ export function useCreateOpeningModal({
         setError(null);
         try {
             const payload = {
-                title: formData.title,
-                description: formData.description,
+                title: formData.title.trim(),
+                description: formData.description.trim(),
                 status: formData.status,
                 departmentId: formData.departmentId,
-                note: formData.note || undefined,
+                note: formData.note.trim() || undefined,
                 HiringManager: formData.HiringManager,
                 skills: formData.skills.map((s) => ({
                     skillId: s.skillId,
@@ -447,16 +453,16 @@ export function useCreateOpeningModal({
                 rounds: formData.rounds
                     .filter((r) => r.name.trim() && r.type)
                     .map((r) => ({
-                        name: r.name,
-                        description: r.description,
+                        name: r.name.trim(),
+                        description: r.description.trim() || undefined,
                         type: r.type,
                     })),
                 questions: formData.questions
                     .filter((q) => q.question.trim() && q.type)
                     .map((q) => ({
-                        question: q.question,
+                        question: q.question.trim(),
                         type: q.type,
-                        options: q.type === "MULTIPLE_CHOICE" ? q.options : undefined,
+                        options: q.type === "MULTIPLE_CHOICE" ? q.options.map((o) => o.trim()) : undefined,
                     })),
             };
 
