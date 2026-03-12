@@ -38,6 +38,20 @@ export function useHiringDetails(id: string | undefined) {
     const [atsResults, setAtsResults] = useState<any[] | null>(null);
     const atsPollingRef = useRef(false);
 
+    // Applicant filter
+    const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+    const [filterLoading, setFilterLoading] = useState(false);
+    const [filterResultDialogOpen, setFilterResultDialogOpen] = useState(false);
+    const [filterResult, setFilterResult] = useState<{ rejectedCount: number | null; message: string } | null>(null);
+
+    // Edit opening
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editLoading, setEditLoading] = useState(false);
+
+    // Change status
+    const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+    const [statusLoading, setStatusLoading] = useState(false);
+
     const setStatusFilter = useCallback((value: string) => {
         setStatusFilterState(value);
         setCurrentPage(1);
@@ -142,6 +156,83 @@ export function useHiringDetails(id: string | undefined) {
         });
     };
 
+    const editOpening = useCallback(async (title: string, description: string) => {
+        if (!id) return;
+        setEditLoading(true);
+        try {
+            const result = await ApiCaller<{ title: string; description: string }, Opening>({
+                requestType: "PUT",
+                paths: ["api", "v1", "hiring", "openings", id],
+                body: { title, description },
+            });
+            if (result.ok) {
+                setOpening((prev) => prev ? { ...prev, title, description } : prev);
+                setEditDialogOpen(false);
+                toast.success("Opening updated successfully");
+            } else {
+                toast.error((result.response as any)?.message || "Failed to update opening");
+            }
+        } catch {
+            toast.error("An error occurred while updating the opening");
+        } finally {
+            setEditLoading(false);
+        }
+    }, [id]);
+
+    const changeStatus = useCallback(async (status: "OPEN" | "CLOSED" | "PAUSED") => {
+        if (!id) return;
+        setStatusLoading(true);
+        try {
+            const result = await ApiCaller<{ Status: string }, Opening>({
+                requestType: "PUT",
+                paths: ["api", "v1", "hiring", "openings", id],
+                body: { Status: status },
+            });
+            if (result.ok) {
+                setOpening((prev) => prev ? { ...prev, Status: status } : prev);
+                setStatusDialogOpen(false);
+                toast.success(`Status changed to ${status}`);
+            } else {
+                toast.error((result.response as any)?.message || "Failed to update status");
+            }
+        } catch {
+            toast.error("An error occurred while updating the status");
+        } finally {
+            setStatusLoading(false);
+        }
+    }, [id]);
+
+    const filterApplicants = useCallback(async (type: "score" | "rank", value: number) => {
+        if (!id) return;
+        setFilterLoading(true);
+        try {
+            const result = await ApiCaller<null, any>({
+                requestType: "POST",
+                paths: ["api", "v1", "hiring", "openings", "filter", id],
+                queryParams: {
+                    filter: type,
+                    value: type === "score" ? value / 100 : value,
+                },
+            });
+            if (result.ok) {
+                const modifiedCount = result.response.data?.modifiedCount ?? null;
+                setFilterResult({
+                    rejectedCount: modifiedCount,
+                    message: result.response.message || "Filter applied successfully",
+                });
+                setFilterDialogOpen(false);
+                setFilterResultDialogOpen(true);
+                fetchApplicants();
+            } else {
+                toast.error((result.response as any)?.message || "Failed to apply filter");
+            }
+        } catch {
+            toast.error("An error occurred while applying the filter");
+        } finally {
+            setFilterLoading(false);
+        }
+    }, [id, fetchApplicants]);
+
     const generateATS = useCallback(async () => {
         if (!id) return;
         setAtsLoading(true);
@@ -149,7 +240,7 @@ export function useHiringDetails(id: string | undefined) {
         atsPollingRef.current = true;
 
         try {
-            // Trigger ATS generation
+            // Trigger ATS generation (also invalidates stale Redis cache server-side)
             const triggerResult = await ApiCaller<null, null>({
                 requestType: "POST",
                 paths: ["api", "v1", "hiring", "applicants", "generate-ats", id],
@@ -157,14 +248,12 @@ export function useHiringDetails(id: string | undefined) {
 
             if (!triggerResult.ok) {
                 toast.error((triggerResult.response as any)?.message || "Failed to start ATS scoring");
-                setAtsLoading(false);
-                atsPollingRef.current = false;
                 return;
             }
 
             toast.info("ATS scoring started, waiting for results...");
 
-            // Long-poll for results
+            // Long-poll — server blocks until worker publishes or 2-min timeout
             const pollResult = await ApiCaller<null, { status: string; results?: any[] }>({
                 requestType: "GET",
                 paths: ["api", "v1", "hiring", "applicants", "ats-result", id],
@@ -177,10 +266,9 @@ export function useHiringDetails(id: string | undefined) {
                 if (data.status === "ready" && data.results) {
                     setAtsResults(data.results);
                     toast.success("ATS scoring complete!");
-                    // Refresh applicants list to show updated scores
                     fetchApplicants();
                 } else {
-                    toast.warning("ATS scoring is still in progress. Try again shortly.");
+                    toast.warning("ATS scoring timed out. Try again shortly.");
                 }
             } else {
                 toast.error("Failed to retrieve ATS results");
@@ -188,8 +276,10 @@ export function useHiringDetails(id: string | undefined) {
         } catch {
             toast.error("An error occurred during ATS scoring");
         } finally {
-            setAtsLoading(false);
-            atsPollingRef.current = false;
+            if (atsPollingRef.current) {
+                setAtsLoading(false);
+                atsPollingRef.current = false;
+            }
         }
     }, [id, fetchApplicants]);
 
@@ -231,5 +321,23 @@ export function useHiringDetails(id: string | undefined) {
         atsLoading,
         atsResults,
         generateATS,
+        // Filter
+        filterDialogOpen,
+        setFilterDialogOpen,
+        filterLoading,
+        filterApplicants,
+        filterResultDialogOpen,
+        setFilterResultDialogOpen,
+        filterResult,
+        // Edit
+        editDialogOpen,
+        setEditDialogOpen,
+        editLoading,
+        editOpening,
+        // Status
+        statusDialogOpen,
+        setStatusDialogOpen,
+        statusLoading,
+        changeStatus,
     };
 }

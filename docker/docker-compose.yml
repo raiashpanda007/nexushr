@@ -37,9 +37,6 @@ services:
     volumes:
       - redis_data:/data
 
-  # -----------------------
-  # LocalStack (S3 + ECS + ECR)
-  # -----------------------
   localstack:
     image: localstack/localstack:latest
     container_name: localstack
@@ -55,6 +52,13 @@ services:
       - ./localstack/init:/etc/localstack/init/ready.d
       - /var/run/docker.sock:/var/run/docker.sock
 
+  
+  vectordb:
+    image: qdrant/qdrant:latest
+    restart: always
+    ports:
+      - "6333:6333"
+      
 volumes:
   mongo_data:
   redis_data:

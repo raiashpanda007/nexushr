@@ -69,3 +69,35 @@ console.log(`[ATS] Tokenized ${tokens} tokens for ${_id}`);
 ```js
 console.log(`[ATS] Tokenized ${tokens.length} tokens for ${_id}`);
 ```
+
+---
+
+## March 2026 — ATS Score Optimization
+
+### Major Algorithm Improvements
+
+1. **TF Calculation (tf-calculator.js):**
+   - Replaced `matchedCount / tokens.length` formula with a blend of semantic max-similarity and frequency bonus.
+   - Added exact-match shortcut: if resume contains the skill name (case-insensitive, including bigrams/trigrams), TF is set to 1.0.
+   - Lowered cosine similarity threshold from 0.7 to 0.55 for more flexible matching (captures synonyms and abbreviations).
+   - Frequency bonus: log-normalized count of matched tokens.
+   - Final TF: `min(1.0, maxSim * 0.7 + freqBonus * 0.3)`.
+
+2. **IDF Calculation (idf-calculator.js):**
+   - Lowered similarity threshold from 0.7 to 0.55 for skill presence detection.
+   - Formula unchanged, but more skills are now recognized in resumes.
+
+3. **N-gram Tokenization (Tokenizer.js):**
+   - Added bigrams and trigrams using `natural.NGrams` (no new dependency).
+   - Multi-word skills (e.g., "machine learning") are now matched directly as tokens.
+
+4. **Score Normalization (engine/index.js):**
+   - After scoring, min-max normalization spreads candidate scores between 0 (lowest) and 1 (highest).
+   - If all scores are equal, normalization is skipped.
+
+### Result
+- ATS scores are now meaningful and visually differentiated (e.g., 0.8, 0.5, 0.2, 0.0) instead of clustered at very low values (1–2%).
+- Exact skill matches and multi-word skills are properly recognized.
+- Top candidate always scores highest, others are proportionally ranked.
+
+---

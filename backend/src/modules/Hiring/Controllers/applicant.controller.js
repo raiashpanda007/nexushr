@@ -341,6 +341,11 @@ class ApplicantController {
     }
     const openingId = req.params.id;
 
+    // Invalidate any existing cached result so the long-poll always waits for fresh data
+    const redisInstance = RedisClient.GetInstance(Cfg.REDIS_URL);
+    const client = redisInstance.GetClient();
+    await client.del(`ats:result:${openingId}`);
+
     await SendResumeEvent(openingId);
 
     return res.status(200).json(
@@ -361,20 +366,38 @@ class ApplicantController {
 
     const redisInstance = RedisClient.GetInstance(Cfg.REDIS_URL);
     const client = redisInstance.GetClient();
+    const redisKey = `ats:result:${openingId}`;
 
+    // Get current applicant count from DB to detect staleness
+    const currentCount = await ApplicantModel.countDocuments({ openingId });
+
+    // Check if a fresh cached result already exists for the current applicant count
+    const cached = await client.get(redisKey);
+    if (cached !== null) {
+      const parsed = JSON.parse(cached);
+      if (parsed.applicantCount === currentCount) {
+        await client.del(redisKey);
+        return res.status(200).json(
+          new ApiResponse(200, { status: "ready", results: parsed.results }, "ATS results ready")
+        );
+      }
+      // Count mismatch — stale cache, delete it and wait for the fresh run
+      await client.del(redisKey);
+    }
+
+    // Long-poll waiting for the worker to publish fresh results
     const MAX_WAIT_MS = 120_000; // 2 minutes max wait
     const POLL_INTERVAL_MS = 3_000; // check every 3 seconds
     const startTime = Date.now();
-    const redisKey = `ats:result:${openingId}`;
 
     while (Date.now() - startTime < MAX_WAIT_MS) {
       const result = await client.get(redisKey);
 
       if (result !== null) {
-        const rankedScores = JSON.parse(result);
+        const parsed = JSON.parse(result);
         await client.del(redisKey);
         return res.status(200).json(
-          new ApiResponse(200, { status: "ready", results: rankedScores }, "ATS results ready")
+          new ApiResponse(200, { status: "ready", results: parsed.results }, "ATS results ready")
         );
       }
 

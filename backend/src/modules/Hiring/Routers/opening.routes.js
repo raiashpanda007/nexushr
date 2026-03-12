@@ -15,6 +15,7 @@ class OpeningRoutes {
         this.router.get("/:id", VerifyMiddleware, this.controller.Get);
         this.router.delete("/:id", VerifyMiddleware, this.controller.Delete);
         this.router.put("/:id", VerifyMiddleware, this.controller.Update);
+        this.router.post("/filter/:id"  , VerifyMiddleware, this.controller.FilterApplicants);
         return this.router;
     }
 }

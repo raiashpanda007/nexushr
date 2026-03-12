@@ -1,5 +1,11 @@
 import {z as zod}  from "zod";
 
+export const UpdateOpeningValidationSchema = zod.object({
+    title: zod.string().min(1, "Please provide a title").trim().optional(),
+    description: zod.string().min(1, "Please provide a description").trim().optional(),
+    Status: zod.enum(["OPEN", "CLOSED", "PAUSED"]).optional(),
+});
+
 export const CreateOpeningValidationSchema = zod.object({
     title: zod.string().min(1, "Please provide a title").trim(),
     description: zod.string().min(1, "Please provide a description").trim(),

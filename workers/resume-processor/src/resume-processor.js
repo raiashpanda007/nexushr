@@ -96,8 +96,12 @@ async function main() {
 
         // Store results in Redis keyed by openingId with 1-hour TTL
         const redisKey = `ats:result:${openingId}`;
-        await redisClient.set(redisKey, JSON.stringify(response), { EX: 3600 });
-        console.log(`[ATS] Stored results in Redis under key: ${redisKey}`);
+        await redisClient.set(
+          redisKey,
+          JSON.stringify({ results: response, applicantCount: allResumeLinks.length }),
+          { EX: 3600 }
+        );
+        console.log(`[ATS] Stored results in Redis under key: ${redisKey} (${allResumeLinks.length} applicants)`);
 
         await SQS_CLIENT.send(
           new DeleteMessageCommand({

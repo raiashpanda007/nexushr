@@ -3,7 +3,7 @@ import { Cfg } from "../conf/Config.js";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/embeddings";
 const BGE_LARGE_MODEL = "BAAI/bge-large-en-v1.5";
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 1000;
 
 async function embedBatch(texts) {
   const response = await axios.post(

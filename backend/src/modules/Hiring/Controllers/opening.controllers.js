@@ -11,7 +11,7 @@ import ApplicantModel from "../Models/applicants.model.js";
 const normalizeRounds = (rounds) =>
   (rounds || [])
     .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
-    .map(r => ({
+    .map((r) => ({
       _id: r.round?._id,
       name: r.round?.name,
       description: r.round?.description,
@@ -72,7 +72,10 @@ class OpeningsController {
           session,
           ordered: true,
         });
-        roundIds = createdRounds.map((round, idx) => ({ round: round._id, rank: idx + 1 }));
+        roundIds = createdRounds.map((round, idx) => ({
+          round: round._id,
+          rank: idx + 1,
+        }));
       }
 
       const [opening] = await OpeningModel.create(
@@ -107,8 +110,8 @@ class OpeningsController {
   });
 
   Get = AsyncHandler(async (req, res) => {
-    if (req.user.role !== "HR" ){
-        throw new ApiError(Types.Errors.Forbidden, "Only HR can view openings");
+    if (req.user.role !== "HR") {
+      throw new ApiError(Types.Errors.Forbidden, "Only HR can view openings");
     }
     const openingId = req.params.id;
     if (!openingId) {
@@ -137,16 +140,24 @@ class OpeningsController {
       }
 
       const openingsRaw = await queryOptions.lean();
-      const openings = openingsRaw.map(o => ({ ...o, rounds: normalizeRounds(o.rounds) }));
+      const openings = openingsRaw.map((o) => ({
+        ...o,
+        rounds: normalizeRounds(o.rounds),
+      }));
       const total = await this.repo.countDocuments(filter);
 
       return res
         .status(200)
         .json(
           new ApiResponse(
-          200,
-          { data: openings, total, page, limit: limitQuery === "all" ? total : limit },
-          "Openings retrieved successfully",
+            200,
+            {
+              data: openings,
+              total,
+              page,
+              limit: limitQuery === "all" ? total : limit,
+            },
+            "Openings retrieved successfully",
           ),
         );
     }
@@ -159,18 +170,20 @@ class OpeningsController {
       .populate("applicants", "name email phone status")
       .lean();
     if (!openingRaw) {
-       throw new ApiError(Types.Errors.NotFound, "Opening not found"); 
+      throw new ApiError(Types.Errors.NotFound, "Opening not found");
     }
-    const opening = { ...openingRaw, rounds: normalizeRounds(openingRaw.rounds) };
+    const opening = {
+      ...openingRaw,
+      rounds: normalizeRounds(openingRaw.rounds),
+    };
     return res
       .status(200)
       .json(new ApiResponse(200, opening, "Opening retrieved successfully"));
-
   });
 
   Update = AsyncHandler(async (req, res) => {
     if (req.user.role !== "HR") {
-        throw new ApiError(Types.Errors.Forbidden, "Only HR can update openings");
+      throw new ApiError(Types.Errors.Forbidden, "Only HR can update openings");
     }
     const openingId = req.params.id;
     if (!openingId) {
@@ -219,7 +232,7 @@ class OpeningsController {
 
   Delete = AsyncHandler(async (req, res) => {
     if (req.user.role !== "HR") {
-        throw new ApiError(Types.Errors.Forbidden, "Only HR can delete openings");
+      throw new ApiError(Types.Errors.Forbidden, "Only HR can delete openings");
     }
     const openingId = req.params.id;
     if (!openingId) {
@@ -232,6 +245,110 @@ class OpeningsController {
     return res
       .status(200)
       .json(new ApiResponse(200, opening, "Opening deleted successfully"));
+  });
+
+  FilterApplicants = AsyncHandler(async (req, res) => {
+    if (req.user.role !== "HR") {
+      throw new ApiError(
+        Types.Errors.Forbidden,
+        "Only HR can filter applicants",
+      );
+    }
+
+    const openingIdParam = req.params.id;
+    if (!openingIdParam) {
+      throw new ApiError(Types.Errors.BadRequest, "Opening ID is required");
+    }
+
+    const openingId = new mongoose.Types.ObjectId(openingIdParam);
+
+    const filterParam = req.query.filter;
+    if (!filterParam) {
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        "Filter parameter is required",
+      );
+    }
+
+    if (filterParam === "score") {
+      const scoreValue = parseFloat(req.query.value);
+
+      if (isNaN(scoreValue)) {
+        throw new ApiError(Types.Errors.BadRequest, "Invalid score value");
+      }
+
+      const result = await ApplicantModel.updateMany(
+        {
+          openingId,
+          score: { $lt: scoreValue },
+        },
+        {
+          $set: { status: "REJECTED" },
+        },
+      );
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            result,
+            "Applicants filtered by score successfully",
+          ),
+        );
+    } else if (filterParam === "rank") {
+      const rankValue = parseInt(req.query.value);
+
+      if (isNaN(rankValue) || rankValue <= 0) {
+        throw new ApiError(Types.Errors.BadRequest, "Invalid rank value");
+      }
+
+      await ApplicantModel.aggregate([
+        {
+          $match: { openingId },
+        },
+
+        {
+          $setWindowFields: {
+            sortBy: { score: -1 },
+            output: {
+              rank: { $documentNumber: {} },
+            },
+          },
+        },
+
+        {
+          $match: { rank: { $gt: rankValue } },
+        },
+
+        {
+          $set: { status: "REJECTED" },
+        },
+
+        {
+          $merge: {
+            into: "applicants",
+            whenMatched: "merge",
+            whenNotMatched: "discard",
+          },
+        },
+      ]);
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            null,
+            "Applicants filtered by rank successfully",
+          ),
+        );
+    } else {
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        "Invalid filter type. Use 'score' or 'rank'",
+      );
+    }
   });
 }
 

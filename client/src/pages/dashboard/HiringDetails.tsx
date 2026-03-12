@@ -1,10 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useHiringDetails } from "@/hooks/Hiring/useHiringDetails";
 import type { Opening } from "@/types/hiring";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Table,
     TableBody,
@@ -40,6 +43,11 @@ import {
     Check,
     Sparkles,
     Trophy,
+    Filter,
+    ShieldX,
+    CheckCircle,
+    Pencil,
+    RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -136,7 +144,46 @@ export default function HiringDetails() {
         atsLoading,
         atsResults,
         generateATS,
+        filterDialogOpen,
+        setFilterDialogOpen,
+        filterLoading,
+        filterApplicants,
+        filterResultDialogOpen,
+        setFilterResultDialogOpen,
+        filterResult,
+        editDialogOpen,
+        setEditDialogOpen,
+        editLoading,
+        editOpening,
+        statusDialogOpen,
+        setStatusDialogOpen,
+        statusLoading,
+        changeStatus,
     } = useHiringDetails(id);
+
+    const [filterTab, setFilterTab] = useState<"score" | "rank">("score");
+    const [filterScore, setFilterScore] = useState("");
+    const [filterRank, setFilterRank] = useState("");
+    const [editTitle, setEditTitle] = useState("");
+    const [editDescription, setEditDescription] = useState("");
+
+    const handleFilterSubmit = () => {
+        if (filterTab === "score") {
+            const val = parseFloat(filterScore);
+            if (isNaN(val) || val < 0 || val > 100) {
+                toast.error("Enter a valid score between 0 and 100");
+                return;
+            }
+            filterApplicants("score", val);
+        } else {
+            const val = parseInt(filterRank);
+            if (isNaN(val) || val <= 0) {
+                toast.error("Enter a valid rank (positive integer)");
+                return;
+            }
+            filterApplicants("rank", val);
+        }
+    };
 
     if (loading) {
         return (
@@ -183,6 +230,28 @@ export default function HiringDetails() {
                 >
                     <ArrowLeft className="h-4 w-4" />
                     Back to Hiring
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => {
+                        setEditTitle(opening.title);
+                        setEditDescription(opening.description);
+                        setEditDialogOpen(true);
+                    }}
+                >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setStatusDialogOpen(true)}
+                >
+                    <RefreshCw className="h-4 w-4" />
+                    Change Status
                 </Button>
                 <Button
                     variant="outline"
@@ -456,6 +525,22 @@ export default function HiringDetails() {
                     </div>
 
      
+                    <div className="flex items-center gap-2">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-2"
+                        disabled={filterLoading}
+                        onClick={() => {
+                            setFilterScore("");
+                            setFilterRank("");
+                            setFilterTab("score");
+                            setFilterDialogOpen(true);
+                        }}
+                    >
+                        <Filter className="h-4 w-4" />
+                        Filter Applicants
+                    </Button>
                     <Button
                         size="sm"
                         className="gap-2"
@@ -472,8 +557,9 @@ export default function HiringDetails() {
                                 <Sparkles className="h-4 w-4" />
                                 Generate Latest ATS Score
                             </>
-                        )}
+)}
                     </Button>
+                    </div>
                 </div>
 
                 {applicantsLoading && currentPage === 1 ? (
@@ -778,6 +864,322 @@ export default function HiringDetails() {
                         <p className="text-sm">No rounds or questions defined for this opening</p>
                     </div>
                 )}
+
+            {/* Edit Opening dialog */}
+            <Dialog
+                open={editDialogOpen}
+                onOpenChange={(v) => {
+                    if (!editLoading) setEditDialogOpen(v);
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Pencil className="h-5 w-5" />
+                            Edit Opening
+                        </DialogTitle>
+                        <DialogDescription>
+                            Update the title and description for this opening.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-4 py-2">
+                        <div className="grid gap-1.5">
+                            <label className="text-sm font-medium text-foreground">
+                                Title
+                            </label>
+                            <Input
+                                placeholder="Opening title"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                disabled={editLoading}
+                            />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <label className="text-sm font-medium text-foreground">
+                                Description
+                            </label>
+                            <textarea
+                                rows={4}
+                                placeholder="Opening description"
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                                disabled={editLoading}
+                                className="px-3 py-2 rounded-md border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none disabled:opacity-50"
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter className="pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setEditDialogOpen(false)}
+                            disabled={editLoading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (!editTitle.trim()) {
+                                    toast.error("Title cannot be empty");
+                                    return;
+                                }
+                                if (!editDescription.trim()) {
+                                    toast.error("Description cannot be empty");
+                                    return;
+                                }
+                                editOpening(editTitle.trim(), editDescription.trim());
+                            }}
+                            disabled={editLoading}
+                        >
+                            {editLoading ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Save Changes
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Change Status dialog */}
+            <Dialog
+                open={statusDialogOpen}
+                onOpenChange={(v) => {
+                    if (!statusLoading) setStatusDialogOpen(v);
+                }}
+            >
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <RefreshCw className="h-5 w-5" />
+                            Change Opening Status
+                        </DialogTitle>
+                        <DialogDescription>
+                            Current status:{" "}
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "text-xs font-semibold border ml-1",
+                                    STATUS_STYLES[opening.Status],
+                                )}
+                            >
+                                {opening.Status}
+                            </Badge>
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-2 py-2">
+                        {(["OPEN", "CLOSED", "PAUSED"] as const).map((s) => (
+                            <button
+                                key={s}
+                                disabled={statusLoading || opening.Status === s}
+                                onClick={() => changeStatus(s)}
+                                className={cn(
+                                    "flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm font-medium transition-colors",
+                                    opening.Status === s
+                                        ? "opacity-40 cursor-not-allowed bg-muted/40 border-border/50"
+                                        : "hover:bg-muted/50 border-border/50 cursor-pointer",
+                                )}
+                            >
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        "text-xs font-semibold border pointer-events-none",
+                                        STATUS_STYLES[s],
+                                    )}
+                                >
+                                    {s}
+                                </Badge>
+                                {statusLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                ) : opening.Status === s ? (
+                                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                                ) : null}
+                            </button>
+                        ))}
+                    </div>
+
+                    <DialogFooter className="pt-1">
+                        <Button
+                            variant="outline"
+                            onClick={() => setStatusDialogOpen(false)}
+                            disabled={statusLoading}
+                        >
+                            Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Filter Applicants dialog */}
+            <Dialog
+                open={filterDialogOpen}
+                onOpenChange={(v) => {
+                    if (!filterLoading) setFilterDialogOpen(v);
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Filter className="h-5 w-5" />
+                            Filter Applicants
+                        </DialogTitle>
+                        <DialogDescription>
+                            Set a cut-off threshold to automatically reject applicants who
+                            don&apos;t meet the criteria.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <Tabs
+                        value={filterTab}
+                        onValueChange={(v) => setFilterTab(v as "score" | "rank")}
+                        className="mt-1"
+                    >
+                        <TabsList className="w-full">
+                            <TabsTrigger value="score" className="flex-1">
+                                By Score
+                            </TabsTrigger>
+                            <TabsTrigger value="rank" className="flex-1">
+                                By Rank
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="score" className="mt-4 grid gap-3">
+                            <div className="grid gap-1.5">
+                                <label className="text-sm font-medium text-foreground">
+                                    Minimum ATS Score (%)
+                                </label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    placeholder="e.g. 60"
+                                    value={filterScore}
+                                    onChange={(e) => setFilterScore(e.target.value)}
+                                    disabled={filterLoading}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Applicants with an ATS score below this threshold will be
+                                    rejected.
+                                </p>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="rank" className="mt-4 grid gap-3">
+                            <div className="grid gap-1.5">
+                                <label className="text-sm font-medium text-foreground">
+                                    Keep Top N Applicants
+                                </label>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    placeholder="e.g. 10"
+                                    value={filterRank}
+                                    onChange={(e) => setFilterRank(e.target.value)}
+                                    disabled={filterLoading}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Only the top N applicants by ATS score will be kept. Everyone
+                                    ranked below will be rejected.
+                                </p>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+
+                    <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 p-3 mt-2">
+                        <ShieldX className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                        <p className="text-xs text-red-600 dark:text-red-400 leading-relaxed">
+                            <span className="font-semibold">Warning:</span> All applicants who
+                            do not pass this filter will be permanently marked as{" "}
+                            <span className="font-semibold">REJECTED</span>. This action cannot
+                            be undone.
+                        </p>
+                    </div>
+
+                    <DialogFooter className="pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setFilterDialogOpen(false)}
+                            disabled={filterLoading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleFilterSubmit}
+                            disabled={filterLoading}
+                        >
+                            {filterLoading ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Applying...
+                                </>
+                            ) : (
+                                <>
+                                    <Filter className="h-4 w-4 mr-2" />
+                                    Apply Filter
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Filter result dialog */}
+            <Dialog
+                open={filterResultDialogOpen}
+                onOpenChange={setFilterResultDialogOpen}
+            >
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            Filter Applied
+                        </DialogTitle>
+                        <DialogDescription>
+                            {filterResult?.message ?? "The filter was successfully applied."}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="rounded-xl bg-muted/40 border border-border/50 p-4 flex flex-col items-center gap-1 text-center">
+                        {filterResult?.rejectedCount != null ? (
+                            <>
+                                <p className="text-3xl font-bold text-foreground tabular-nums">
+                                    {filterResult.rejectedCount}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    applicant
+                                    {filterResult.rejectedCount !== 1 ? "s" : ""} marked as{" "}
+                                    <span className="font-semibold text-red-600 dark:text-red-400">
+                                        REJECTED
+                                    </span>
+                                </p>
+                            </>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">
+                                Applicants ranked below the cutoff have been marked as{" "}
+                                <span className="font-semibold text-red-600 dark:text-red-400">
+                                    REJECTED
+                                </span>
+                                .
+                            </p>
+                        )}
+                    </div>
+
+                    <DialogFooter className="pt-1">
+                        <Button onClick={() => setFilterResultDialogOpen(false)}>
+                            Done
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Delete confirmation */}
             <Dialog
