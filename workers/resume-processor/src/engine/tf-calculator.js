@@ -9,7 +9,14 @@ async function TfCalculator(tokens, skillName, tokenEmbeddings, skillEmbedding) 
     return 0;
   }
 
-  const threshold = 0.7; // Cosine similarity threshold
+  // Exact match shortcut — strongest signal, return immediately
+  const skillLower = skillName.toLowerCase();
+  if (tokens.includes(skillLower)) {
+    return 1.0;
+  }
+
+  const threshold = 0.55; // Lowered from 0.7 — catches synonyms & abbreviations
+  let maxSim = 0;
   let matchedCount = 0;
 
   // Compare each token embedding with skill embedding
@@ -20,17 +27,26 @@ async function TfCalculator(tokens, skillName, tokenEmbeddings, skillEmbedding) 
       continue; // Skip if embedding not found
     }
 
-    // Calculate cosine similarity
     const similarity = CosineSimilarity(skillEmbedding, tokenVec);
 
-    // If similarity is above threshold, count it as matched
+    if (similarity > maxSim) {
+      maxSim = similarity;
+    }
+
     if (similarity > threshold) {
       matchedCount++;
     }
   }
 
-  // TF = matched tokens / total tokens
-  const tf = matchedCount / tokens.length;
+  if (maxSim === 0) {
+    return 0;
+  }
+
+  // Frequency bonus — log-normalised so it doesn't dominate
+  const freqBonus = Math.log(1 + matchedCount) / Math.log(1 + tokens.length);
+
+  // TF = weighted blend of best semantic match + frequency signal
+  const tf = Math.min(1.0, maxSim * 0.7 + freqBonus * 0.3);
 
   return tf;
 }

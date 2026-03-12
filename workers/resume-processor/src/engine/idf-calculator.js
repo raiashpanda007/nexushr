@@ -11,7 +11,7 @@ async function IdfCalculator(allTokens, skillName, skillEmbedding, allTokenEmbed
     return 0;
   }
 
-  const threshold = 0.7;
+  const threshold = 0.55;
   let resumesWithSkill = 0;
 
   // For each resume, check if it contains tokens matching this skill

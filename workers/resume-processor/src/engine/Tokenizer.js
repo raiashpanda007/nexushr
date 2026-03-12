@@ -4,11 +4,11 @@ async function Tokenizer(text) {
   const lowercase = text.toLowerCase();
 
   const tokenizer = new natural.WordTokenizer();
-  let tokens = tokenizer.tokenize(lowercase);
+  let unigrams = tokenizer.tokenize(lowercase);
 
   const stopwords = natural.stopwords;
 
-  tokens = tokens.filter(word => {
+  unigrams = unigrams.filter(word => {
     return (
       !stopwords.includes(word) &&     // remove stopwords
       word.length > 2 &&               // remove short words
@@ -16,7 +16,12 @@ async function Tokenizer(text) {
     );
   });
 
-  return tokens;
+  // Add bigrams and trigrams using natural.NGrams so multi-word skills
+  // like "machine learning" or "node js" produce direct token matches
+  const bigrams = natural.NGrams.bigrams(unigrams).map(g => g.join(" "));
+  const trigrams = natural.NGrams.trigrams(unigrams).map(g => g.join(" "));
+
+  return [...unigrams, ...bigrams, ...trigrams];
 }
 
 export default Tokenizer;

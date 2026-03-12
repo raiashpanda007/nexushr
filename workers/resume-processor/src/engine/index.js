@@ -162,8 +162,16 @@ async function ATSEngine(openingId, applicants, openingSkills) {
     // Step 8: Sort and rank candidates
     scores.sort((a, b) => b.normalizedScore - a.normalizedScore);
 
+    // Step 9: Min-max normalization so scores spread meaningfully across candidates
+    const maxScore = scores[0]?.normalizedScore ?? 0;
+    const minScore = scores[scores.length - 1]?.normalizedScore ?? 0;
+    const range = maxScore - minScore;
+
     const rankedScores = scores.map((score, index) => ({
       ...score,
+      normalizedScore: range > 0.001
+        ? parseFloat(((score.normalizedScore - minScore) / range).toFixed(3))
+        : score.normalizedScore,
       rank: index + 1
     }));
 
