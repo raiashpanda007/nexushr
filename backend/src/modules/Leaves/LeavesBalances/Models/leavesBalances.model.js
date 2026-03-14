@@ -28,6 +28,7 @@ const LeaveBalanceSchema = new mongoose.Schema(
 );
 
 LeaveBalanceSchema.index({ user: 1 });
+LeaveBalanceSchema.index({ "leaves.type": 1, user: 1 }, { unique: true });
 
 const LeaveBalanceModel = mongoose.model(
   "LeaveBalance",

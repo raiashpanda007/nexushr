@@ -3,24 +3,24 @@ import { Cfg } from "../config/env.js"
 import jwt from "jsonwebtoken";
 import { ApiError } from "../utils/index.js";
 const VerifyMiddleware = AsyncHandler((req, res, next) => {
-    const token = req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
-    if (!token) {
-        throw new ApiError(401, "Unauthorized");
+  const token = req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    throw new ApiError(401, "Unauthorized");
+  }
+  let decodedToken;
+  try {
+    decodedToken = jwt.verify(token, Cfg.ACCESS_TOKEN_SECRET);
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      throw new ApiError(401, "jwt expired");
     }
-    let decodedToken;
-    try {
-        decodedToken = jwt.verify(token, Cfg.ACCESS_TOKEN_SECRET);
-    } catch (err) {
-        if (err.name === "TokenExpiredError") {
-            throw new ApiError(401, "jwt expired");
-        }
-        throw new ApiError(401, "Unauthorized");
-    }
-    if (!decodedToken) {
-        throw new ApiError(401, "Unauthorized");
-    }
-    req.user = decodedToken;
-    next();
+    throw new ApiError(401, "Unauthorized");
+  }
+  if (!decodedToken) {
+    throw new ApiError(401, "Unauthorized");
+  }
+  req.user = decodedToken;
+  next();
 })
 
 export default VerifyMiddleware;

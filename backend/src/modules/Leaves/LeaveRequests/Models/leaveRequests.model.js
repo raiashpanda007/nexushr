@@ -56,6 +56,8 @@ LeaveRequestSchema.index({ from: 1, to: 1 });
 
 
 LeaveRequestSchema.pre("save", async function () {
+  if (!this.isNew) return;
+
   const fromDate = new Date(this.from);
   const toDate = new Date(this.to);
 

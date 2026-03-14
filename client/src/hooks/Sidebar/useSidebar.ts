@@ -12,6 +12,7 @@ export function useSidebar() {
         { name: "Leaves", path: "/leaves", icon: "CalendarDays" },
         { name: "Events", path: "/events", icon: "CalendarRange" },
         { name: "Departments", path: "/departments", icon: "Building2" },
+        { name: "Roles", path: "/roles", icon: "Shield" },
         { name: "Salaries", path: "/salaries", icon: "BadgeCommon" },
         { name: "Skills", path: "/skills", icon: "Award" },
         { name: "Payroll", path: "/payroll", icon: "Banknote" },

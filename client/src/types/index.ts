@@ -39,5 +39,19 @@ export interface Employee {
     syncState?: "unsynced" | "synced";
 }
 
+export interface Permission {
+    module: string;
+    actions: string[];
+}
+
+export interface Role {
+    _id: string;
+    name: string;
+    permissions?: Permission[];
+    department?: string | { _id: string; name: string };
+    users?: string[] | Employee[];
+    createdAt?: string;
+    updatedAt?: string;
+}
 
 export type RequestType = "POST" | "GET" | "PUT" | "PATCH" | "DELETE"

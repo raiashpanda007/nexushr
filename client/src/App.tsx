@@ -18,6 +18,8 @@ import Hiring from "./pages/dashboard/Hiring"
 import HiringDetails from "./pages/dashboard/HiringDetails"
 import ApplicantDetails from "./pages/dashboard/ApplicantDetails"
 import Reviews from "./pages/dashboard/Reviews"
+import Roles from "./pages/dashboard/Roles"
+import RoleDetails from "./pages/dashboard/RoleDetails"
 import JobApply from "./pages/JobApply"
 import { Toaster } from "sonner"
 
@@ -57,6 +59,8 @@ function App() {
           <Route path="employee" element={<Employee />} />
           <Route path="employee/:id" element={<EmployeeDetails />} />
           <Route path="departments" element={<Departments />} />
+          <Route path="roles" element={<Roles />} />
+          <Route path="roles/:id" element={<RoleDetails />} />
           <Route path="salaries" element={<Salaries />} />
           <Route path="skills" element={<Skills />} />
           <Route path="payroll" element={<Payroll />} />

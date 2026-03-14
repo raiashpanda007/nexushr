@@ -9,10 +9,9 @@ const mongodbErrorHandler = (err) => {
   // When trying to insert/update a document with a duplicate unique field
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
-    const value = err.keyValue[field];
-    const message = `${field} "${value}" already exists`;
+    const message = `${field} already exists`;
     return new ApiError(409, message, [
-      { field, value, message, code: "DUPLICATE_KEY" }
+      { field, message, code: "DUPLICATE_KEY" }
     ]);
   }
 
@@ -33,7 +32,7 @@ const mongodbErrorHandler = (err) => {
   if (err instanceof mongoose.Error.CastError) {
     const message = `Invalid ${err.kind} format for ${err.path}`;
     return new ApiError(400, message, [
-      { field: err.path, value: err.value, message, code: "INVALID_ID" }
+      { field: err.path, message, code: "INVALID_ID" }
     ]);
   }
 

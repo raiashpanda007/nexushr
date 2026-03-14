@@ -11,38 +11,42 @@ import SearchRoutes from "./modules/Search/Routes/search.routes.js";
 import EventRoutes from "./modules/Events/Routes/events.routes.js";
 import AssetsRoutes from "./modules/Assets/Routes/assets.routes.js";
 import HiringRoutes from "./modules/Hiring/Routers/hiring.routes.js";
+import PermissionsRoutes from "./modules/Roles/Routes/permissions.routes.js";
 
 class Routes {
-    constructor() {
-        this.router = Router();
-        this.userRoutes = new UserRoutesIndex().routes();
-        this.skillRoutes = new SkillRoutes().routes();
-        this.departmentRoutes = new DepartmentRoutes().routes();
-        this.leavesRoutes = new LeavesRouter().routes();
-        this.salariesRoutes = new SalariesRoutes().routes();
-        this.payrollRoutes = new PayrollRoutes().routes();
-        this.attendanceRoutes = new AttendanceRoutes().routes();
-        this.syncRoutes = new SyncRoutes().routes();
-        this.searchRoutes = new SearchRoutes().routes();
-        this.eventRoutes = new EventRoutes().routes();
-        this.assetsRoutes = new AssetsRoutes().routes();
-        this.hiringRoutes = new HiringRoutes().routes();
-    }
-    routes() {
-        this.router.use("/", this.userRoutes);
-        this.router.use("/skills", this.skillRoutes);
-        this.router.use("/departments", this.departmentRoutes);
-        this.router.use("/leaves", this.leavesRoutes);
-        this.router.use("/salaries", this.salariesRoutes);
-        this.router.use("/payroll", this.payrollRoutes);
-        this.router.use("/attendance", this.attendanceRoutes);
-        this.router.use("/sync", this.syncRoutes);
-        this.router.use("/events", this.eventRoutes);
-        this.router.use("/search", this.searchRoutes);
-        this.router.use("/assets", this.assetsRoutes);
-        this.router.use("/hiring", this.hiringRoutes);
-        return this.router;
-    }
+  constructor() {
+    this.router = Router();
+    this.userRoutes = new UserRoutesIndex().routes();
+    this.skillRoutes = new SkillRoutes().routes();
+    this.departmentRoutes = new DepartmentRoutes().routes();
+    this.leavesRoutes = new LeavesRouter().routes();
+    this.salariesRoutes = new SalariesRoutes().routes();
+    this.payrollRoutes = new PayrollRoutes().routes();
+    this.attendanceRoutes = new AttendanceRoutes().routes();
+    this.syncRoutes = new SyncRoutes().routes();
+    this.searchRoutes = new SearchRoutes().routes();
+    this.eventRoutes = new EventRoutes().routes();
+    this.assetsRoutes = new AssetsRoutes().routes();
+    this.hiringRoutes = new HiringRoutes().routes();
+
+    this.permissionsRoutes = new PermissionsRoutes().routes();
+  }
+  routes() {
+    this.router.use("/", this.userRoutes);
+    this.router.use("/skills", this.skillRoutes);
+    this.router.use("/departments", this.departmentRoutes);
+    this.router.use("/leaves", this.leavesRoutes);
+    this.router.use("/salaries", this.salariesRoutes);
+    this.router.use("/payroll", this.payrollRoutes);
+    this.router.use("/attendance", this.attendanceRoutes);
+    this.router.use("/sync", this.syncRoutes);
+    this.router.use("/events", this.eventRoutes);
+    this.router.use("/search", this.searchRoutes);
+    this.router.use("/assets", this.assetsRoutes);
+    this.router.use("/hiring", this.hiringRoutes);
+    this.router.use("/permissions", this.permissionsRoutes);
+    return this.router;
+  }
 }
 
 export default Routes;

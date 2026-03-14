@@ -74,7 +74,10 @@ const UserSchema = new mongoose.Schema(
         }
       }
     ],
-
+    permissions: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Permissions",
+    },
   },
   {
     timestamps: true,
@@ -89,8 +92,7 @@ UserSchema.index({ online: 1 });
 
 
 
-
-UserSchema.pre("save", async function () {
+UserSchema.pre("save", async function() {
   if (!this.isModified("passwordHash")) return;
 
   const saltRounds = 10;

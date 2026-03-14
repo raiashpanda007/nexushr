@@ -38,6 +38,19 @@ export const UserUpdatesValidationSchema = zod.object({
   })).optional()
 })
 
+export const CreateEmployeeValidationByRole = zod.object({
+  email: zod.email().trim(),
+  firstName: zod.string().min(1, "Please provide first name").trim(),
+  lastName: zod.string().min(1, "Please provide last name").trim(),
+  password: zod.string().min(8, "Password must be at least 8 characters long").trim(),
+  profilePhoto: zod.string(),
+  note: zod.string().optional(),
+  skills: zod.array(zod.object({
+    skillId: zod.string().trim().min(1, "Skill id is required"),
+    amount: zod.number().min(1, "Skill amount must be at least 1").max(5, "Skill amount cannot be more than 5")
+  }))
+
+})
 
 
 

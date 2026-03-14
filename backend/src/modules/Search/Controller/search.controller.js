@@ -2,6 +2,7 @@ import UserModel from "../../Users/models/users.models.js";
 import DepartmentModal from "../../Departments/Models/departments.models.js";
 import SkillModal from "../../Skills/models/skills.models.js";
 import LeaveTypeModal from "../../Leaves/LeaveTypes/Models/leavetypes.model.js";
+import RolesModel from "../../Roles/Models/roles.permissions.model.js";
 import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
 import mongoose from "mongoose";
 
@@ -43,11 +44,12 @@ const MAP = {
     searchFields: ["firstName", "lastName", "email", "role"],
     lookups: usersLookups,
     project: { $project: { passwordHash: 0 } },
-    // Supported extra filters: deptId
+    // Supported extra filters: deptId | departmentId
     filters: (query) => {
       const extra = {};
-      if (query.deptId) {
-        extra.deptId = new mongoose.Types.ObjectId(query.deptId);
+      const departmentFilter = query.deptId || query.departmentId;
+      if (departmentFilter) {
+        extra.deptId = new mongoose.Types.ObjectId(departmentFilter);
       }
       return extra;
     },
@@ -60,8 +62,9 @@ const MAP = {
     project: { $project: { passwordHash: 0 } },
     filters: (query) => {
       const extra = {};
-      if (query.deptId) {
-        extra.deptId = new mongoose.Types.ObjectId(query.deptId);
+      const departmentFilter = query.deptId || query.departmentId;
+      if (departmentFilter) {
+        extra.deptId = new mongoose.Types.ObjectId(departmentFilter);
       }
       return extra;
     },
@@ -87,6 +90,35 @@ const MAP = {
     project: null,
     filters: () => ({}),
   },
+  roles: {
+    model: RolesModel,
+    searchFields: ["name"],
+    lookups: [
+      {
+        $lookup: {
+          from: "departments",
+          localField: "department",
+          foreignField: "_id",
+          pipeline: [{ $project: { name: 1 } }],
+          as: "department",
+        },
+      },
+      {
+        $unwind: {
+          path: "$department",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ],
+    project: null,
+    filters: (query) => {
+      const extra = {};
+      if (query.departmentId) {
+        extra.department = new mongoose.Types.ObjectId(query.departmentId);
+      }
+      return extra;
+    },
+  },
 };
 
 class SearchController {
@@ -97,6 +129,10 @@ class SearchController {
   Search = AsyncHandler(async (req, res) => {
     const { query } = req.query;
     const { model } = req.params;
+    const parsedLimit = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isNaN(parsedLimit)
+      ? null
+      : Math.min(Math.max(parsedLimit, 1), 100);
     if (!model) {
       throw new ApiError(400, "Model is required");
     }
@@ -134,6 +170,10 @@ class SearchController {
 
     if (config.project) {
       pipeline.push(config.project);
+    }
+
+    if (limit) {
+      pipeline.push({ $limit: limit });
     }
 
     const result = await config.model.aggregate(pipeline);

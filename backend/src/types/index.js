@@ -1,4 +1,4 @@
-import { CreateHRValidationSchema, CreateEmployeValidationSchema, Login, UserUpdatesValidationSchema } from "./users.types.js"
+import { CreateHRValidationSchema, CreateEmployeValidationSchema, Login, UserUpdatesValidationSchema, CreateEmployeeValidationByRole } from "./users.types.js"
 import { CreateSkill, UpdateSkill } from "./skills.types.js"
 import { CreateDepartmentValidationSchema, UpdateDepartmentValidationSchema } from "./departments.types.js"
 import { CreateLeaveTypeValidationSchema, UpdateLeaveTypeValidationSchema } from "./Leaves/LeaveTypes.types.js"
@@ -11,8 +11,9 @@ import { CreateAttendanceValidationSchema } from "./attendance.types.js"
 import { CreateAssetValidationSchema, UpdateAssetValidationSchema } from "./asset.types.js"
 import { CreateOpeningValidationSchema, UpdateOpeningValidationSchema } from "./Hiring/opening.types.js"
 import { OfflineQueueValidationSchema } from "./sync.types.js"
-import { CreateApplicantValidationSchema , UpdateApplicantValidationSchema} from "./Hiring/applicant.types.js"
+import { CreateApplicantValidationSchema, UpdateApplicantValidationSchema } from "./Hiring/applicant.types.js"
 import { CreateInterviewSchema, UpdateInterviewSchema } from "./Hiring/interview.types.js"
+import { CreateRoleValidationSchema, UpdateRoleValidationSchema } from "./roles.types.js"
 import { ErrorTypes } from "./error.types.js"
 
 
@@ -22,7 +23,10 @@ const Types = {
     CreateHR: CreateHRValidationSchema,
     CreateEmp: CreateEmployeValidationSchema,
     Login: Login,
-    UserUpdates: UserUpdatesValidationSchema
+    UserUpdates: UserUpdatesValidationSchema,
+    Roles: {
+      Create: CreateEmployeeValidationByRole
+    }
   },
   Skills: {
     Create: CreateSkill,
@@ -75,6 +79,10 @@ const Types = {
   Interviews: {
     Create: CreateInterviewSchema,
     Update: UpdateInterviewSchema
+  },
+  Roles: {
+    Create: CreateRoleValidationSchema,
+    Update: UpdateRoleValidationSchema
   },
   OfflineQueue: OfflineQueueValidationSchema,
   Errors: ErrorTypes
