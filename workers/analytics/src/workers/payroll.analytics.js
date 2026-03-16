@@ -16,12 +16,7 @@ import {
     generateDeductionDistributionChart,
 } from "../utils/PayrollCharts.js";
 
-/**
- * Handle a GET_PAYROLL_ANALYTICS event.
- *
- * Expected event shape:
- *   { type: "GET_PAYROLL_ANALYTICS", month: number, year: number, email: string }
- */
+
 async function HandlePayrollEvent(event, dbClient) {
     const { month, year, email } = event;
 

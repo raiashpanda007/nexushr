@@ -215,6 +215,7 @@ class LeaveRequestController {
         if (status) matchStage.status = String(status);
 
         if (!departmentId) {
+            // Across all departments with leave type breakdown.
             const summaryPipeline = [
                 { $match: matchStage },
 
@@ -308,6 +309,10 @@ class LeaveRequestController {
             }
             departmentMatch = { "requestedBy.deptId": new mongoose.Types.ObjectId(departmentId) };
         }
+
+        // First aggregate the leave requests with user and type details, filtered by department and status if provided
+        // Then facet into history, user summary, and leave type summary
+        
 
         const detailedPipeline = [
             { $match: matchStage },

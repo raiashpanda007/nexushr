@@ -134,6 +134,19 @@ async function GetPayrollAnalyticsData(db, month, year) {
         trendMonths.push({ month: m, year: y, label: `${MONTH_NAMES[m - 1].slice(0, 3)} ${y}` });
     }
 
+    // 1 Filters payrolls for specific months
+    // 2 Joins salary data
+    // 3 Flattens salary array
+    // 4 Groups payrolls by month/year
+    // 5 Calculates
+
+        // total base salary
+        // total HRA
+        // total LTA
+        // total bonuses
+        // total deductions
+        // employee count
+
     const trendPayrolls = await payrolls
         .aggregate([
             {

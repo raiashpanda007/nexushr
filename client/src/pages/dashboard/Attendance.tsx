@@ -33,6 +33,11 @@ const formatDuration = (minutes: number) => {
     return `${h}h ${m}m`;
 };
 
+const truncateLabel = (value: string, maxLength = 12) => {
+    if (!value) return '';
+    return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+};
+
 const Attendance = () => {
     const {
         userDetails,
@@ -440,7 +445,7 @@ const Attendance = () => {
                     {analyticsDeptFilter === "ALL" ? (
                         <Card className="border-border shadow-sm rounded-xl overflow-hidden gap-0 py-0">
                             <CardHeader className="bg-muted/30 border-b border-border">
-                                <CardTitle className="flex items-center gap-2">
+                                <CardTitle className="flex items-center gap-2 pt-3">
                                     <BarChart3 className="h-5 w-5 text-muted-foreground" /> Department Comparison
                                 </CardTitle>
                                 <CardDescription>Tracking performance across departments for the selected period</CardDescription>
@@ -451,7 +456,15 @@ const Attendance = () => {
                                         <ResponsiveContainer width="100%" height="100%">
                                             <BarChart data={departmentStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)', fontWeight: 500 }} />
+                                                <XAxis
+                                                    dataKey="name"
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    interval={0}
+                                                    tickMargin={8}
+                                                    tick={{ fill: 'var(--muted-foreground)', fontWeight: 500 }}
+                                                    tickFormatter={(value: string) => truncateLabel(value, 10)}
+                                                />
                                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)' }} />
                                                 <Tooltip
                                                     cursor={{ fill: 'var(--muted)' }}

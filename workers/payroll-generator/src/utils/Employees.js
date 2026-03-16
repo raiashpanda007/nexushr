@@ -17,12 +17,12 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
     const totalDays = getDaysInMonth(year, month - 1);
 
     const pipeline = [
-      // ── 1. Match employees belonging to the selected departments (skip filter if "All") ──
+      //  1. Match employees belonging to the selected departments (skip filter if "All") 
       ...(isAll
         ? []
         : [{ $match: { deptId: { $in: deptObjectIds } } }]),
 
-      // ── 2. Get the most-recent payroll for each employee ──
+      //  2. Get the most-recent payroll for each employee 
       {
         $lookup: {
           from: "payrolls",
@@ -39,7 +39,7 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
         $unwind: { path: "$lastPayroll", preserveNullAndEmptyArrays: true },
       },
 
-      // ── 3. Lookup the salary referenced by the last payroll ──
+      //  3. Lookup the salary referenced by the last payroll 
       //       Falls back to the employee's current salary if no payroll exists
       {
         $lookup: {
@@ -68,7 +68,7 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
       },
       { $unwind: { path: "$salary", preserveNullAndEmptyArrays: true } },
 
-      // ── 4. Lookup ACCEPTED unpaid-leave requests for the month ──
+      //  4. Lookup ACCEPTED unpaid-leave requests for the month 
       //       Mirrors PayrollController.GetLeaveDeductions
       {
         $lookup: {
@@ -107,7 +107,7 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
         },
       },
 
-      // ── 5. Count distinct present days from attendance ──
+      //  5. Count distinct present days from attendance 
       {
         $lookup: {
           from: "attendances",
@@ -126,7 +126,7 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
         },
       },
 
-      // ── 6. Compute per-day salary, present/absent days ──
+      //  6. Compute per-day salary, present/absent days 
       {
         $addFields: {
           perDaySalary: {
@@ -150,7 +150,7 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
         },
       },
 
-      // ── 7. Compute leave deduction amounts (quantity × perDaySalary) ──
+      //  7. Compute leave deduction amounts (quantity × perDaySalary) 
       {
         $addFields: {
           leaveDeductions: {
@@ -179,7 +179,7 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
         },
       },
 
-      // ── 8. Final projection ──
+      //  8. Final projection 
       {
         $project: {
           firstName: 1,

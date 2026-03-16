@@ -101,9 +101,24 @@ class AssetController {
             const page = Math.max(parseInt(req.query.page) || 1, 1);
             const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 100);
             const skip = (page - 1) * limit;
+            const status = req.query.status;
+            const userId = req.query.userId;
+            const departmentId = req.query.departmentId;
+            const validStatuses = ["AVAILABLE", "ASSIGNED", "MAINTENANCE", "DISPOSED"];
+
+            if (status && !validStatuses.includes(status)) {
+                throw new ApiError(Types.Errors.BadRequest, "Invalid status filter");
+            }
+
+            if (departmentId && !mongoose.Types.ObjectId.isValid(departmentId)) {
+                throw new ApiError(Types.Errors.BadRequest, "Invalid department filter");
+            }
 
             if (req.user.role !== "HR") {
-                const filter = { currentOwner: req.user.id };
+                const filter = {
+                    currentOwner: req.user.id,
+                    ...(status ? { status } : {}),
+                };
                 const [assets, total] = await Promise.all([
                     this.repo.find(filter).skip(skip).limit(limit),
                     this.repo.countDocuments(filter),
@@ -113,22 +128,11 @@ class AssetController {
                 }, "Assets fetched successfully"));
             }
 
-            const userId = req.query.userId;
-            if (userId) {
-                const filter = { currentOwner: userId };
-                const [assets, total] = await Promise.all([
-                    this.repo.find(filter).skip(skip).limit(limit),
-                    this.repo.countDocuments(filter),
-                ]);
-                return res.status(200).json(new ApiResponse(200, {
-                    assets, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
-                }, "Assets fetched successfully"));
-            }
-
-            const departmentId = req.query.departmentId;
             if (departmentId) {
                 const matchStage = {
                     "owner.deptId": new mongoose.Types.ObjectId(departmentId),
+                    ...(userId ? { currentOwner: new mongoose.Types.ObjectId(userId) } : {}),
+                    ...(status ? { status } : {}),
                 };
                 const [result] = await this.repo.aggregate([
                     {
@@ -156,9 +160,13 @@ class AssetController {
                 }, "Assets fetched successfully"));
             }
 
+            const filter = {
+                ...(status ? { status } : {}),
+                ...(userId ? { currentOwner: userId } : {}),
+            };
             const [assets, total] = await Promise.all([
-                this.repo.find().skip(skip).limit(limit),
-                this.repo.countDocuments(),
+                this.repo.find(filter).skip(skip).limit(limit),
+                this.repo.countDocuments(filter),
             ]);
             return res.status(200).json(new ApiResponse(200, {
                 assets, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
