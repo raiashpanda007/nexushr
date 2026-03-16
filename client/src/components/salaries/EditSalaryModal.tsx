@@ -221,7 +221,7 @@ const EditSalaryModal: React.FC<EditSalaryModalProps> = ({
                             <Button
                                 type="submit"
                                 disabled={loading}
-                                className="rounded-lg px-6 font-semibold gap-2 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-orange-500/25"
+                                className="rounded-lg px-6 font-semibold gap-2  text-white shadow-lg "
                             >
                                 {loading ? (
                                     <>

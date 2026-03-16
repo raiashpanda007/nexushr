@@ -415,7 +415,7 @@ const CreateSalaryModal: React.FC<CreateSalaryModalProps> = ({
                             <Button
                                 type="submit"
                                 disabled={loading}
-                                className="rounded-lg px-6 font-semibold gap-2 bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-lg shadow-indigo-500/25"
+                                className="rounded-lg px-6 font-semibold gap-2  text-white shadow-lg shadow-indigo-500/25"
                             >
                                 {loading ? (
                                     <>

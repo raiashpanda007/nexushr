@@ -178,9 +178,15 @@ export function useAssets() {
         try {
             const queryParams: Record<string, string | number | boolean> = { page: currentPage, limit };
 
+            if (role === "HR" && statusFilter !== "all") {
+                queryParams.status = statusFilter;
+            }
+
             if (selectedEmployee) {
                 queryParams.userId = selectedEmployee._id;
-            } else if (departmentFilter !== "all") {
+            }
+
+            if (departmentFilter !== "all") {
                 queryParams.departmentId = departmentFilter;
             }
 
@@ -203,13 +209,8 @@ export function useAssets() {
                     fetchedTotal = fetchedAssets.length;
                 }
 
-                // Apply client-side status filter
-                if (statusFilter !== "all") {
-                    fetchedAssets = fetchedAssets.filter((a) => a.status === statusFilter);
-                }
-
                 setAssets(fetchedAssets);
-                setTotal(statusFilter !== "all" ? fetchedAssets.length : fetchedTotal);
+                setTotal(fetchedTotal);
             } else {
                 console.error("Failed to fetch assets:", result.response.message);
             }
@@ -218,7 +219,7 @@ export function useAssets() {
         } finally {
             setLoading(false);
         }
-    }, [departmentFilter, statusFilter, selectedEmployee]);
+    }, [departmentFilter, limit, role, selectedEmployee, statusFilter]);
 
     useEffect(() => {
         fetchAssets(page);

@@ -41,6 +41,8 @@
     - [Payroll](#payroll-apiv1payroll)
     - [Attendance](#attendance-apiv1attendance)
     - [Sync](#sync-apiv1sync)
+    - [Hiring](#hiring-apiv1hiring)
+- [Applicant Tracking System (ATS)](#applicant-tracking-system-ats)
 - [Client](#client)
   - [Routing & Role-Based Access](#routing--role-based-access)
   - [Pages](#pages)
@@ -88,6 +90,7 @@ The NexusHR platform empowers Human Resource administrators with a specialized s
 - **Refined Leave & Attendance Insights**: Visually enhanced leave dashboards featuring segmented bar charts (by leave types) and aesthetic pie charts for quick status assessments.
 - **Events Management**: An interactive organization-wide Events Calendar that HR can manage, seeding and displaying events with detailed dialogs.
 - **Bulk Payroll Processing**: Process payroll for entire departments or the full organization concurrently using distributed background workers (generator and batch writers).
+- **Applicant Tracking System (ATS)**: AI-powered resume screening with TF-IDF + semantic embeddings for intelligent skill matching. Automatically rank candidates based on resume-to-opening fit with configurable thresholds for bulk rejection/filtering.
 
 ---
 
@@ -158,6 +161,7 @@ NexusHR/
 │   │       ├── Salaries/         # Salary structures
 │   │       ├── Payroll/          # Payroll generation & retrieval
 │   │       ├── Attendance/       # Punch-in/out records
+│   │       ├── Hiring/           # Job openings, applicants, ATS scoring, interview rounds
 │   │       └── Sync/             # Offline batch sync endpoint
 │   └── package.json
 ├── workers/
@@ -173,9 +177,25 @@ NexusHR/
 │   │       ├── payroll.batch.js
 │   │       ├── conf/Config.js
 │   │       └── utils/Db.js
-│   └── image-worker/             # Image processing worker
-│       └── src/
-│           └── image-worker.js
+│   ├── image-worker/             # Image processing worker
+│   │   └── src/
+│   │       └── image-worker.js
+│   ├── resume-processor/          # ATS engine — resume parsing, tokenization, TF-IDF scoring
+│   │   └── src/
+│   │       ├── resume-processor.js
+│   │       ├── conf/Config.js
+│   │       ├── engine/
+│   │       │   ├── index.js       # ATSEngine main orchestration
+│   │       │   ├── ParseResumes.js
+│   │       │   ├── Tokenizer.js
+│   │       │   ├── tf-calculator.js
+│   │       │   └── idf-calculator.js
+│   │       └── utils/
+│   │           ├── CosineSimilarity.js
+│   │           ├── Db.js
+│   │           ├── DownloadResume.js
+│   │           └── GenerateEmbeddings.js
+│   └── analytics/                 # Analytics aggregation worker
 ├── docker/                       # Docker Compose + LocalStack for SQS
 ├── ecosystem.config.js           # PM2 multi-app config
 └── client/
@@ -416,6 +436,35 @@ Handles image processing tasks (resizing, optimization) via SQS.
 **`workers/analytics/...`**
 
 Handles processing of HR analytics data, triggered by a dedicated analytics queue via LocalStack. Evaluates metrics such as departmental bonuses, deductions, and monthly aggregations.
+
+### Resume Processor (ATS Engine)
+
+**`workers/resume-processor/src/resume-processor.js`**
+
+Long-polls the AWS SQS queue for ATS resume scoring events from the backend. On receiving an event with `{ openingId }`:
+
+1. **Download & Parse**: Downloads all applicant resumes (PDF/DOCX) for the opening
+2. **Tokenize**: Extracts tokens from resume text using natural language tokenization
+3. **Embed**: Generates semantic embeddings for all unique tokens and job-required skills using a pre-trained model
+4. **Calculate TF (Term Frequency)**: For each skill in the job opening, computes a TF score that blends:
+   - Semantic similarity (cosine distance between skill and resume tokens)
+   - Exact-match shortcut (if skill is literally found in resume, TF = 1.0)
+   - Frequency bonus (log-normalized count of matched tokens)
+   - Formula: `TF = min(1.0, maxSimilarity * 0.7 + frequencyBonus * 0.3)`
+5. **Calculate IDF (Inverse Document Frequency)**: Computes how rare/common each skill is across all applicants' resumes
+   - Formula: `IDF = log(1 + totalResumes / resumesContainingSkill)` (smoothed to avoid log(0))
+6. **Compute Scores**: For each applicant, calculates raw score as:
+   - `score = Σ(TF × IDF × skillWeight)` across all required skills
+   - Normalizes by total skill weights to produce a 0–1 score
+7. **Rank & Min-Max Normalize**: Sorts applicants by normalized score, then applies min-max normalization across the candidate pool to spread scores meaningfully
+8. **Persist**: Stores the `normalizedScore` and `rank` in the `applicants` collection for each applicant
+9. **Cache & Publish**: Publishes results to Redis with applicant count to ensure freshness on the frontend
+
+**Key algorithms:**
+- **TF Calculation** (`tf-calculator.js`): Tokenizes skill names using the same strategy as the tokenizer to avoid mismatches (e.g., `"Node.js"` → `["node"]`)
+- **IDF Calculation** (`idf-calculator.js`): Uses cosine similarity (with 0.55 threshold) to detect skill presence in resumes, accounting for synonyms and abbreviations
+- **Tokenizer** (`Tokenizer.js`): Splits on non-alphanumeric characters (preserves `+` and `#` for special skills like `C++`, `C#`), drops tokens < 3 chars, generates n-grams for multi-word matches
+- **Embeddings** (`GenerateEmbeddings.js`): Calls a transformer model (via API or local) to convert tokens and skill names into fixed-size vectors for semantic comparison
 
 ---
 
@@ -730,6 +779,166 @@ This endpoint is called exclusively by the frontend's `syncQueue.worker.ts` afte
 
 ---
 
+#### Hiring (`/api/v1/hiring`)
+
+The Hiring module is subdivided into three sub-routers for managing job openings, applicants, and ATS scoring.
+
+**Job Openings** (`/api/v1/hiring/openings`)
+
+> All routes protected by `VerifyMiddleware`. HR-only endpoints.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create a job opening with title, description, department, required skills (with proficiency levels) |
+| `GET` | `/` | List all job openings (HR) or public openings (applicants on job apply page) |
+| `GET` | `/:id` | Get opening details including attached skills and questions |
+| `PUT` | `/:id` | Update opening details, skills, or screening questions |
+| `DELETE` | `/:id` | Archive or delete a job opening |
+
+**Applicants** (`/api/v1/hiring/applicants`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Submit application (public) — requires name, email, phone, resume, and optional screening question answers |
+| `GET` | `/` | List applicants for an opening with pagination (HR only) |
+| `GET` | `/:applicantId` | Get detailed applicant profile including ATS score, interview rounds, resume link (HR only) |
+| `PUT` | `/:applicantId` | Update applicant status (APPLIED → INTERVIEWING → OFFERED → REJECTED) or notes |
+| `DELETE` | `/:applicantId` | Remove an applicant from consideration |
+| `POST` | `/signed-url` | Get S3 signed URL for resume upload |
+| `POST` | `/generate-ats/:openingId` | Trigger ATS scoring for all applicants of an opening (HR only) — sends event to SQS |
+| `GET` | `/ats-result/:openingId` | Long-poll endpoint that waits for ATS results from the resume processor worker (up to 2 minutes) |
+
+**ATS Results** — Each applicant record includes:
+- `score` — Normalized 0–1 ATS score (updated after scoring)
+- `atsBreakdown` — Detailed skill-by-skill TF/IDF/weight breakdown (optional, for debugging)
+
+**ATS Filtering** (`/api/v1/hiring/applicants/filter`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/by-score` | Bulk reject applicants below a minimum ATS score threshold (HR only) |
+| `POST` | `/by-rank` | Keep only the top N applicants by ATS score, reject others (HR only) |
+
+**Interview Rounds** (`/api/v1/hiring/rounds`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create an interview round (e.g., Phone Screen, Technical, Final) for an opening |
+| `GET` | `/` | List all rounds for an opening |
+| `PUT` | `/:roundId` | Update round details |
+| `DELETE` | `/:roundId` | Delete a round |
+
+**Interview Feedback** (`/api/v1/hiring/feedback`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Submit interview feedback for an applicant in a round (score, comments, pass/fail) |
+| `GET` | `/:applicantId` | Retrieve all interview feedback for an applicant |
+
+**Screening Questions** (`/api/v1/hiring/questions`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create a global or opening-specific screening question |
+| `GET` | `/` | List all screening questions |
+| `PUT` | `/:questionId` | Update a question |
+| `DELETE` | `/:questionId` | Delete a question |
+
+Applicant answers to screening questions are stored during application and can be reviewed in the applicant details panel.
+
+---
+
+## Applicant Tracking System (ATS)
+
+### Overview
+
+NexusHR integrates an **AI-powered ATS engine** that automatically ranks job applicants based on the semantic and lexical relevance of their resumes to the job opening's requirements. The system uses **TF-IDF (Term Frequency-Inverse Document Frequency)** combined with **semantic embeddings** to provide intelligent skill matching.
+
+### ATS Workflow
+
+```
+HR uploads job opening with required skills & proficiency weights
+       │
+       ▼
+HR clicks "Generate Latest ATS Score" in applicants list
+       │
+       ▼
+POST /api/v1/hiring/applicants/generate-ats/:openingId
+       │
+       ▼
+Backend: Invalidates stale Redis cache, sends event to SQS queue
+       │
+       ▼  SQS Queue (ATS Event)
+       │
+resume-processor worker
+  → Downloads all applicant resumes (PDF/DOCX)
+  → Tokenizes resume text into semantic tokens
+  → Generates embeddings for tokens and job skills
+  → Calculates TF (Term Frequency) for each skill
+  → Calculates IDF (Inverse Document Frequency) for each skill
+  → Computes raw score: Σ(TF × IDF × weight)
+  → Normalizes and ranks candidates
+  → Stores scores in MongoDB `applicants.score`
+  → Publishes results to Redis
+       │
+       ▼
+Frontend: Long-polls /api/v1/hiring/applicants/ats-result/:openingId
+  (waits up to 2 minutes for results from Redis)
+       │
+       ▼
+HR views ATS Ranking table with:
+  - Rank (1st place, 2nd place, etc.)
+  - Applicant name
+  - Normalized score (0–100%)
+  - Optional skill breakdown (TF/IDF values per skill)
+```
+
+### Scoring Algorithm
+
+**Term Frequency (TF):**
+- Tokenizes job skill names using the same strategy as resume tokenization to ensure matching
+- Searches for skill tokens in the resume text using semantic similarity (cosine distance on embeddings)
+- Blends semantic matching (70%) with frequency bonus (30%)
+- Exact-match shortcut: if the full skill name is literally found in the resume, TF = 1.0
+- Formula: `TF = min(1.0, maxSimilarity * 0.7 + log(1 + frequency) * 0.3)`
+
+**Inverse Document Frequency (IDF):**
+- Measures how discriminating a skill is across the applicant pool
+- Smoothed to avoid log(0): `IDF = log(1 + totalApplicants / applicantsWithSkill)`
+- Rarer skills have higher IDF values
+
+**Final Score:**
+- Aggregates across all required skills: `score = Σ(TF × IDF × skillWeight) / totalWeight`
+- Normalized to 0–1 by dividing by the sum of all skill weights
+- Min-max normalized across the candidate pool to spread scores meaningfully
+
+### Key Features
+
+1. **Semantic Skill Matching**: Uses embeddings to match synonyms, abbreviations, and variations (e.g., `"Node.js"` matches `"Node"`, `"JavaScript"` matches `"JS"`)
+2. **Proficiency-Weighted Scoring**: Multiplies each skill score by its assigned proficiency weight in the job opening
+3. **Multi-Format Resume Support**: Parses PDF and DOCX resumes
+4. **Async Worker Processing**: Handles scoring asynchronously via SQS to prevent backend timeouts on large applicant pools
+5. **Redis Caching**: Caches results with applicant count to detect staleness and invalidate stale scores
+6. **Bulk Filtering**: HR can auto-reject applicants below a score threshold or keep only the top N candidates
+
+### Configuration
+
+In the Job Opening creation/edit form:
+- Assign required skills with proficiency levels (1–5 or custom scale)
+- Proficiency level acts as a weight multiplier in the TF-IDF calculation
+- Higher weight = more important for candidate ranking
+
+### ATS Result Interpretation
+
+- **Score 0.8–1.0**: Excellent match — strong resume alignment with all key skills
+- **Score 0.5–0.8**: Good match — covers most required skills
+- **Score 0.2–0.5**: Moderate match — has some relevant skills but missing others
+- **Score 0.0–0.2**: Poor match — minimal skill overlap
+
+Scores are visually ranked with badges (Gold for 1st place, Silver for 2nd, Bronze for 3rd, etc.) in the HR dashboard.
+
+---
+
 ## Client
 
 ### Routing & Role-Based Access
@@ -758,6 +967,9 @@ All pages are nested under a shared `<Layout>` component (sidebar + header).
 | `/attendance` | `Attendance.tsx` | Both | HR: analytics dashboard. Employee: punch in/out + history |
 | `/leaves` | `Leaves.tsx` | Both | HR: manage types, balances, requests. Employee: apply & track |
 | `/events` | `Events.tsx` | Both | Interactive organization-wide events calendar |
+| `/hiring` | `HiringDetails.tsx` | HR | Job openings & applicants with ATS scoring, interview rounds, bulk filtering |
+| `/job-apply` | `JobApply.tsx` | Public | Public job application portal with screening questions & resume upload |
+| `/applicant/:id` | `ApplicantDetails.tsx` | HR | Detailed applicant profile with ATS breakdown, interview feedback, resume review |
 
 ---
 
@@ -793,6 +1005,9 @@ Custom hooks in `src/hooks/` abstract all data-fetching logic from page componen
 | `useAttendance` | Punch in/out (with offline handling) + history fetch. Triggers `syncQueue.worker` on reconnect |
 | `useLeaves` | Aggregates leave types, balances, and requests. Merges local unsynced changes with API data |
 | `useEmployeeLeaves` | Employee-facing leave view (own balances + requests) |
+| `useHiringDetails` | Manages job opening applicants, ATS scoring trigger, result polling, and bulk filtering |
+| `useApplicantDetails` | Fetches applicant profile, resume, interview rounds, and feedback |
+| `useJobApply` | Public job application form + resume upload + screening questions |
 
 Hooks that support offline-first pass a `syncState` property to table rows, which renders an **"Unsynced"** badge for locally-cached but not-yet-sent mutations.
 
