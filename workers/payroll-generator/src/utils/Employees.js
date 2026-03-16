@@ -17,12 +17,13 @@ async function* GetEmployeeBatches(dbInstance, departments, month, year) {
     const totalDays = getDaysInMonth(year, month - 1);
 
     const pipeline = [
-      //  1. Match employees belonging to the selected departments (skip filter if "All") 
+      //  1. Match employees belonging to the selected departments (skip filter if "All"); 
       ...(isAll
         ? []
         : [{ $match: { deptId: { $in: deptObjectIds } } }]),
 
-      //  2. Get the most-recent payroll for each employee 
+      //  2. Get the most-recent payroll for each employee ;
+
       {
         $lookup: {
           from: "payrolls",
