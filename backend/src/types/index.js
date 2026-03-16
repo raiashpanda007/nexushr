@@ -1,4 +1,4 @@
-import { CreateHRValidationSchema, CreateEmployeValidationSchema, Login, UserUpdatesValidationSchema, CreateEmployeeValidationByRole } from "./users.types.js"
+import { CreateHRValidationSchema, CreateEmployeValidationSchema, Login, UserUpdatesValidationSchema, CreateEmployeeValidationByRole, UpdateEmployeeValidationRole } from "./users.types.js"
 import { CreateSkill, UpdateSkill } from "./skills.types.js"
 import { CreateDepartmentValidationSchema, UpdateDepartmentValidationSchema } from "./departments.types.js"
 import { CreateLeaveTypeValidationSchema, UpdateLeaveTypeValidationSchema } from "./Leaves/LeaveTypes.types.js"
@@ -25,7 +25,8 @@ const Types = {
     Login: Login,
     UserUpdates: UserUpdatesValidationSchema,
     Roles: {
-      Create: CreateEmployeeValidationByRole
+      Create: CreateEmployeeValidationByRole,
+      Update: UpdateEmployeeValidationRole
     }
   },
   Skills: {

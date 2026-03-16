@@ -2,10 +2,10 @@ import mongoose from "mongoose";
 
 const MODULES = [
   "EMPLOYEES",
-  "DEPARTMENTS",
   "ATTENDANCE",
   "LEAVE",
   "PAYROLL",
+  "ASSETS"
 ]
 
 

@@ -352,16 +352,16 @@ class UserController {
   })
 
   GetSignedURL = AsyncHandler(async (req, res) => {
-    const {fileName, contentType} = req.query;
+    const { fileName, contentType } = req.query;
     if (!fileName || !contentType) {
       throw new ApiError(Types.Errors.BadRequest, "fileName and contentType are required");
     }
 
     const signedUrl = await GenerateUploadUrl(fileName, contentType, "register-photos");
 
-    return res.status(200).json(new ApiResponse(200, {signedUrl}, "Signed URL generated successfully"));
+    return res.status(200).json(new ApiResponse(200, { signedUrl }, "Signed URL generated successfully"));
   })
-    
+
 }
 
 export default UserController;
