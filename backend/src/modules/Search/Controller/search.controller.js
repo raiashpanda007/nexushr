@@ -2,7 +2,6 @@ import UserModel from "../../Users/models/users.models.js";
 import DepartmentModal from "../../Departments/Models/departments.models.js";
 import SkillModal from "../../Skills/models/skills.models.js";
 import LeaveTypeModal from "../../Leaves/LeaveTypes/Models/leavetypes.model.js";
-import RolesModel from "../../Roles/Models/roles.permissions.model.js";
 import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
 import mongoose from "mongoose";
 
@@ -89,35 +88,6 @@ const MAP = {
     lookups: [],
     project: null,
     filters: () => ({}),
-  },
-  roles: {
-    model: RolesModel,
-    searchFields: ["name"],
-    lookups: [
-      {
-        $lookup: {
-          from: "departments",
-          localField: "department",
-          foreignField: "_id",
-          pipeline: [{ $project: { name: 1 } }],
-          as: "department",
-        },
-      },
-      {
-        $unwind: {
-          path: "$department",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-    ],
-    project: null,
-    filters: (query) => {
-      const extra = {};
-      if (query.departmentId) {
-        extra.department = new mongoose.Types.ObjectId(query.departmentId);
-      }
-      return extra;
-    },
   },
 };
 

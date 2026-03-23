@@ -74,10 +74,6 @@ const UserSchema = new mongoose.Schema(
         }
       }
     ],
-    permissions: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Permissions",
-    },
   },
   {
     timestamps: true,

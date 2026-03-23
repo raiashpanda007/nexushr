@@ -13,7 +13,6 @@ import { CreateOpeningValidationSchema, UpdateOpeningValidationSchema } from "./
 import { OfflineQueueValidationSchema } from "./sync.types.js"
 import { CreateApplicantValidationSchema, UpdateApplicantValidationSchema } from "./Hiring/applicant.types.js"
 import { CreateInterviewSchema, UpdateInterviewSchema } from "./Hiring/interview.types.js"
-import { CreateRoleValidationSchema, UpdateRoleValidationSchema } from "./roles.types.js"
 import { ErrorTypes } from "./error.types.js"
 
 
@@ -59,7 +58,10 @@ const Types = {
     GenerateBulk: GenerateBulkPayrollValidationSchema
   },
   Attendance: {
-    Create: CreateAttendanceValidationSchema
+    Create: CreateAttendanceValidationSchema,
+    Roles :{
+      Create: CreateAttendanceValidationSchema
+    }
   },
   Events: {
     Create: CreateEventSchema,
@@ -80,10 +82,6 @@ const Types = {
   Interviews: {
     Create: CreateInterviewSchema,
     Update: UpdateInterviewSchema
-  },
-  Roles: {
-    Create: CreateRoleValidationSchema,
-    Update: UpdateRoleValidationSchema
   },
   OfflineQueue: OfflineQueueValidationSchema,
   Errors: ErrorTypes
