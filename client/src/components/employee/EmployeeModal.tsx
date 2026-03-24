@@ -10,16 +10,18 @@ import { Check, ChevronsUpDown, Camera, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import { useEmployeeModal } from "@/hooks/employee/useEmployeeModal";
+import type { EmployeePrefillData } from "@/hooks/employee/useEmployeeModal";
 import { useRef } from "react";
 
 interface EmployeeModalProps {
     isOpen: boolean;
     onClose: () => void;
     initialData?: Employee | null;
+    prefillData?: EmployeePrefillData | null;
     onSuccess: () => void;
 }
 
-export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess }: EmployeeModalProps) {
+export default function EmployeeModal({ isOpen, onClose, initialData, prefillData, onSuccess }: EmployeeModalProps) {
     const {
         formData,
         selectedSkills,
@@ -39,7 +41,7 @@ export default function EmployeeModal({ isOpen, onClose, initialData, onSuccess 
         uploading,
         uploadError,
         handleFileSelect,
-    } = useEmployeeModal({ isOpen, onClose, initialData, onSuccess });
+    } = useEmployeeModal({ isOpen, onClose, initialData, prefillData, onSuccess });
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 

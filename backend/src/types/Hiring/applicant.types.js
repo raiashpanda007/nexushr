@@ -19,3 +19,9 @@ export const UpdateApplicantValidationSchema = zod.object({
     note: zod.string().trim().optional(),
     currentRound: zod.string().trim().optional(),
 });
+
+export const SendOfferValidationSchema = zod.object({
+    subject: zod.string().trim().min(1, "Please provide a subject").optional(),
+    message: zod.string().trim().min(1, "Please provide a message"),
+    attachmentUrl: zod.string().url("Invalid attachment URL").optional(),
+});

@@ -12,6 +12,7 @@ import { Cfg } from "../../../config/env.js";
 
 import Types from "../../../types/index.js";
 import { SendResumeEvent } from "../../../queue/ats.queue.js";
+import { SendMailEvent } from "../../../queue/mails.queue.js";
 
 class ApplicantController {
   constructor() {
@@ -345,6 +346,62 @@ class ApplicantController {
         "ATS score generation initiated successfully. It may take a few moments for the scores to be updated.",
       ),
     );
+  });
+
+  SendOffer = AsyncHandler(async (req, res) => {
+    if (req.user.role !== "HR") {
+      throw new ApiError(Types.Errors.Unauthroized, "Only HR can send offers");
+    }
+
+    const { applicantId } = req.params;
+    const applicant = await this.repo.findById(applicantId).populate({
+      path: "openingId",
+      select: "title",
+    });
+    if (!applicant) {
+      throw new ApiError(Types.Errors.NotFound, "Applicant not found");
+    }
+    if (applicant.status !== "OFFERING") {
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        "Applicant must be in OFFERING status to send an offer",
+      );
+    }
+
+    const parsedData = Types.Applicants.SendOffer.safeParse(req.body);
+    if (!parsedData.success) {
+      const errorMessages = (
+        parsedData.error.issues ??
+        parsedData.error.errors ??
+        []
+      )
+        .map((err) => err.message)
+        .join(", ");
+      throw new ApiError(
+        Types.Errors.BadRequest,
+        `Validation failed: ${errorMessages}`,
+      );
+    }
+
+    const { message, attachmentUrl, subject } = parsedData.data;
+    const openingTitle = applicant.openingId?.title ?? "Position";
+
+    applicant.status = "OFFERED";
+    await applicant.save();
+
+    await SendMailEvent({
+      to: applicant.email,
+      subject: subject ?? `Job Offer — ${openingTitle}`,
+      text: message,
+      html: `<p>${message.replace(/\n/g, "<br>")}</p>`,
+      ...(attachmentUrl && {
+        attachments: [{ filename: "offer-letter.pdf", path: attachmentUrl }],
+      }),
+    });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Offer sent successfully"));
   });
 
   GetATSResult = AsyncHandler(async (req, res) => {

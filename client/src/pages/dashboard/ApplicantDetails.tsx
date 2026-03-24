@@ -24,6 +24,7 @@ import {
     CheckCircle2,
     AlignLeft,
     CalendarCheck2,
+    UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -391,6 +392,30 @@ export default function ApplicantDetails() {
                     <ArrowLeft className="h-4 w-4" />
                     Back to {from === 'reviews' ? 'Reviews' : 'Opening'}
                 </Button>
+
+                {applicant.status === "OFFERED" && (
+                    <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => {
+                            const nameParts = applicant.name.trim().split(" ");
+                            const firstName = nameParts[0] ?? "";
+                            const lastName = nameParts.slice(1).join(" ") || "";
+                            const deptId =
+                                opening?.departmentId && typeof opening.departmentId === "object"
+                                    ? opening.departmentId._id
+                                    : undefined;
+                            navigate("/employee", {
+                                state: {
+                                    prefill: { firstName, lastName, email: applicant.email, deptId },
+                                },
+                            });
+                        }}
+                    >
+                        <UserPlus className="h-4 w-4" />
+                        Add as Employee
+                    </Button>
+                )}
             </div>
 
             {/* Candidate card */}

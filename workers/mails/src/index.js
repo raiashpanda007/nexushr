@@ -27,13 +27,14 @@ async function processMessages() {
     if (data.Messages) {
       for (const message of data.Messages) {
         try {
-          const { to, subject, text, html } = JSON.parse(message.Body);
+          const { to, subject, text, html, attachments } = JSON.parse(message.Body);
           await transporter.sendMail({
             from: Cfg.USER_EMAIL,
             to,
             subject,
             text,
             ...(html && { html }),
+            ...(attachments && attachments.length > 0 && { attachments }),
           });
           console.log(`Email sent to ${to} with subject "${subject}"`);
           await sqsClient.send(new DeleteMessageCommand({

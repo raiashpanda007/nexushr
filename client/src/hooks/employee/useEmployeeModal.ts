@@ -4,14 +4,22 @@ import type { Employee, Department, Skill } from "@/types";
 import { CreateEmployeeSchema, UpdateEmployeeSchema, formatZodErrors } from "@/validations/schemas";
 import { useImageUpload } from "./useImageUpload";
 
+export interface EmployeePrefillData {
+    firstName: string;
+    lastName: string;
+    email: string;
+    deptId?: string;
+}
+
 interface UseEmployeeModalProps {
     isOpen: boolean;
     onClose: () => void;
     initialData?: Employee | null;
+    prefillData?: EmployeePrefillData | null;
     onSuccess: () => void;
 }
 
-export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: UseEmployeeModalProps) {
+export function useEmployeeModal({ isOpen, onClose, initialData, prefillData, onSuccess }: UseEmployeeModalProps) {
     const [formData, setFormData] = useState({
         firstName: "",
         lastName: "",
@@ -70,6 +78,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
 
     useEffect(() => {
         if (initialData) {
+            // edit mode — handled below
             const deptId = typeof initialData.deptId === 'object' ? initialData.deptId?._id : initialData.deptId;
 
             let initialSkills: Array<{ skillId: string; amount: number }> = [];
@@ -113,6 +122,17 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
             });
             setSelectedSkills(initialSkills);
             resetImage(initialData.profilePhoto);
+        } else if (prefillData) {
+            setFormData({
+                firstName: prefillData.firstName,
+                lastName: prefillData.lastName,
+                email: prefillData.email,
+                password: "",
+                deptId: prefillData.deptId || "",
+                note: "",
+            });
+            setSelectedSkills([]);
+            resetImage();
         } else {
             setFormData({
                 firstName: "",
@@ -126,7 +146,7 @@ export function useEmployeeModal({ isOpen, onClose, initialData, onSuccess }: Us
             resetImage();
         }
         setError(null);
-    }, [initialData, isOpen]);
+    }, [initialData, prefillData, isOpen]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;

@@ -1,11 +1,36 @@
+import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import EmployeeTable from "@/components/employee/EmployeeTable";
 import EmployeeModal from "@/components/employee/EmployeeModal";
 import { useEmployee } from "@/hooks/Employee/useEmployee";
+import type { EmployeePrefillData } from "@/hooks/employee/useEmployeeModal";
 import { Users, Search, Plus, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 export default function Employee() {
+    const location = useLocation();
+    const [prefillData, setPrefillData] = useState<EmployeePrefillData | null>(null);
+    const autoOpenedRef = useRef(false);
+
+    useEffect(() => {
+        if (autoOpenedRef.current) return;
+        const prefill = (location.state as any)?.prefill as EmployeePrefillData | undefined;
+        if (prefill) {
+            autoOpenedRef.current = true;
+            setPrefillData(prefill);
+            handleAddEmployee();
+            // clear router state so the modal doesn't re-open on back navigation
+            window.history.replaceState({}, "");
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleModalCloseWithPrefill = () => {
+        setPrefillData(null);
+        handleModalClose();
+    };
+
     const {
         employees,
         page,
@@ -112,8 +137,9 @@ export default function Employee() {
 
             <EmployeeModal
                 isOpen={isModalOpen}
-                onClose={handleModalClose}
+                onClose={handleModalCloseWithPrefill}
                 initialData={selectedEmployee}
+                prefillData={prefillData}
                 onSuccess={handleSuccess}
             />
         </div>
