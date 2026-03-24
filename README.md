@@ -23,6 +23,8 @@
   - [Payroll Batch](#payroll-batch)
   - [Image Worker](#image-worker)
   - [Analytics Worker](#analytics-worker)
+  - [Resume Processor (ATS Engine)](#resume-processor-ats-engine)
+  - [Mail Worker](#mail-worker)
 - [Bulk Payroll Processing](#bulk-payroll-processing)
 - [Backend](#backend)
   - [Entry Point & Clustering](#entry-point--clustering)
@@ -41,8 +43,13 @@
     - [Payroll](#payroll-apiv1payroll)
     - [Attendance](#attendance-apiv1attendance)
     - [Sync](#sync-apiv1sync)
+    - [Events](#events-apiv1events)
+    - [Assets](#assets-apiv1assets)
+    - [Search](#search-apiv1search)
     - [Hiring](#hiring-apiv1hiring)
 - [Applicant Tracking System (ATS)](#applicant-tracking-system-ats)
+- [Hiring & Interview Workflow](#hiring--interview-workflow)
+- [Asset Management](#asset-management)
 - [Client](#client)
   - [Routing & Role-Based Access](#routing--role-based-access)
   - [Pages](#pages)
@@ -91,6 +98,12 @@ The NexusHR platform empowers Human Resource administrators with a specialized s
 - **Events Management**: An interactive organization-wide Events Calendar that HR can manage, seeding and displaying events with detailed dialogs.
 - **Bulk Payroll Processing**: Process payroll for entire departments or the full organization concurrently using distributed background workers (generator and batch writers).
 - **Applicant Tracking System (ATS)**: AI-powered resume screening with TF-IDF + semantic embeddings for intelligent skill matching. Automatically rank candidates based on resume-to-opening fit with configurable thresholds for bulk rejection/filtering.
+- **Full Interview Pipeline**: Schedule structured interviews across multiple rounds (Phone Screen, Technical, Final, etc.) with automatic Zoom meeting creation, result tracking (PASSED / FAILED / PENDING), and automatic applicant status promotion when all rounds are cleared.
+- **Offer Email Workflow**: Two-step offer dialog lets HR compose a personalised offer email with a custom subject, rich message body (1,000 character limit), and optional PDF attachment (uploaded to S3). Sent asynchronously via the SQS mail worker — applicant status is atomically updated to `OFFERED` on dispatch.
+- **One-Click "Add as Employee"**: On an `OFFERED` applicant's detail page HR can promote them to an employee with a single button. Name, email, and department are pre-filled in the employee creation modal from the applicant record, removing duplicate data entry.
+- **Asset Management**: Track company assets (laptops, equipment, etc.) assigned to employees. Supports full CRUD with S3-backed image uploads and a dedicated stats endpoint for asset utilisation.
+- **Full-Text Search**: Cross-entity search across employees, departments, skills, and more via a single `/api/v1/search/:model` endpoint used by every list view that has a search bar.
+- **My Interviews (Reviewer Portal)**: Employees assigned as interviewers can view all their scheduled interviews in a dedicated `/reviews` page, with direct links to applicant profiles.
 
 ---
 
@@ -151,7 +164,9 @@ NexusHR/
 │   │   │   ├── Response.js       # ApiResponse class
 │   │   │   └── index.js          # Re-exports utils
 │   │   ├── queue/
-│   │   │   └── payroll.queue.js  # SQS client — sends bulk payroll messages
+│   │   │   ├── payroll.queue.js  # SQS client — sends bulk payroll messages
+│   │   │   ├── mails.queue.js    # SQS client — enqueues outbound emails
+│   │   │   └── ats.queue.js      # SQS client — triggers resume scoring
 │   │   ├── types/                # Shared Zod schemas / type definitions
 │   │   └── modules/
 │   │       ├── Users/            # Authentication + employee management
@@ -161,7 +176,10 @@ NexusHR/
 │   │       ├── Salaries/         # Salary structures
 │   │       ├── Payroll/          # Payroll generation & retrieval
 │   │       ├── Attendance/       # Punch-in/out records
-│   │       ├── Hiring/           # Job openings, applicants, ATS scoring, interview rounds
+│   │       ├── Events/           # Organization-wide calendar events
+│   │       ├── Assets/           # Company asset tracking & assignment
+│   │       ├── Search/           # Cross-entity full-text search
+│   │       ├── Hiring/           # Job openings, applicants, ATS scoring, interviews, offer flow
 │   │       └── Sync/             # Offline batch sync endpoint
 │   └── package.json
 ├── workers/
@@ -195,6 +213,10 @@ NexusHR/
 │   │           ├── Db.js
 │   │           ├── DownloadResume.js
 │   │           └── GenerateEmbeddings.js
+│   ├── mails/                    # Email delivery worker (nodemailer + Gmail SMTP)
+│   │   └── src/
+│   │       ├── index.js          # Polls SQS, sends via nodemailer (supports attachments)
+│   │       └── utils/Config.js
 │   └── analytics/                 # Analytics aggregation worker
 ├── docker/                       # Docker Compose + LocalStack for SQS
 ├── ecosystem.config.js           # PM2 multi-app config
@@ -206,12 +228,22 @@ NexusHR/
     │   │   ├── Login.tsx
     │   │   └── dashboard/
     │   │       ├── Employee.tsx
+    │   │       ├── EmployeeDetails.tsx
     │   │       ├── Departments.tsx
     │   │       ├── Salaries.tsx
     │   │       ├── Skills.tsx
     │   │       ├── Payroll.tsx
     │   │       ├── Attendance.tsx
-    │   │       └── Leaves.tsx
+    │   │       ├── Leaves.tsx
+    │   │       ├── EmployeeLeaves.tsx
+    │   │       ├── Events.tsx
+    │   │       ├── EventDetails.tsx
+    │   │       ├── Assets.tsx
+    │   │       ├── AssetDetails.tsx
+    │   │       ├── Hiring.tsx
+    │   │       ├── HiringDetails.tsx
+    │   │       ├── ApplicantDetails.tsx
+    │   │       └── Reviews.tsx
     │   ├── components/          # Reusable UI components
     │   ├── hooks/               # Feature-specific data hooks
     │   ├── store/               # Redux store + userState slice
@@ -268,6 +300,15 @@ NexusHR/
 │                                                              │
 │  image-worker (×1)                                           │
 │    └─ Image processing tasks                                │
+│                                                              │
+│  mails (×1)                                                  │
+│    └─ Polls SQS → sends email via nodemailer (+ attachments)│
+│                                                              │
+│  resume-processor (×1)                                       │
+│    └─ Polls SQS → TF-IDF + embeddings → scores applicants  │
+│                                                              │
+│  analytics (×1)                                              │
+│    └─ Polls SQS → aggregates HR analytics → stores results  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -289,9 +330,20 @@ PORT=8000
 INSTANCES=2                          # Number of cluster workers to fork
 ACCESS_TOKEN_SECRET=your_secret_here
 REFRESH_TOKEN=your_refresh_secret_here
-MONGO_DB_URL=mongodb://localhost:27017
+MONGO_DB_URL=mongodb://localhost:27017/?replicaSet=rs0
 DB_NAME=nexushr
+REDIS_URL=redis://localhost:6379
+SQS_REGION=us-east-1
+SQS_ENDPOINT=http://localhost:4566
+SQS_ACCESS_KEY=test
+SQS_SECRET_KEY=test
+SQS_URL=http://localhost:4566/000000000000/payroll-generation
+MAILSERVER_QUEUE_URL=http://localhost:4566/000000000000/mailserver
+RESUME_PROCESSOR_QUEUE_URL=http://localhost:4566/000000000000/resume-processor
+ANALYTICS_QUEUE_URL=http://localhost:4566/000000000000/analytics
 ```
+
+> **Note**: MongoDB must run as a **replica set** (required for ACID transactions in leave operations). The included `docker/docker-compose.yml` initialises `rs0` automatically.
 
 Create a `.env` file in `client/`:
 
@@ -346,6 +398,7 @@ Use the root PM2 ecosystem file to run all services together.
 | Payroll Batch Writer | `nexushr-payroll-batch` | 3 | cluster |
 | Image Worker | `nexushr-image-worker` | 1 | cluster |
 | Analytics Worker | `nexushr-analytics` | 1 | cluster |
+| Mail Worker | `nexushr-mails` | 1 | fork |
 | Client Dev Server | `nexushr-client` | 1 | fork |
 
 The **payroll-batch** worker runs with 3 instances so multiple batches of employee payrolls can be written in parallel for faster processing.
@@ -436,6 +489,31 @@ Handles image processing tasks (resizing, optimization) via SQS.
 **`workers/analytics/...`**
 
 Handles processing of HR analytics data, triggered by a dedicated analytics queue via LocalStack. Evaluates metrics such as departmental bonuses, deductions, and monthly aggregations.
+
+### Mail Worker
+
+**`workers/mails/src/index.js`**
+
+Long-polls the **mail SQS queue** (1-second interval, up to 10 messages at a time). For each message:
+
+1. Parses `{ to, subject, text, html?, attachments? }` from the SQS message body
+2. Sends via **nodemailer** using Gmail SMTP credentials (`USER_EMAIL` / `USER_PASSWORD`)
+3. Supports optional **file attachments** — nodemailer fetches the file from its `path` (e.g., an S3 URL) before sending
+4. Deletes the SQS message on successful delivery; logs errors and continues on failure
+
+Events enqueued to this worker:
+- Interview scheduled notifications (to applicant and all reviewers)
+- Offer emails composed by HR (with optional PDF offer-letter attachment, stored in S3)
+
+Required env (in `workers/mails/.env`):
+
+```env
+SQS_QUEUE_URL=http://localhost:4566/000000000000/mailserver
+SQS_ENDPOINT=http://localhost:4566
+AWS_REGION=us-east-1
+USER_EMAIL=your@gmail.com
+USER_PASSWORD=your_app_password
+```
 
 ### Resume Processor (ATS Engine)
 
@@ -779,6 +857,52 @@ This endpoint is called exclusively by the frontend's `syncQueue.worker.ts` afte
 
 ---
 
+#### Events (`/api/v1/events`)
+
+> Protected by `VerifyMiddleware`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create a calendar event (HR only) |
+| `GET` | `/` | List all events (paginated) |
+| `GET` | `/:id` | Get a single event with full details |
+| `PUT` | `/:id` | Update an event |
+| `DELETE` | `/:id` | Delete an event |
+
+Events appear on the organization-wide interactive calendar accessible to all roles.
+
+---
+
+#### Assets (`/api/v1/assets`)
+
+> Protected by `VerifyMiddleware`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create / register a new asset |
+| `GET` | `/` | List all assets (paginated, filterable) |
+| `GET` | `/stats` | Aggregate asset utilisation stats (total, assigned, unassigned, by category) |
+| `GET` | `/upload-url` | Get S3 signed URL for asset image upload |
+| `GET` | `/:id` | Get a single asset with full details |
+| `PUT` | `/:id` | Update asset details or assignment |
+| `DELETE` | `/:id` | Delete an asset record |
+
+Assets can be assigned to employees, and the stats endpoint powers the asset dashboard summary cards.
+
+---
+
+#### Search (`/api/v1/search`)
+
+> Protected by `VerifyMiddleware`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/:model` | Full-text search across a given model (e.g., `users`, `departments`, `skills`). Returns matching documents. |
+
+Used by every list page that has a search bar. The `:model` segment maps to the corresponding MongoDB collection and text index.
+
+---
+
 #### Hiring (`/api/v1/hiring`)
 
 The Hiring module is subdivided into three sub-routers for managing job openings, applicants, and ATS scoring.
@@ -802,38 +926,63 @@ The Hiring module is subdivided into three sub-routers for managing job openings
 | `POST` | `/` | Submit application (public) — requires name, email, phone, resume, and optional screening question answers |
 | `GET` | `/` | List applicants for an opening with pagination (HR only) |
 | `GET` | `/:applicantId` | Get detailed applicant profile including ATS score, interview rounds, resume link (HR only) |
-| `PUT` | `/:applicantId` | Update applicant status (APPLIED → INTERVIEWING → OFFERED → REJECTED) or notes |
+| `PATCH` | `/:applicantId` | Update applicant status or notes |
 | `DELETE` | `/:applicantId` | Remove an applicant from consideration |
-| `POST` | `/signed-url` | Get S3 signed URL for resume upload |
+| `POST` | `/signed-url` | Get S3 signed URL for resume / offer-document upload |
+| `POST` | `/:applicantId/send-offer` | Compose & send an offer email to the applicant (HR only) — updates status to `OFFERED` and dispatches via mail worker |
 | `POST` | `/generate-ats/:openingId` | Trigger ATS scoring for all applicants of an opening (HR only) — sends event to SQS |
 | `GET` | `/ats-result/:openingId` | Long-poll endpoint that waits for ATS results from the resume processor worker (up to 2 minutes) |
 
+**`send-offer` request body:**
+
+```json
+{
+  "subject": "Job Offer — Senior Engineer",
+  "message": "Dear Jane, we are pleased to offer you...",
+  "attachmentUrl": "http://s3.localhost.localstack.cloud:4566/resumes/offer-letter.pdf"
+}
+```
+
+`subject` is optional (defaults to `"Job Offer — <opening title>"`). `attachmentUrl` is optional; if provided the mail worker fetches the PDF from S3 and attaches it to the email. The applicant must be in `OFFERING` status before calling this endpoint.
+
+**Applicant status lifecycle:**
+
+```
+APPLIED → INTERVIEWING → OFFERING → OFFERED
+                       ↘ REJECTED
+```
+
+- `APPLIED`: initial state on application submission
+- `INTERVIEWING`: set when the first interview is scheduled
+- `OFFERING`: set automatically when the last interview round result is marked `PASSED`
+- `OFFERED` / `REJECTED`: set by HR via the offer workflow or manual rejection
+
 **ATS Results** — Each applicant record includes:
 - `score` — Normalized 0–1 ATS score (updated after scoring)
-- `atsBreakdown` — Detailed skill-by-skill TF/IDF/weight breakdown (optional, for debugging)
+- `rank` — Numeric rank within the opening's candidate pool
 
-**ATS Filtering** (`/api/v1/hiring/applicants/filter`)
+**Interviews** (`/api/v1/hiring/interviews`)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/by-score` | Bulk reject applicants below a minimum ATS score threshold (HR only) |
-| `POST` | `/by-rank` | Keep only the top N applicants by ATS score, reject others (HR only) |
+| `POST` | `/` | Schedule an interview for an applicant in a specific round. Creates a Zoom meeting and emails applicant + all reviewers via the mail worker. |
+| `PATCH` | `/:id` | Update interview details or set result (`PASSED` / `FAILED` / `PENDING`). Automatically advances applicant to `OFFERING` when the last round is passed. |
+| `GET` | `/my` | Get all interviews where the current user is a reviewer or hiring manager (used by the Reviews page). |
+| `GET` | `/` | List all interviews (filterable) |
+| `GET` | `/:id` | Get a single interview |
+
+Interview scheduling automatically:
+- Creates a Zoom meeting via the Zoom API and stores `zoomMeetingId` and `zoomJoinUrl`
+- Sends calendar-style email notifications to the applicant and every reviewer
+- Moves the applicant to `INTERVIEWING` status on first interview creation
 
 **Interview Rounds** (`/api/v1/hiring/rounds`)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/` | Create an interview round (e.g., Phone Screen, Technical, Final) for an opening |
-| `GET` | `/` | List all rounds for an opening |
-| `PUT` | `/:roundId` | Update round details |
-| `DELETE` | `/:roundId` | Delete a round |
+| `GET` | `/` | List all rounds defined for a given opening |
 
-**Interview Feedback** (`/api/v1/hiring/feedback`)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/` | Submit interview feedback for an applicant in a round (score, comments, pass/fail) |
-| `GET` | `/:applicantId` | Retrieve all interview feedback for an applicant |
+Rounds are defined on the opening (via the opening create/edit form) with a `rank` to control ordering.
 
 **Screening Questions** (`/api/v1/hiring/questions`)
 
@@ -845,6 +994,77 @@ The Hiring module is subdivided into three sub-routers for managing job openings
 | `DELETE` | `/:questionId` | Delete a question |
 
 Applicant answers to screening questions are stored during application and can be reviewed in the applicant details panel.
+
+---
+
+## Hiring & Interview Workflow
+
+End-to-end flow from job posting to employee onboarding:
+
+```
+HR creates a Job Opening (title, department, required skills, rounds, screening questions)
+       │
+       ▼
+Public applicants submit via /job-opening/:id (resume + screening answers)
+       │
+       ▼
+HR triggers ATS scoring → resume-processor worker ranks candidates
+       │
+       ▼
+HR reviews ranked applicants, schedules interviews per round
+  POST /api/v1/hiring/interviews
+    → Zoom meeting created
+    → Email sent to applicant + reviewers (via mail worker)
+    → Applicant status → INTERVIEWING
+       │
+       ▼
+Reviewer marks result: PASSED / FAILED / PENDING
+  PATCH /api/v1/hiring/interviews/:id
+    → If last round PASSED → applicant status → OFFERING
+       │
+       ▼
+HR sees OFFERING badge, opens Offer Dialog (two-step)
+  Step 1: Make Offer / Reject
+  Step 2: Compose email (subject, message ≤ 1,000 chars, optional PDF attachment)
+  POST /api/v1/hiring/applicants/:id/send-offer
+    → Applicant status → OFFERED
+    → Offer email + attachment dispatched via mail worker
+       │
+       ▼
+HR clicks "Add as Employee" on the applicant detail page
+  → Navigates to /employee with name, email & department pre-filled
+  → HR sets password + photo, saves → employee record created
+```
+
+---
+
+## Asset Management
+
+NexusHR includes a full asset lifecycle module for tracking company equipment assigned to employees.
+
+### Asset fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Asset name / model |
+| `category` | e.g., Laptop, Phone, Monitor |
+| `serialNumber` | Unique hardware identifier |
+| `assignedTo` | Employee reference (optional) |
+| `status` | `AVAILABLE` / `ASSIGNED` / `MAINTENANCE` / `RETIRED` |
+| `image` | S3-backed image URL |
+| `purchaseDate` | Date of acquisition |
+| `notes` | Free-text notes |
+
+### Asset Stats endpoint
+
+`GET /api/v1/assets/stats` returns aggregated counts used by the dashboard summary cards:
+- Total assets
+- Assets by status
+- Assets by category
+
+### Asset image upload
+
+`GET /api/v1/assets/upload-url` returns a pre-signed S3 PUT URL (5-minute expiry). The frontend uploads directly to S3 and stores the resulting object URL in the asset record.
 
 ---
 
@@ -959,17 +1179,24 @@ All pages are nested under a shared `<Layout>` component (sidebar + header).
 | Route | Component | Role | Description |
 |-------|-----------|------|-------------|
 | `/login` | `Login.tsx` | Public | Email/password login form |
-| `/employee` | `Employee.tsx` | HR | Employee list with create/update/delete, paginated |
+| `/job-opening/:id` | `JobApply.tsx` | Public | Public job application portal with screening questions & resume upload |
+| `/employee` | `Employee.tsx` | HR | Employee list with create/update/delete, paginated; supports pre-fill from applicant |
+| `/employee/:id` | `EmployeeDetails.tsx` | Both | Individual employee profile |
 | `/departments` | `Departments.tsx` | HR | Department management |
 | `/skills` | `Skills.tsx` | HR | Skill management |
 | `/salaries` | `Salaries.tsx` | HR | Salary structure management, paginated |
 | `/payroll` | `Payroll.tsx` | Both | HR: generate & view all payrolls. Employee: view own payroll |
 | `/attendance` | `Attendance.tsx` | Both | HR: analytics dashboard. Employee: punch in/out + history |
-| `/leaves` | `Leaves.tsx` | Both | HR: manage types, balances, requests. Employee: apply & track |
+| `/leaves` | `Leaves.tsx` | HR | Manage leave types, balances, and requests |
+| `/leaves` (employee view) | `EmployeeLeaves.tsx` | Employee | Apply & track own leave requests |
 | `/events` | `Events.tsx` | Both | Interactive organization-wide events calendar |
-| `/hiring` | `HiringDetails.tsx` | HR | Job openings & applicants with ATS scoring, interview rounds, bulk filtering |
-| `/job-apply` | `JobApply.tsx` | Public | Public job application portal with screening questions & resume upload |
-| `/applicant/:id` | `ApplicantDetails.tsx` | HR | Detailed applicant profile with ATS breakdown, interview feedback, resume review |
+| `/events/:id` | `EventDetails.tsx` | Both | Full event detail view |
+| `/assets` | `Assets.tsx` | Both | Company asset list with stats summary |
+| `/assets/:id` | `AssetDetails.tsx` | Both | Individual asset detail and assignment view |
+| `/hiring` | `Hiring.tsx` | HR | Job openings list with status filter and pagination |
+| `/hiring/:id` | `HiringDetails.tsx` | HR | Opening details — applicant list, ATS scoring, bulk filtering |
+| `/hiring/applicant/:id` | `ApplicantDetails.tsx` | HR | Detailed applicant profile with interview rounds, resume viewer, offer workflow, and "Add as Employee" button |
+| `/reviews` | `Reviews.tsx` | Employee | Reviewer portal — all interviews scheduled for the current user |
 
 ---
 
@@ -981,10 +1208,13 @@ Components live in `src/components/` and are organized by feature:
 - **`Sidebar`** — Navigation links filtered by role
 - **`Header`** — User info + logout
 - **`leaves/`** — `ApplyLeaveModal`, leave type/balance/request tables
-- **`payroll/`** — Payroll table, filter controls
-- **`employee/`** — Employee form modal, employee table
+- **`payroll/`** — Payroll table, filter controls, bulk payroll dialog
+- **`employee/`** — `EmployeeModal` (create/edit, supports pre-fill from applicant), `EmployeeTable`
 - **`departments/`, `skills/`, `salaries/`** — Respective CRUD tables and modals
 - **`Attendance/`** — Punch button, attendance history table, analytics charts (Recharts)
+- **`hiring/`** — `OfferDialog` (two-step: decide → compose email + PDF attachment), `InterviewPanel`, `CreateOpeningModal`, `OpeningTable`
+- **`assets/`** — Asset table, asset detail modal, stats summary cards
+- **`events/`** — Event calendar, event detail dialog
 
 All components use **shadcn/ui** primitives (Dialog, Select, Popover, Checkbox, etc.) styled with TailwindCSS.
 
@@ -997,7 +1227,8 @@ Custom hooks in `src/hooks/` abstract all data-fetching logic from page componen
 | Hook | Description |
 |------|-------------|
 | `useLogin` | Login form state + auth API call |
-| `useEmployee` | Employee CRUD + pagination |
+| `useEmployee` | Employee CRUD + pagination; reads router `location.state.prefill` on mount to auto-open the modal with applicant data pre-filled |
+| `useEmployeeModal` | Form state for employee create/edit modal; accepts optional `prefillData` to populate fields without entering edit mode |
 | `useDepartments` | Department CRUD |
 | `useSkills` | Skill CRUD |
 | `useSalaries` | Salary CRUD + pagination |
@@ -1005,9 +1236,10 @@ Custom hooks in `src/hooks/` abstract all data-fetching logic from page componen
 | `useAttendance` | Punch in/out (with offline handling) + history fetch. Triggers `syncQueue.worker` on reconnect |
 | `useLeaves` | Aggregates leave types, balances, and requests. Merges local unsynced changes with API data |
 | `useEmployeeLeaves` | Employee-facing leave view (own balances + requests) |
+| `useHiring` | Job openings list with pagination and status filter |
 | `useHiringDetails` | Manages job opening applicants, ATS scoring trigger, result polling, and bulk filtering |
-| `useApplicantDetails` | Fetches applicant profile, resume, interview rounds, and feedback |
 | `useJobApply` | Public job application form + resume upload + screening questions |
+| `useImageUpload` | Shared S3 image upload hook (signed URL → PUT → store URL); used by employee and asset modals |
 
 Hooks that support offline-first pass a `syncState` property to table rows, which renders an **"Unsynced"** badge for locally-cached but not-yet-sent mutations.
 
