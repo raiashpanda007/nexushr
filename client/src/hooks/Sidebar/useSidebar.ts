@@ -18,6 +18,13 @@ export function useSidebar() {
         { name: "Assets", path: "/assets", icon: "Package" },
         { name: "Hiring", path: "/hiring", icon: "BriefcaseBusiness" },
         { name: "Reviews", path: "/reviews", icon: "ClipboardList" },
+        {
+            name: "Training", path: "/training", icon: "GraduationCap", children: [
+                { name: "Courses", path: "/training/courses", icon: "BookOpen" },
+                { name: "Analytics", path: "/training/analytics", icon: "BarChart2" },
+                { name: "Assessments", path: "/training/assessments", icon: "ClipboardCheck" },
+            ]
+        },
     ]
 
     const employeeItems = [
@@ -28,6 +35,13 @@ export function useSidebar() {
         { name: "Salaries", path: "/salaries", icon: "BadgeCommon" },
         { name: "Assets", path: "/assets", icon: "Package" },
         { name: "Reviews", path: "/reviews", icon: "ClipboardList" },
+        {
+            name: "Training", path: "/training", icon: "GraduationCap", children: [
+                { name: "Courses", path: "/training/courses", icon: "BookOpen" },
+                { name: "Analytics", path: "/training/analytics", icon: "BarChart2" },
+                { name: "Assessments", path: "/training/assessments", icon: "ClipboardCheck" },
+            ]
+        },
     ]
 
     const items = role === "HR" ? hrItems : (role === "EMPLOYEE" ? employeeItems : [])

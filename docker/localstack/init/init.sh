@@ -38,6 +38,8 @@ awslocal --region $REGION s3 mb s3://register-photos || true
 awslocal --region $REGION s3 mb s3://punch-photos || true
 awslocal --region $REGION s3 mb s3://assets || true
 awslocal --region $REGION s3 mb s3://resumes || true
+awslocal --region $REGION s3 mb s3://resources || true
+awslocal --region $REGION s3 mb s3://training-videos || true
 
 echo "Setting CORS policy..."
 
@@ -67,6 +69,14 @@ awslocal --region $REGION s3api put-bucket-cors \
 
 awslocal --region $REGION s3api put-bucket-cors \
   --bucket resumes \
+  --cors-configuration "$CORS_CONFIG"
+
+awslocal --region $REGION s3api put-bucket-cors \
+  --bucket resources \
+  --cors-configuration "$CORS_CONFIG"
+
+awslocal --region $REGION s3api put-bucket-cors \
+  --bucket training-videos \
   --cors-configuration "$CORS_CONFIG"
 
 echo "Creating SQS queues..."

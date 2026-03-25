@@ -60,10 +60,19 @@ const MAP = {
     lookups: usersLookups,
     project: { $project: { passwordHash: 0 } },
     filters: (query) => {
-      const extra = {};
+      const extra = { role: "EMPLOYEE" };
       const departmentFilter = query.deptId || query.departmentId;
       if (departmentFilter) {
         extra.deptId = new mongoose.Types.ObjectId(departmentFilter);
+      }
+      if (query.skillId) {
+        const maxLevel = parseInt(query.maxLevel, 10);
+        extra.skills = {
+          $elemMatch: {
+            skillId: new mongoose.Types.ObjectId(query.skillId),
+            amount: { $lte: isNaN(maxLevel) ? 5 : maxLevel },
+          },
+        };
       }
       return extra;
     },

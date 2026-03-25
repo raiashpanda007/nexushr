@@ -11,6 +11,7 @@ import SearchRoutes from "./modules/Search/Routes/search.routes.js";
 import EventRoutes from "./modules/Events/Routes/events.routes.js";
 import AssetsRoutes from "./modules/Assets/Routes/assets.routes.js";
 import HiringRoutes from "./modules/Hiring/Routers/hiring.routes.js";
+import TrainingRoutes from "./modules/Training/Routes/training.routes.js";
 class Routes {
   constructor() {
     this.router = Router();
@@ -26,6 +27,7 @@ class Routes {
     this.eventRoutes = new EventRoutes().routes();
     this.assetsRoutes = new AssetsRoutes().routes();
     this.hiringRoutes = new HiringRoutes().routes();
+    this.trainingRoutes = new TrainingRoutes().routes();
   }
   routes() {
     this.router.use("/", this.userRoutes);
@@ -40,6 +42,7 @@ class Routes {
     this.router.use("/search", this.searchRoutes);
     this.router.use("/assets", this.assetsRoutes);
     this.router.use("/hiring", this.hiringRoutes);
+    this.router.use("/training", this.trainingRoutes);
     return this.router;
   }
 }

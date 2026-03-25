@@ -18,6 +18,11 @@ import Hiring from "./pages/dashboard/Hiring"
 import HiringDetails from "./pages/dashboard/HiringDetails"
 import ApplicantDetails from "./pages/dashboard/ApplicantDetails"
 import Reviews from "./pages/dashboard/Reviews"
+import Training from "./pages/dashboard/Training"
+import TrainingAssessments from "./pages/dashboard/TrainingAssessments"
+import TrainingAnalytics from "./pages/dashboard/TrainingAnalytics"
+import CourseDetail from "./pages/dashboard/CourseDetail"
+import CreateChapter from "./pages/dashboard/CreateChapter"
 import JobApply from "./pages/JobApply"
 import { Toaster } from "sonner"
 
@@ -70,6 +75,12 @@ function App() {
           <Route path="hiring/:id" element={<HiringDetails />} />
           <Route path="hiring/applicant/:applicantId" element={<ApplicantDetails />} />
           <Route path="reviews" element={<Reviews />} />
+          <Route path="training" element={<Navigate to="/training/courses" replace />} />
+          <Route path="training/courses" element={<Training />} />
+          <Route path="training/assessments" element={<TrainingAssessments />} />
+          <Route path="training/analytics" element={<TrainingAnalytics />} />
+          <Route path="training/:id" element={<CourseDetail />} />
+          <Route path="training/:id/chapter/create" element={<CreateChapter />} />
         </Route>
 
         {/* Catch all - redirect to home (which redirects based on role) */}

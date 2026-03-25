@@ -13,6 +13,11 @@ import { CreateOpeningValidationSchema, UpdateOpeningValidationSchema } from "./
 import { OfflineQueueValidationSchema } from "./sync.types.js"
 import { CreateApplicantValidationSchema, UpdateApplicantValidationSchema, SendOfferValidationSchema } from "./Hiring/applicant.types.js"
 import { CreateInterviewSchema, UpdateInterviewSchema } from "./Hiring/interview.types.js"
+import { CreateLessonValidationSchema, UpdateLessonValidationSchema } from "./Training/lessons.types.js"
+import { CreateAssessmentValidationSchema, UpdateAssessmentValidationSchema } from "./Training/assessment.types.js"
+import { CreateChapterValidationSchema, UpdateChapterValidationSchema, MarkOpenedValidationSchema } from "./Training/chapter.types.js"
+import { SubmitAssessmentValidationSchema, ReviewTextAnswersValidationSchema } from "./Training/progress.types.js"
+import { AddStudentsSchema, AddStudentsBySkillSchema } from "./Training/training.types.js"
 import { ErrorTypes } from "./error.types.js"
 
 
@@ -83,6 +88,27 @@ const Types = {
   Interviews: {
     Create: CreateInterviewSchema,
     Update: UpdateInterviewSchema
+  },
+  Lessons: {
+    Create: CreateLessonValidationSchema,
+    Update: UpdateLessonValidationSchema,
+  },
+  Assessments: {
+    Create: CreateAssessmentValidationSchema,
+    Update: UpdateAssessmentValidationSchema,
+  },
+  Chapters: {
+    Create: CreateChapterValidationSchema,
+    Update: UpdateChapterValidationSchema,
+    MarkOpened: MarkOpenedValidationSchema,
+  },
+  Progress: {
+    Submit: SubmitAssessmentValidationSchema,
+    Review: ReviewTextAnswersValidationSchema,
+  },
+  TrainingProgram: {
+    AddStudents: AddStudentsSchema,
+    AddStudentsBySkill: AddStudentsBySkillSchema,
   },
   OfflineQueue: OfflineQueueValidationSchema,
   Errors: ErrorTypes

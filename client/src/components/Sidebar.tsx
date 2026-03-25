@@ -16,6 +16,10 @@ import {
     BriefcaseBusiness,
     ClipboardList,
     Shield,
+    GraduationCap,
+    BookOpen,
+    BarChart2,
+    ClipboardCheck,
     type LucideIcon,
 } from "lucide-react"
 
@@ -32,6 +36,10 @@ const iconMap: Record<string, LucideIcon> = {
     BriefcaseBusiness,
     ClipboardList,
     Shield,
+    GraduationCap,
+    BookOpen,
+    BarChart2,
+    ClipboardCheck,
 }
 
 export default function Sidebar() {
@@ -64,28 +72,56 @@ export default function Sidebar() {
                     const isActive = location.pathname.startsWith(item.path)
                     const Icon = iconMap[item.icon]
                     return (
-                        <Button
-                            key={item.path}
-                            variant="ghost"
-                            size="sm"
-                            className={`justify-start gap-3 h-11 px-4 font-medium transition-all duration-300 ${isActive
-                                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 hover:text-primary-foreground scale-[1.02]"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:scale-[1.01]"
-                                }`}
-                            asChild
-                        >
-                            <Link to={item.path}>
-                                {Icon && (
-                                    <Icon
-                                        className={`w-[18px] h-[18px] shrink-0 transition-colors ${isActive
-                                                ? "text-primary-foreground"
-                                                : "text-muted-foreground"
-                                            }`}
-                                    />
-                                )}
-                                <span className={isActive ? "font-semibold tracking-wide" : ""}>{item.name}</span>
-                            </Link>
-                        </Button>
+                        <div key={item.path}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`w-full justify-start gap-3 h-11 px-4 font-medium transition-all duration-300 ${isActive
+                                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 hover:text-primary-foreground scale-[1.02]"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:scale-[1.01]"
+                                    }`}
+                                asChild
+                            >
+                                <Link to={item.children ? item.children[0].path : item.path}>
+                                    {Icon && (
+                                        <Icon
+                                            className={`w-[18px] h-[18px] shrink-0 transition-colors ${isActive
+                                                    ? "text-primary-foreground"
+                                                    : "text-muted-foreground"
+                                                }`}
+                                        />
+                                    )}
+                                    <span className={isActive ? "font-semibold tracking-wide" : ""}>{item.name}</span>
+                                </Link>
+                            </Button>
+                            {item.children && isActive && (
+                                <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-border/40 pl-3">
+                                    {item.children.map((child) => {
+                                        const isChildActive = location.pathname === child.path || location.pathname.startsWith(child.path + "/")
+                                        const ChildIcon = iconMap[child.icon]
+                                        return (
+                                            <Button
+                                                key={child.path}
+                                                variant="ghost"
+                                                size="sm"
+                                                className={`justify-start gap-2.5 h-9 px-3 font-medium transition-all duration-200 ${isChildActive
+                                                        ? "bg-primary/15 text-primary hover:bg-primary/20"
+                                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                                                    }`}
+                                                asChild
+                                            >
+                                                <Link to={child.path}>
+                                                    {ChildIcon && (
+                                                        <ChildIcon className={`w-3.5 h-3.5 shrink-0 ${isChildActive ? "text-primary" : "text-muted-foreground"}`} />
+                                                    )}
+                                                    <span className={`text-xs ${isChildActive ? "font-semibold" : ""}`}>{child.name}</span>
+                                                </Link>
+                                            </Button>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     )
                 })}
             </nav>
