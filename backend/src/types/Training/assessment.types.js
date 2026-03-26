@@ -51,6 +51,14 @@ export const CreateAssessmentValidationSchema = zod.object({
   questions: zod.array(QuestionSchema).min(1, "At least one question is required"),
   passingScore: zod.number().min(0).max(100).default(70),
   reviewer: ObjectIdSchema.optional().nullable(),
+}).superRefine((data, ctx) => {
+  if (data.questions.some((q) => q.type === "TEXT") && !data.reviewer) {
+    ctx.addIssue({
+      code: zod.ZodIssueCode.custom,
+      message: "Reviewer is required when assessment contains TEXT questions",
+      path: ["reviewer"],
+    });
+  }
 });
 
 export const UpdateAssessmentValidationSchema = zod.object({
@@ -63,4 +71,12 @@ export const UpdateAssessmentValidationSchema = zod.object({
   questions: zod.array(QuestionSchema).min(1).optional(),
   passingScore: zod.number().min(0).max(100).optional(),
   reviewer: ObjectIdSchema.optional().nullable(),
+}).superRefine((data, ctx) => {
+  if (data.questions && data.questions.some((q) => q.type === "TEXT") && !data.reviewer) {
+    ctx.addIssue({
+      code: zod.ZodIssueCode.custom,
+      message: "Reviewer is required when assessment contains TEXT questions",
+      path: ["reviewer"],
+    });
+  }
 });

@@ -10,6 +10,7 @@ class ProgressRoutes {
 
   routes() {
     this.router.post("/submit", VerifyMiddleware, this.controller.SubmitAssessment);
+    this.router.post("/complete-chapter", VerifyMiddleware, this.controller.CompleteChapter);
     this.router.patch("/review", VerifyMiddleware, this.controller.ReviewTextAnswers);
     this.router.get("/overview", VerifyMiddleware, this.controller.GetOverview);
     this.router.get("/my-assessments", VerifyMiddleware, this.controller.GetMyAssessments);

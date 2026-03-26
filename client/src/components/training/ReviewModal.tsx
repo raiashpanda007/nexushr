@@ -110,8 +110,26 @@ export default function ReviewModal({
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         </div>
                     ) : textQuestions.length === 0 ? (
-                        <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
-                            No text questions found in this assessment.
+                        <div className="flex flex-col items-center justify-center py-12 gap-5">
+                            <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                            </div>
+                            <div className="text-center max-w-sm">
+                                <p className="text-sm font-medium text-foreground">Auto-Graded Assessment</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    This assessment contains only multiple-choice questions. Review the score and submit to approve.
+                                </p>
+                            </div>
+                            <div className="w-full max-w-sm mt-2">
+                                <p className="text-sm font-medium text-foreground mb-2 text-left">Reviewer Note <span className="text-muted-foreground font-normal">(optional)</span></p>
+                                <Textarea
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    placeholder="Add feedback for the employee…"
+                                    rows={3}
+                                    className="resize-none"
+                                />
+                            </div>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-5">
@@ -192,7 +210,7 @@ export default function ReviewModal({
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={submitting || assessmentLoading || !allScored || textQuestions.length === 0}
+                        disabled={submitting || assessmentLoading || (textQuestions.length > 0 && !allScored)}
                         className="gap-2 min-w-36"
                     >
                         {submitting ? (

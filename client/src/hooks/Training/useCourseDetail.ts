@@ -97,6 +97,31 @@ export function useCourseDetail(lessonId: string | undefined) {
         }
     }, []);
 
+    const markChapterComplete = useCallback(async (chapterId: string) => {
+        if (!lessonId) return;
+        try {
+            const result = await ApiCaller<{ lessonId: string; chapterId: string }, any>({
+                requestType: "POST",
+                paths: ["api", "v1", "training", "progress", "complete-chapter"],
+                body: { lessonId, chapterId },
+            });
+            if (result.ok) {
+                toast.success("Chapter marked as complete!");
+                // Update lesson's completedChapters locally
+                setLesson((prev) => {
+                    if (!prev) return prev;
+                    const prevCompleted = prev.completedChapters ?? [];
+                    if (prevCompleted.includes(chapterId)) return prev;
+                    return { ...prev, completedChapters: [...prevCompleted, chapterId] };
+                });
+            } else {
+                toast.error(result.response?.message || "Failed to mark chapter complete");
+            }
+        } catch {
+            toast.error("Failed to mark chapter complete");
+        }
+    }, [lessonId]);
+
     return {
         lesson,
         loading,
@@ -107,5 +132,6 @@ export function useCourseDetail(lessonId: string | undefined) {
         selectChapter,
         chapterLoading,
         deleteChapter,
+        markChapterComplete,
     };
 }

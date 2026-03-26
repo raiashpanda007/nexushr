@@ -223,7 +223,7 @@ function PendingReviewsTab({
                     <div>
                         <CardTitle className="text-base font-semibold">Assessments Awaiting Review</CardTitle>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            Text answers submitted by employees that need your scoring
+                            Assessments submitted by employees that need your scoring and approval
                         </p>
                     </div>
                     <Button variant="ghost" size="sm" onClick={onRefresh} className="gap-1.5 text-muted-foreground" disabled={loading}>
@@ -329,7 +329,7 @@ export default function TrainingAssessments() {
     useEffect(() => {
         if (!isHR) fetchMyAssessments("all");
         fetchPendingReviews();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const defaultTab = isHR ? "pending-reviews" : "my-assessments";

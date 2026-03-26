@@ -83,7 +83,12 @@ class AssessmentController {
       throw new ApiError(Types.Errors.BadRequest, "Invalid assessment id");
     }
 
-    if (req.user.role !== "HR") {
+    const assessment = await this.repo.findById(uid);
+    if (!assessment) {
+      throw new ApiError(Types.Errors.NotFound, "Assessment not found");
+    }
+
+    if (req.user.role !== "HR" && String(assessment.reviewer) !== String(req.user.id)) {
       // Employee: verify they have access via enrolled lesson → chapter
       const accessible = await this._isAccessibleByEmployee(uid, req.user.id);
       if (!accessible) {
@@ -91,10 +96,6 @@ class AssessmentController {
       }
     }
 
-    const assessment = await this.repo.findById(uid);
-    if (!assessment) {
-      throw new ApiError(Types.Errors.NotFound, "Assessment not found");
-    }
     return res.status(200).json(new ApiResponse(200, assessment, "Assessment fetched successfully"));
   };
 

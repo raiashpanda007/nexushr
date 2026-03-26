@@ -77,9 +77,13 @@ class UserProgressController {
     }
 
     const percentage = totalMarks > 0 ? Math.round((earned / totalMarks) * 100) : 0;
-    // Cannot pass if there are unreviewed TEXT questions (score is incomplete)
-    const passed = !hasTextQuestions && percentage >= (assessment.passingScore ?? 70);
-    const reviewStatus = hasTextQuestions ? "pending_review" : "reviewed";
+
+    const hasReviewer = !!assessment.reviewer;
+    const needsReview = hasTextQuestions || hasReviewer;
+
+    // Cannot pass automatically if manual review is required
+    const passed = !needsReview && Math.round((earned / totalMarks) * 100) >= (assessment.passingScore ?? 70);
+    const reviewStatus = needsReview ? "pending_review" : "reviewed";
 
     const totalChapters = lesson.chapters.length;
     const allChapterIds = lesson.chapters.map((c) => String(c.chapter));
@@ -105,6 +109,15 @@ class UserProgressController {
       if (!cpEntry) {
         progress.chapterProgress.push({ chapter: chapterId, status: "in_progress", assessmentAttempts: [] });
         cpEntry = progress.chapterProgress[progress.chapterProgress.length - 1];
+      }
+
+      if (cpEntry.status === "completed") {
+        throw new ApiError(Types.Errors.BadRequest, "You have already completed this assessment");
+      }
+
+      const hasPending = cpEntry.assessmentAttempts.some((a) => a.reviewStatus === "pending_review");
+      if (hasPending) {
+        throw new ApiError(Types.Errors.BadRequest, "You have an assessment currently under review. Please wait for the results.");
       }
 
       // Record attempt
@@ -146,8 +159,8 @@ class UserProgressController {
       const message = hasTextQuestions
         ? "Assessment submitted — text answers are pending HR review"
         : passed
-        ? "Assessment passed!"
-        : "Assessment submitted — keep trying!";
+          ? "Assessment passed!"
+          : "Assessment submitted — keep trying!";
 
       return res.status(200).json(
         new ApiResponse(
@@ -163,6 +176,107 @@ class UserProgressController {
           },
           message
         )
+      );
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  });
+
+  /**
+   * POST /progress/complete-chapter
+   * Employee mark a chapter without assessment as completed
+   */
+  CompleteChapter = AsyncHandler(async (req, res) => {
+    if (req.user.role === "HR") {
+      throw new ApiError(Types.Errors.Forbidden, "HR cannot complete chapters");
+    }
+
+    const { lessonId, chapterId } = req.body;
+    if (!lessonId || !chapterId) {
+      throw new ApiError(Types.Errors.BadRequest, "lessonId and chapterId are required");
+    }
+
+    // Verify enrollment
+    const enrolled = await TrainingModel.exists({
+      students: new mongoose.Types.ObjectId(req.user.id),
+      Lessons: new mongoose.Types.ObjectId(lessonId),
+    });
+    if (!enrolled) {
+      throw new ApiError(Types.Errors.Forbidden, "You are not enrolled in this lesson");
+    }
+
+    // Verify chapter belongs to lesson
+    const lesson = await LessonModel.findById(lessonId).select("chapters");
+    if (!lesson) throw new ApiError(Types.Errors.NotFound, "Lesson not found");
+    const chapterInLesson = lesson.chapters.some((c) => String(c.chapter) === chapterId);
+    if (!chapterInLesson) {
+      throw new ApiError(Types.Errors.BadRequest, "Chapter does not belong to this lesson");
+    }
+
+    // Check if the chapter has an assessment
+    const chapter = await ChapterModel.findById(chapterId);
+    if (!chapter) throw new ApiError(Types.Errors.NotFound, "Chapter not found");
+    if (chapter.assessments && chapter.assessments.length > 0) {
+      throw new ApiError(Types.Errors.BadRequest, "This chapter has an assessment. Please complete the assessment to mark it as complete.");
+    }
+
+    const totalChapters = lesson.chapters.length;
+    const allChapterIds = lesson.chapters.map((c) => String(c.chapter));
+    const now = new Date();
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      let progress = await UserProgressModel.findOne({
+        user: new mongoose.Types.ObjectId(req.user.id),
+        lesson: new mongoose.Types.ObjectId(lessonId),
+      }).session(session);
+
+      if (!progress) {
+        [progress] = await UserProgressModel.create(
+          [{ user: req.user.id, lesson: lessonId, status: "in_progress", completedChapters: [], chapterProgress: [] }],
+          { session }
+        );
+      }
+
+      // Find or create chapterProgress entry
+      let cpEntry = progress.chapterProgress.find((cp) => String(cp.chapter) === chapterId);
+      if (!cpEntry) {
+        progress.chapterProgress.push({ chapter: chapterId, status: "in_progress", assessmentAttempts: [] });
+        cpEntry = progress.chapterProgress[progress.chapterProgress.length - 1];
+      }
+
+      if (cpEntry.status === "completed") {
+        throw new ApiError(Types.Errors.BadRequest, "Chapter is already completed");
+      }
+
+      cpEntry.status = "completed";
+      cpEntry.completedAt = now;
+
+      const alreadyDone = progress.completedChapters.some((id) => String(id) === chapterId);
+      if (!alreadyDone) {
+        progress.completedChapters.push(new mongoose.Types.ObjectId(chapterId));
+      }
+
+      progress.status = "in_progress";
+      if (
+        progress.completedChapters.length >= totalChapters &&
+        allChapterIds.every((id) => progress.completedChapters.some((c) => String(c) === id))
+      ) {
+        progress.status = "completed";
+      }
+
+      await progress.save({ session });
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.status(200).json(
+        new ApiResponse(200, {
+          chapterStatus: "completed",
+          lessonStatus: progress.status
+        }, "Chapter completed successfully")
       );
     } catch (error) {
       await session.abortTransaction();
@@ -370,11 +484,6 @@ class UserProgressController {
     }
   });
 
-  /**
-   * GET /progress/pending-reviews
-   * HR: list all student-chapter pairs that have a pending-review attempt.
-   * Optional ?lessonId=X to scope to one lesson.
-   */
   GetPendingReviews = AsyncHandler(async (req, res) => {
     const isHR = req.user.role === "HR";
     const { lessonId } = req.query;
@@ -432,7 +541,7 @@ class UserProgressController {
       // Join assessment to get reviewer field
       {
         $lookup: {
-          from: "assessments",
+          from: "assesments",
           let: { aId: { $arrayElemAt: ["$chapterDoc.assessments.assessmentId", 0] } },
           pipeline: [
             { $match: { $expr: { $eq: ["$_id", "$$aId"] } } },
@@ -444,14 +553,12 @@ class UserProgressController {
       { $unwind: { path: "$assessmentDoc", preserveNullAndEmptyArrays: true } },
     ];
 
-    // Employees only see pending reviews for assessments they are the reviewer of
-    if (!isHR) {
-      pipeline.push({
-        $match: {
-          "assessmentDoc.reviewer": new mongoose.Types.ObjectId(req.user.id),
-        },
-      });
-    }
+    // Everyone only sees pending reviews for assessments they are the explicit reviewer of
+    pipeline.push({
+      $match: {
+        "assessmentDoc.reviewer": new mongoose.Types.ObjectId(req.user.id),
+      },
+    });
 
     pipeline.push(
       {
@@ -594,13 +701,13 @@ class UserProgressController {
         attemptsCount: attempts.length,
         latestAttempt: attempts.length
           ? {
-              attemptedAt: attempts[attempts.length - 1].attemptedAt,
-              percentage: attempts[attempts.length - 1].percentage,
-              passed: attempts[attempts.length - 1].passed,
-              reviewStatus: attempts[attempts.length - 1].reviewStatus,
-              score: attempts[attempts.length - 1].score,
-              totalScore: attempts[attempts.length - 1].totalScore,
-            }
+            attemptedAt: attempts[attempts.length - 1].attemptedAt,
+            percentage: attempts[attempts.length - 1].percentage,
+            passed: attempts[attempts.length - 1].passed,
+            reviewStatus: attempts[attempts.length - 1].reviewStatus,
+            score: attempts[attempts.length - 1].score,
+            totalScore: attempts[attempts.length - 1].totalScore,
+          }
           : null,
       });
     }

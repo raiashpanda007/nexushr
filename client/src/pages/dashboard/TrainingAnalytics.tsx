@@ -618,11 +618,14 @@ export default function TrainingAnalytics() {
 
     const {
         view,
+        // Overview
         overview,
         overviewLoading,
+        // Lesson
         selectedLesson,
         lessonData,
         lessonLoading,
+        // Student
         selectedStudent,
         studentAllLessons,
         studentAllLessonsLoading,
@@ -631,12 +634,13 @@ export default function TrainingAnalytics() {
         studentTabLesson,
         studentTab,
         allLessons,
+        // Actions
         navigateToLesson,
         navigateToStudent,
         navigateBack,
         handleStudentTabChange,
         handleStudentTabLessonChange,
-    } = useTrainingAnalytics();
+    } = useTrainingAnalytics(isHR);
 
     // Employee view
     if (!isHR) {

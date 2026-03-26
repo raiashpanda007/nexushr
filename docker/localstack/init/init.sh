@@ -33,6 +33,11 @@ RESUME_QUEUE_NAME="resume-processor"
 RESUME_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$RESUME_QUEUE_NAME"
 RESUME_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$RESUME_QUEUE_NAME"
 
+# Video Transcoding Queue
+VIDEO_QUEUE_NAME="video-transcoding"
+VIDEO_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$VIDEO_QUEUE_NAME"
+VIDEO_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$VIDEO_QUEUE_NAME"
+
 echo "Creating S3 buckets..."
 awslocal --region $REGION s3 mb s3://register-photos || true
 awslocal --region $REGION s3 mb s3://punch-photos || true
@@ -105,6 +110,10 @@ awslocal --region $REGION sqs create-queue \
 awslocal --region $REGION sqs create-queue \
   --queue-name $RESUME_QUEUE_NAME || true
 
+# Create video transcoding queue
+awslocal --region $REGION sqs create-queue \
+  --queue-name $VIDEO_QUEUE_NAME || true
+
 echo "Attaching SQS policy to allow S3 to publish..."
 
 awslocal --region $REGION sqs set-queue-attributes \
@@ -131,6 +140,35 @@ awslocal --region $REGION s3api put-bucket-notification-configuration \
         \"QueueArn\": \"$QUEUE_ARN\",
         \"Events\": [\"s3:ObjectCreated:*\"]
 
+      }
+    ]
+  }"
+
+echo "Attaching SQS policy to allow S3 to publish to video-transcoding queue..."
+
+awslocal --region $REGION sqs set-queue-attributes \
+  --queue-url $VIDEO_QUEUE_URL \
+  --attributes Policy="{
+    \"Version\": \"2012-10-17\",
+    \"Statement\": [
+      {
+        \"Effect\": \"Allow\",
+        \"Principal\": { \"Service\": \"s3.amazonaws.com\" },
+        \"Action\": \"sqs:SendMessage\",
+        \"Resource\": \"$VIDEO_QUEUE_ARN\"
+      }
+    ]
+  }"
+
+echo "Configuring S3 -> SQS notification for training-videos..."
+
+awslocal --region $REGION s3api put-bucket-notification-configuration \
+  --bucket training-videos \
+  --notification-configuration "{
+    \"QueueConfigurations\": [
+      {
+        \"QueueArn\": \"$VIDEO_QUEUE_ARN\",
+        \"Events\": [\"s3:ObjectCreated:*\"]
       }
     ]
   }"

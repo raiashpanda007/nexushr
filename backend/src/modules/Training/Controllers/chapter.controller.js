@@ -426,21 +426,11 @@ class ChapterController {
       if (!cpEntry.openedAt) cpEntry.openedAt = now;
       progress.currentChapter = new mongoose.Types.ObjectId(uid);
 
-      if (!hasAssessments) {
-        // Auto-complete
-        cpEntry.status = "completed";
-        cpEntry.completedAt = now;
-        const alreadyDone = progress.completedChapters.some((id) => String(id) === uid);
-        if (!alreadyDone) {
-          progress.completedChapters.push(new mongoose.Types.ObjectId(uid));
-        }
-      } else {
-        cpEntry.status = "in_progress";
-      }
+      cpEntry.status = "in_progress";
 
       progress.status = "in_progress";
       if (progress.completedChapters.length === totalChapters &&
-          allChapterIds.every((id) => progress.completedChapters.some((c) => String(c) === id))) {
+        allChapterIds.every((id) => progress.completedChapters.some((c) => String(c) === id))) {
         progress.status = "completed";
       }
 

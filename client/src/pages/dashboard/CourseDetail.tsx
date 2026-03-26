@@ -104,8 +104,8 @@ function ChapterTree({
                                             ? "bg-primary-foreground/20 text-primary-foreground"
                                             : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
                                         : isSelected
-                                        ? "bg-primary-foreground/20 text-primary-foreground"
-                                        : "bg-muted text-muted-foreground"
+                                            ? "bg-primary-foreground/20 text-primary-foreground"
+                                            : "bg-muted text-muted-foreground"
                                 )}
                             >
                                 {isCompleted ? (
@@ -138,8 +138,8 @@ function ChapterTree({
                                         {isExpanded
                                             ? chapter.description
                                             : chapter.description.length > 60
-                                            ? chapter.description.slice(0, 60) + "…"
-                                            : chapter.description}
+                                                ? chapter.description.slice(0, 60) + "…"
+                                                : chapter.description}
                                     </p>
                                 )}
                                 {/* Badges */}
@@ -419,9 +419,11 @@ interface ChapterContentProps {
     lessonId: string;
     isEmployee: boolean;
     loading: boolean;
+    isCompleted: boolean;
+    onComplete: (chapterId: string) => void;
 }
 
-function ChapterContent({ chapter, lessonId, isEmployee, loading }: ChapterContentProps) {
+function ChapterContent({ chapter, lessonId, isEmployee, loading, isCompleted, onComplete }: ChapterContentProps) {
     const [activeAssessment, setActiveAssessment] = useState<Assessment | null>(null);
     const [submittedAssessmentIds, setSubmittedAssessmentIds] = useState<Set<string>>(new Set());
 
@@ -675,6 +677,25 @@ function ChapterContent({ chapter, lessonId, isEmployee, loading }: ChapterConte
                         </div>
                     </section>
                 )}
+
+                {/* Complete Chapter Button for Employee */}
+                {!hasAssessments && isEmployee && !isCompleted && (
+                    <div className="mt-8 flex justify-center">
+                        <Button
+                            className="gap-2 px-8"
+                            onClick={() => onComplete(chapter._id)}
+                        >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Mark as Complete
+                        </Button>
+                    </div>
+                )}
+                {!hasAssessments && isEmployee && isCompleted && (
+                    <div className="mt-8 flex justify-center py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-600 font-medium">
+                        <CheckCircle2 className="h-5 w-5 mr-2" />
+                        Chapter Completed
+                    </div>
+                )}
             </div>
         </>
     );
@@ -724,6 +745,7 @@ export default function CourseDetail() {
         selectChapter,
         chapterLoading,
         deleteChapter,
+        markChapterComplete,
     } = useCourseDetail(id);
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -916,6 +938,8 @@ export default function CourseDetail() {
                             lessonId={id ?? ""}
                             isEmployee={!isHR}
                             loading={chapterLoading}
+                            isCompleted={lesson.completedChapters?.includes(selectedChapter._id) ?? false}
+                            onComplete={markChapterComplete}
                         />
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full min-h-80 text-muted-foreground">
@@ -925,8 +949,8 @@ export default function CourseDetail() {
                                 {sortedChapters.length > 0
                                     ? "Click any chapter from the sidebar to view its content"
                                     : isHR
-                                    ? "Add your first chapter using the button above"
-                                    : "No chapters available yet"}
+                                        ? "Add your first chapter using the button above"
+                                        : "No chapters available yet"}
                             </p>
                         </div>
                     )}

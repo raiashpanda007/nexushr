@@ -185,8 +185,8 @@ export default function CreateChapter() {
                                                 done
                                                     ? "bg-primary border-primary text-primary-foreground"
                                                     : active
-                                                    ? "border-primary text-primary bg-primary/10"
-                                                    : "border-border text-muted-foreground bg-muted/30"
+                                                        ? "border-primary text-primary bg-primary/10"
+                                                        : "border-border text-muted-foreground bg-muted/30"
                                             )}
                                         >
                                             {done ? (
@@ -633,9 +633,13 @@ export default function CreateChapter() {
                                         <div className="grid gap-1.5">
                                             <Label>
                                                 Reviewer{" "}
-                                                <span className="text-muted-foreground text-xs font-normal">
-                                                    (optional)
-                                                </span>
+                                                {formData.assessment.questions.some(q => q.type === "TEXT") ? (
+                                                    <span className="text-red-500">*</span>
+                                                ) : (
+                                                    <span className="text-muted-foreground text-xs font-normal">
+                                                        (optional)
+                                                    </span>
+                                                )}
                                             </Label>
                                             {formData.assessment.reviewer ? (
                                                 <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background">
@@ -930,8 +934,8 @@ export default function CreateChapter() {
                                     step === s.step
                                         ? "w-6 bg-primary"
                                         : step > s.step
-                                        ? "w-3 bg-primary/50"
-                                        : "w-3 bg-border"
+                                            ? "w-3 bg-primary/50"
+                                            : "w-3 bg-border"
                                 )}
                             />
                         ))}

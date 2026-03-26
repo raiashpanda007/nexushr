@@ -453,6 +453,11 @@ export function useCreateChapter(lessonId: string) {
                     setError("Assessment name is required when questions are added");
                     return false;
                 }
+                const hasTextQuestion = assessment.questions.some(q => q.type === "TEXT");
+                if (hasTextQuestion && !assessment.reviewer) {
+                    setError("A reviewer is required when TEXT questions are present");
+                    return false;
+                }
                 const assessResult = await ApiCaller<any, any>({
                     requestType: "POST",
                     paths: ["api", "v1", "training", "assessments"],

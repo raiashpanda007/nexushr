@@ -22,7 +22,7 @@ export interface SelectedStudent {
     lastName: string;
 }
 
-export function useTrainingAnalytics() {
+export function useTrainingAnalytics(isHR: boolean = true) {
     const [view, setView] = useState<AnalyticsView>("overview");
 
     // Overview
@@ -152,8 +152,10 @@ export function useTrainingAnalytics() {
 
     // Load overview on mount
     useEffect(() => {
-        fetchOverview();
-    }, [fetchOverview]);
+        if (isHR) {
+            fetchOverview();
+        }
+    }, [fetchOverview, isHR]);
 
     const navigateToLesson = (lessonId: string, lessonName: string) => {
         setSelectedLesson({ id: lessonId, name: lessonName });
