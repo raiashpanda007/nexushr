@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import AssessmentView from "@/components/training/AssessmentView";
+import { HlsVideoPlayer } from "@/components/training/HlsVideoPlayer";
 import {
     ArrowLeft,
     Loader2,
@@ -480,30 +481,31 @@ function ChapterContent({ chapter, lessonId, isEmployee, loading, isCompleted, o
 
                 {/* Video lecture */}
                 {hasVideo && chapter.videoLecture && (() => {
-                    const v = chapter.videoLecture.versions?.[0];
-                    const videoUrl = v?.["1080p"] || v?.["720p"] || v?.["360p"] || v?.["240p"] || v?.["default"] || null;
+                    const { transcoding_status, hlsMasterUrl, name: videoName } = chapter.videoLecture;
+                    const isProcessing = transcoding_status === "processing" || !transcoding_status;
                     return (
                         <section>
                             <SectionHeader icon={<Video className="h-4 w-4" />} title="Video Lecture" />
                             <div className="rounded-2xl overflow-hidden border border-border/50 bg-black mt-3">
-                                {videoUrl ? (
-                                    <video
-                                        key={videoUrl}
-                                        controls
-                                        className="w-full max-h-96"
-                                        src={videoUrl}
-                                    >
-                                        Your browser does not support the video tag.
-                                    </video>
+                                {isProcessing ? (
+                                    <div className="flex flex-col items-center justify-center gap-3 h-44 text-white/70 text-sm px-6 text-center">
+                                        <Loader2 className="h-7 w-7 animate-spin text-blue-400" />
+                                        <p className="font-medium">Video is being transcoded, please wait…</p>
+                                        <p className="text-xs text-white/40">
+                                            The video will be available once processing is complete. Refresh the page to check.
+                                        </p>
+                                    </div>
+                                ) : hlsMasterUrl ? (
+                                    <HlsVideoPlayer key={hlsMasterUrl} src={hlsMasterUrl} />
                                 ) : (
                                     <div className="flex items-center justify-center h-40 text-white/50 text-sm">
                                         Video unavailable
                                     </div>
                                 )}
                             </div>
-                            {chapter.videoLecture.name && (
+                            {videoName && (
                                 <p className="mt-2 text-xs text-muted-foreground">
-                                    {chapter.videoLecture.name}
+                                    {videoName}
                                 </p>
                             )}
                         </section>

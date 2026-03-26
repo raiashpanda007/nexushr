@@ -44,7 +44,7 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=s3,ecs,ecr,sqs
+      - SERVICES=s3,ecs,sqs
       - DEBUG=1
       - AWS_DEFAULT_REGION=ap-south-1
     volumes:

@@ -46,6 +46,7 @@ const VideoLectureSchema = zod
     url: zod.string().trim().url("Please provide a valid URL").optional(),
     versions: zod.array(VideoVersionSchema).min(1).optional(),
     metadata: zod.string().trim().optional(),
+    s3Key: zod.string().trim().optional(),
   })
   .refine((val) => Boolean(val.url || (val.versions && val.versions.length)), {
     message: "Video URL is required",

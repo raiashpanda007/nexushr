@@ -11,6 +11,9 @@ export interface Video {
     name: string;
     versions: VideoVersion[];
     metadata?: string;
+    s3Key?: string;
+    transcoding_status?: "processing" | "ready";
+    hlsMasterUrl?: string;
 }
 
 export interface TextResource {

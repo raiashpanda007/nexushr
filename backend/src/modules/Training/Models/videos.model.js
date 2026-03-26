@@ -30,7 +30,20 @@ const VideoSchema = new mongoose.Schema(
     metadata: {
       type: String,
       trim: true,
-    }
+    },
+    s3Key: {
+      type: String,
+      trim: true,
+    },
+    transcoding_status: {
+      type: String,
+      enum: ["processing", "ready"],
+      default: "processing",
+    },
+    hlsMasterUrl: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true

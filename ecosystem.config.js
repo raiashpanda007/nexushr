@@ -79,6 +79,19 @@ module.exports = {
       }
     },
     {
+      name: "nexushr-transcoding-complete",
+      cwd: "./workers/transcoding-complete",
+      script: "./src/index.js",
+      interpreter: "node",
+      exec_mode: "cluster",
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: "production"
+      }
+    },
+    {
       name: "nexushr-client",
       cwd: "./client",
       script: "npm",

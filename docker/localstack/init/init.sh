@@ -38,6 +38,10 @@ VIDEO_QUEUE_NAME="video-transcoding"
 VIDEO_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$VIDEO_QUEUE_NAME"
 VIDEO_QUEUE_ARN="arn:aws:sqs:$REGION:$ACCOUNT_ID:$VIDEO_QUEUE_NAME"
 
+# Video Transcode Complete Queue
+TRANSCODE_COMPLETE_QUEUE_NAME="video-transcode-complete"
+TRANSCODE_COMPLETE_QUEUE_URL="http://localhost:4566/$ACCOUNT_ID/$TRANSCODE_COMPLETE_QUEUE_NAME"
+
 echo "Creating S3 buckets..."
 awslocal --region $REGION s3 mb s3://register-photos || true
 awslocal --region $REGION s3 mb s3://punch-photos || true
@@ -45,6 +49,7 @@ awslocal --region $REGION s3 mb s3://assets || true
 awslocal --region $REGION s3 mb s3://resumes || true
 awslocal --region $REGION s3 mb s3://resources || true
 awslocal --region $REGION s3 mb s3://training-videos || true
+awslocal --region $REGION s3 mb s3://hls-transcode || true
 
 echo "Setting CORS policy..."
 
@@ -84,6 +89,10 @@ awslocal --region $REGION s3api put-bucket-cors \
   --bucket training-videos \
   --cors-configuration "$CORS_CONFIG"
 
+awslocal --region $REGION s3api put-bucket-cors \
+  --bucket hls-transcode \
+  --cors-configuration "$CORS_CONFIG"
+
 echo "Creating SQS queues..."
 
 # Create punch queue
@@ -113,6 +122,10 @@ awslocal --region $REGION sqs create-queue \
 # Create video transcoding queue
 awslocal --region $REGION sqs create-queue \
   --queue-name $VIDEO_QUEUE_NAME || true
+
+# Create video transcode complete queue
+awslocal --region $REGION sqs create-queue \
+  --queue-name $TRANSCODE_COMPLETE_QUEUE_NAME || true
 
 echo "Attaching SQS policy to allow S3 to publish..."
 
@@ -173,12 +186,34 @@ awslocal --region $REGION s3api put-bucket-notification-configuration \
     ]
   }"
 
-echo "Creating ECR repo..."
-awslocal --region $REGION ecr create-repository \
-  --repository-name my-repo || true
-
 echo "Creating ECS cluster..."
 awslocal --region $REGION ecs create-cluster \
-  --cluster-name my-cluster || true
+  --cluster-name nexushr-transcoder || true
+
+echo "Registering ECS task definition..."
+TRANSCODER_IMAGE="raiashpanda007/nexushrtranscoder:latest"
+
+awslocal --region $REGION ecs register-task-definition \
+  --family video-transcoder \
+  --network-mode awsvpc \
+  --requires-compatibilities FARGATE \
+  --cpu "1024" \
+  --memory "2048" \
+  --container-definitions "[
+    {
+      \"name\": \"video-transcoder\",
+      \"image\": \"$TRANSCODER_IMAGE\",
+      \"essential\": true,
+      \"environment\": [],
+      \"logConfiguration\": {
+        \"logDriver\": \"awslogs\",
+        \"options\": {
+          \"awslogs-group\": \"/ecs/video-transcoder\",
+          \"awslogs-region\": \"$REGION\",
+          \"awslogs-stream-prefix\": \"ecs\"
+        }
+      }
+    }
+  ]" || true
 
 echo "LocalStack setup complete."

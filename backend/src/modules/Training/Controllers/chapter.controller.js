@@ -38,6 +38,22 @@ class ChapterController {
     ];
   };
 
+  // Extract the S3 object key from a full S3 URL.
+  // e.g. "http://localhost:4566/training-videos/my-video.mp4" → "my-video.mp4"
+  _extractS3Key = (videoLecture) => {
+    if (videoLecture.s3Key) return videoLecture.s3Key;
+    const url = videoLecture.url;
+    if (!url) return undefined;
+    try {
+      const { pathname } = new URL(url);
+      // pathname = "/bucket-name/key" — drop leading slash and bucket segment
+      const parts = pathname.replace(/^\//, "").split("/");
+      return parts.slice(1).join("/") || undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
   Create = AsyncHandler(async (req, res) => {
     if (req.user.role !== "HR") {
       throw new ApiError(Types.Errors.Forbidden, "Only HR can create chapters");
@@ -69,7 +85,7 @@ class ChapterController {
           throw new ApiError(Types.Errors.UnprocessableData, "Video URL is required");
         }
         const [video] = await VideosModel.create(
-          [{ name: videoLecture.name, versions, metadata: videoLecture.metadata }],
+          [{ name: videoLecture.name, versions, s3Key: this._extractS3Key(videoLecture), metadata: videoLecture.metadata }],
           { session }
         );
         videoId = video._id;
@@ -145,7 +161,7 @@ class ChapterController {
             throw new ApiError(Types.Errors.UnprocessableData, "Video URL is required");
           }
           const [video] = await VideosModel.create(
-            [{ name: videoLecture.name, versions, metadata: videoLecture.metadata }],
+            [{ name: videoLecture.name, versions, s3Key: this._extractS3Key(videoLecture), metadata: videoLecture.metadata }],
             { session }
           );
           newVideoId = video._id;
@@ -287,6 +303,12 @@ class ChapterController {
     if (!chapter) {
       throw new ApiError(Types.Errors.NotFound, "Chapter not found");
     }
+
+    // Employees cannot access a chapter whose video is still transcoding
+    if (req.user.role !== "HR" && chapter.videoLecture?.transcoding_status === "processing") {
+      throw new ApiError(Types.Errors.Forbidden, "Chapter video is not ready yet");
+    }
+
     return res.status(200).json(new ApiResponse(200, chapter, "Chapter fetched successfully"));
   };
 
@@ -320,6 +342,11 @@ class ChapterController {
       }
     }
 
+    // Employees only see chapters whose video is ready (or chapters with no video)
+    const videoReadyFilter = req.user.role !== "HR"
+      ? [{ $match: { $or: [{ videoLecture: null }, { "videoLecture.transcoding_status": "ready" }] } }]
+      : [];
+
     const pipeline = [
       { $match: matchStage },
       {
@@ -331,6 +358,7 @@ class ChapterController {
         },
       },
       { $unwind: { path: "$videoLecture", preserveNullAndEmptyArrays: true } },
+      ...videoReadyFilter,
     ];
 
     if (limitQuery !== "all") {
