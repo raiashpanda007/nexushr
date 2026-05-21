@@ -17,13 +17,15 @@ interface Department {
 
 export interface AttendanceRecord {
     _id: string;
-    user: {
+    user: string;
+    userSnapshot?: {
         _id: string;
         firstName: string;
         lastName: string;
         email: string;
         profilePhoto?: string;
-        deptId?: Department;
+        deptId?: string;
+        deptName?: string;
     };
     date: string;
     punches: Punch[];
@@ -96,11 +98,12 @@ export function useAttendance() {
         }
     }, [isHR]);
 
-    const fetchAttendances = async (dateStr?: string, currentPage = 1) => {
+    const fetchAttendances = async (dateStr?: string, currentPage = 1, search = '') => {
         setLoading(true);
         try {
             const queryParams: Record<string, string> = { page: currentPage.toString(), limit: limit.toString() };
             if (dateStr) queryParams.date = dateStr;
+            if (isHR && search.trim()) queryParams.search = search.trim();
 
             let apiAttendances: AttendanceRecord[] = [];
             let apiTotal = 0;
@@ -131,7 +134,7 @@ export function useAttendance() {
 
                 if (!dateStr || dateStr === today) {
                     const existingRecordIdx = apiAttendances.findIndex(a =>
-                        a.user?._id === userDetails?.id && a.date === today
+                        (a.userSnapshot?._id?.toString() ?? a.user?.toString()) === userDetails?.id && a.date === today
                     );
 
                     const punches = offlinePunches.map(p => ({
@@ -148,11 +151,12 @@ export function useAttendance() {
                     } else if (userDetails) {
                         apiAttendances.unshift({
                             _id: `offline-${Date.now()}`,
-                            user: {
+                            user: userDetails.id,
+                            userSnapshot: {
                                 _id: userDetails.id,
                                 firstName: userDetails.firstName || '',
                                 lastName: userDetails.lastName || '',
-                                email: userDetails.email || ''
+                                email: userDetails.email || '',
                             },
                             date: today,
                             punches: punches,
@@ -234,11 +238,18 @@ export function useAttendance() {
         }
     };
 
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     useEffect(() => {
-        if (userDetails) {
-            fetchAttendances(filterDate, page);
-        }
-    }, [userDetails, filterDate, page]);
+        if (!userDetails) return;
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = setTimeout(() => {
+            fetchAttendances(filterDate, page, searchTerm);
+        }, 300);
+        return () => {
+            if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        };
+    }, [userDetails, filterDate, page, searchTerm]);
 
     useEffect(() => {
         if (isHR && userDetails && activeTab === "Analytics") {
@@ -397,14 +408,7 @@ export function useAttendance() {
         }
     }, [userDetails, filterDate, pollVerificationStatus]);
 
-    const filteredAttendances = useMemo(() => {
-        return attendances.filter(a => {
-            if (!searchTerm) return true;
-            const search = searchTerm.toLowerCase();
-            const fullName = `${a.user?.firstName || ''} ${a.user?.lastName || ''}`.toLowerCase();
-            return fullName.includes(search) || a.user?._id?.toLowerCase().includes(search);
-        });
-    }, [attendances, searchTerm]);
+    const filteredAttendances = attendances;
 
     const analyticsFilteredAttendances = useMemo(() => {
         return analyticsData.filter(a => {
@@ -420,12 +424,13 @@ export function useAttendance() {
         const map = new Map<string, { _id: string, name: string, totalMinutes: number, count: number }>();
 
         analyticsFilteredAttendances.forEach(a => {
-            if (!a.user?.deptId) return;
-            const dept = a.user.deptId;
-            if (!map.has(dept._id)) {
-                map.set(dept._id, { _id: dept._id, name: dept.name, totalMinutes: 0, count: 0 });
+            if (!a.userSnapshot?.deptId) return;
+            const deptId = a.userSnapshot.deptId;
+            const deptName = a.userSnapshot.deptName ?? deptId;
+            if (!map.has(deptId)) {
+                map.set(deptId, { _id: deptId, name: deptName, totalMinutes: 0, count: 0 });
             }
-            const stat = map.get(dept._id)!;
+            const stat = map.get(deptId)!;
             stat.totalMinutes += a.totalMinutes || 0;
             stat.count += 1;
         });
@@ -445,14 +450,14 @@ export function useAttendance() {
         const uniqueEmps = new Map<string, any>();
 
         analyticsFilteredAttendances.forEach(a => {
-            if (a.user?.deptId?._id === analyticsDeptFilter && a.user?._id) {
-                if (!uniqueEmps.has(a.user._id)) {
-                    uniqueEmps.set(a.user._id, {
-                        ...a.user,
+            if (a.userSnapshot?.deptId === analyticsDeptFilter && a.userSnapshot?._id) {
+                if (!uniqueEmps.has(a.userSnapshot._id)) {
+                    uniqueEmps.set(a.userSnapshot._id, {
+                        ...a.userSnapshot,
                         totalLoggedMinutes: 0
                     });
                 }
-                const emp = uniqueEmps.get(a.user._id)!;
+                const emp = uniqueEmps.get(a.userSnapshot._id)!;
                 emp.totalLoggedMinutes += a.totalMinutes || 0;
             }
         });
@@ -462,7 +467,7 @@ export function useAttendance() {
     const selectedEmpRecords = useMemo(() => {
         if (!selectedEmpId) return [];
         return analyticsData
-            .filter(a => a.user?._id === selectedEmpId && a.date)
+            .filter(a => a.userSnapshot?._id === selectedEmpId && a.date)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [analyticsData, selectedEmpId]);
 
@@ -498,7 +503,7 @@ export function useAttendance() {
         return Array.from(months.entries()).map(([k, v]) => ({ name: k, Hours: parseFloat(v.toFixed(2)) }));
     }, [selectedEmpRecords]);
 
-    const selectedEmpName = selectedEmpRecords.length > 0 ? `${selectedEmpRecords[0].user.firstName} ${selectedEmpRecords[0].user.lastName}` : "";
+    const selectedEmpName = selectedEmpRecords.length > 0 ? `${selectedEmpRecords[0].userSnapshot?.firstName ?? ''} ${selectedEmpRecords[0].userSnapshot?.lastName ?? ''}`.trim() : "";
 
     return {
         userDetails,

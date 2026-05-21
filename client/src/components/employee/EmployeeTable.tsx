@@ -43,10 +43,12 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
         );
     }
 
-    const getDepartmentName = (dept: string | { _id: string; name: string } | undefined) => {
+    const getDepartmentName = (employee: Employee) => {
+        if (employee.deptSnapshot?.name) return employee.deptSnapshot.name;
+        const dept = employee.deptId;
         if (!dept) return null;
-        if (typeof dept === 'string') return dept;
-        return dept.name;
+        if (typeof dept === 'object') return dept.name;
+        return null;
     };
 
     const getSkillsList = (skills: Employee["skills"]) => {
@@ -62,11 +64,13 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                 }
 
                 const resolvedSkillName =
-                    typeof skillItem.name === "string"
-                        ? skillItem.name
-                        : typeof skillItem.skillId === "object"
-                            ? skillItem.skillId?.name
-                            : undefined;
+                    typeof skillItem.skillName === "string" && skillItem.skillName
+                        ? skillItem.skillName
+                        : typeof skillItem.name === "string"
+                            ? skillItem.name
+                            : typeof skillItem.skillId === "object"
+                                ? skillItem.skillId?.name
+                                : undefined;
 
                 if (!resolvedSkillName) {
                     return null;
@@ -139,7 +143,7 @@ export default function EmployeeTable({ employees, onEdit, startIndex = 1 }: Emp
                     </TableHeader>
                     <TableBody>
                         {employees.map((employee, index) => {
-                            const deptName = getDepartmentName(employee.deptId);
+                            const deptName = getDepartmentName(employee);
                             const skills = getSkillsList(employee.skills);
                             const employeeId = employee._id || employee.id;
                             return (

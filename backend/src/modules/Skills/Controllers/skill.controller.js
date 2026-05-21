@@ -1,6 +1,8 @@
 import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
 import Types from "../../../types/index.js";
 import SkillModel from "../models/skills.models.js";
+import UserModel from "../../Users/models/users.models.js";
+import OpeningModel from "../../Hiring/Models/openings.model.js";
 
 class SkillController {
     constructor() {
@@ -35,6 +37,20 @@ class SkillController {
         }
         const { name, category } = parsedBody.data;
         const updatedSkill = await this.repo.findByIdAndUpdate(skillId, { name, category }, { new: true });
+        if (updatedSkill) {
+            await Promise.all([
+                UserModel.updateMany(
+                    { "skills.skillId": updatedSkill._id },
+                    { $set: { "skills.$[skill].skillName": updatedSkill.name } },
+                    { arrayFilters: [{ "skill.skillId": updatedSkill._id }] },
+                ),
+                OpeningModel.updateMany(
+                    { "skills.skillId": updatedSkill._id },
+                    { $set: { "skills.$[skill].skillName": updatedSkill.name } },
+                    { arrayFilters: [{ "skill.skillId": updatedSkill._id }] },
+                ),
+            ]);
+        }
         return res.status(200).json(new ApiResponse(200, updatedSkill, "Skill updated successfully"));
     })
 

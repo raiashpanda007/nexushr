@@ -4,9 +4,12 @@ import {
   ApiResponse,
   ApiError,
   GenerateUploadUrl,
+  buildOpeningSnapshot,
+  buildRoundSnapshot,
 } from "../../../utils/index.js";
 import ApplicantModel from "../Models/applicants.model.js";
 import OpeningModel from "../Models/openings.model.js";
+import RoundsModel from "../Models/rounds.model.js";
 import RedisClient from "../../../config/Redis.js";
 import { Cfg } from "../../../config/env.js";
 
@@ -93,6 +96,7 @@ class ApplicantController {
               email,
               phone,
               openingId,
+              openingSnapshot: buildOpeningSnapshot(opening),
               resume: resumeUrl,
               questions: questions ?? [],
             },
@@ -182,6 +186,18 @@ class ApplicantController {
     }
     if (currentRound !== undefined) {
       applicant.currentRound = currentRound;
+      if (currentRound) {
+        const roundDoc = await RoundsModel.findById(currentRound).lean();
+        if (roundDoc) {
+          const openingDoc = await OpeningModel.findOne({ "rounds.round": currentRound })
+            .select("rounds")
+            .lean();
+          const roundEntry = openingDoc?.rounds?.find((r) => r.round?.toString() === currentRound?.toString());
+          applicant.currentRoundSnapshot = buildRoundSnapshot(roundDoc, roundEntry?.rank ?? null);
+        }
+      } else {
+        applicant.currentRoundSnapshot = null;
+      }
     }
 
     await applicant.save();
@@ -275,55 +291,15 @@ class ApplicantController {
     }
     const applicant = await this.repo
       .findById(applicantId)
-      .populate({
-        path: "openingId",
-        select: "title description departmentId HiringManager rounds",
-        populate: [
-          {
-            path: "departmentId",
-            select: "name",
-          },
-          {
-            path: "HiringManager",
-            select: "firstName lastName email",
-          },
-          {
-            path: "rounds.round",
-            select: "name description type",
-          },
-        ],
-      })
-      .populate({
-        path: "questions.questionId",
-        select: "questionText",
-      })
-      .populate({
-        path: "currentRound",
-        select: "name description type",
-      });
+      .populate({ path: "questions.questionId", select: "questionText" })
+      .lean();
     if (!applicant) {
       throw new ApiError(Types.Errors.NotFound, "Applicant not found");
     }
 
-    // Normalize rounds to flat sorted array
-    const applicantObj = applicant.toObject();
-    if (applicantObj.openingId?.rounds) {
-      applicantObj.openingId.rounds = (applicantObj.openingId.rounds || [])
-        .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
-        .map(r => ({
-          _id: r.round?._id,
-          name: r.round?.name,
-          description: r.round?.description,
-          type: r.round?.type,
-          rank: r.rank,
-        }));
-    }
-
     return res
       .status(200)
-      .json(
-        new ApiResponse(200, { applicant: applicantObj }, "Applicant retrieved successfully"),
-      );
+      .json(new ApiResponse(200, { applicant }, "Applicant retrieved successfully"));
   });
 
   GenerateATSscore = AsyncHandler(async (req, res) => {
@@ -354,10 +330,7 @@ class ApplicantController {
     }
 
     const { applicantId } = req.params;
-    const applicant = await this.repo.findById(applicantId).populate({
-      path: "openingId",
-      select: "title",
-    });
+    const applicant = await this.repo.findById(applicantId).lean();
     if (!applicant) {
       throw new ApiError(Types.Errors.NotFound, "Applicant not found");
     }
@@ -384,7 +357,7 @@ class ApplicantController {
     }
 
     const { message, attachmentUrl, subject } = parsedData.data;
-    const openingTitle = applicant.openingId?.title ?? "Position";
+    const openingTitle = applicant.openingSnapshot?.title ?? "Position";
 
     applicant.status = "OFFERED";
     await applicant.save();

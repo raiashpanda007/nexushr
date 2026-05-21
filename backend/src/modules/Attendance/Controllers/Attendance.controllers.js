@@ -1,5 +1,6 @@
 import AttendanceModel from "../Models/attendance.model.js";
-import { ApiResponse, ApiError, AsyncHandler, GenerateUploadUrl } from "../../../utils/index.js";
+import UserModel from "../../Users/models/users.models.js";
+import { ApiResponse, ApiError, AsyncHandler, GenerateUploadUrl, buildUserSnapshot } from "../../../utils/index.js";
 import Types from "../../../types/index.js";
 import RedisClient from "../../../config/Redis.js";
 import { Cfg } from "../../../config/env.js";
@@ -38,13 +39,22 @@ class AttendanceController {
             if (type !== 'IN') {
                 throw new ApiError(Types.Errors.BadRequest, "First punch of the day must be IN");
             }
+            const user = await UserModel.findById(userId).select("firstName lastName email profilePhoto deptSnapshot deptId").lean();
+            const userSnapshot = buildUserSnapshot(user);
+
             attendance = new this.repo({
                 user: userId,
+                userSnapshot,
                 date: startOfDay,
                 punches: [{ type, time: now, photo: photo || null }]
             });
             await attendance.save();
             return res.status(201).json(new ApiResponse(201, attendance, `Punched ${type} successfully`));
+        }
+
+        if (!attendance.userSnapshot) {
+            const user = await UserModel.findById(userId).select("firstName lastName email profilePhoto deptSnapshot deptId").lean();
+            attendance.userSnapshot = buildUserSnapshot(user);
         }
 
         // If attendance exists, check last punch
@@ -85,21 +95,21 @@ class AttendanceController {
             query.date = queryDate;
         }
 
+        if (req.user.role === "HR" && req.query.search) {
+            const regex = new RegExp(req.query.search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+            query.$or = [
+                { "userSnapshot.firstName": regex },
+                { "userSnapshot.lastName": regex },
+                { "userSnapshot.email": regex },
+            ];
+        }
+
         const { page: pageQuery, limit: limitQuery } = req.query;
         let limit = parseInt(limitQuery) || 10;
         let page = parseInt(pageQuery) || 1;
         if (limit > 100) limit = 100;
 
-        const populateOptions = {
-            path: "user",
-            select: "firstName lastName email deptId",
-            populate: {
-                path: "deptId",
-                select: "name"
-            }
-        };
-
-        let queryOptions = this.repo.find(query).populate(populateOptions).sort({ date: -1 });
+        let queryOptions = this.repo.find(query).sort({ date: -1 }).lean();
 
         // Disable pagination if limit=all is requested for Analytics
         if (limitQuery !== 'all') {

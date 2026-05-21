@@ -1,12 +1,13 @@
 import mongoose from "mongoose";
 import PayrollModal from "../Models/payroll.model.js";
-import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
+import { AsyncHandler, ApiResponse, ApiError, buildUserSnapshot, buildSalarySnapshot } from "../../../utils/index.js";
 import LeaveRequestModal from "../../Leaves/LeaveRequests/Models/leaveRequests.model.js";
 import SalaryModal from "../../Salaries/Models/salaries.model.js";
 import Types from "../../../types/index.js";
 import AttendanceModel from "../../Attendance/Models/attendance.model.js";
 import { PayrollSendMessage } from "../../../queue/payroll.queue.js";
 import { SendAnalyticsEvent } from "../../../queue/analytics.queue.js";
+import UserModel from "../../Users/models/users.models.js";
 
 function getDaysInMonth(year, monthIndex) {
     const date = new Date(year, monthIndex, 1);
@@ -72,12 +73,20 @@ class PayrollController {
             );
         }
         const { user, bonus, deduction, salary, month, year } = parsedBody.data;
+        const [userDoc, salaryDoc] = await Promise.all([
+            UserModel.findById(user)
+                .select("firstName lastName email profilePhoto deptSnapshot deptId")
+                .lean(),
+            SalaryModal.findById(salary).select("base hra lta").lean(),
+        ]);
 
         const payroll = await this.repo.create({
             user,
+            userSnapshot: buildUserSnapshot(userDoc),
             bonus,
             deduction,
             salary,
+            salarySnapshot: buildSalarySnapshot(salaryDoc),
             month,
             year,
         });
@@ -123,8 +132,7 @@ class PayrollController {
             let queryOptions = this.repo
                 .find(filter)
                 .sort({ _id: -1 })
-                .populate("salary")
-                .populate("user", "firstName lastName email profilePhoto");
+                .lean();
 
             if (limitQuery !== "all") {
                 queryOptions = queryOptions.skip(skip).limit(limit);
@@ -161,8 +169,7 @@ class PayrollController {
         let queryOptions = this.repo
             .find(filter)
             .sort({ _id: -1 })
-            .populate("salary")
-            .populate("user", "firstName lastName email profilePhoto");
+            .lean();
 
         if (limitQuery !== "all") {
             queryOptions = queryOptions.skip(skip).limit(limit);
@@ -211,19 +218,7 @@ class PayrollController {
                         $gte: new Date(year, month - 1, 1),
                         $lte: new Date(year, month, 0),
                     },
-                },
-            },
-            {
-                $lookup: {
-                    from: "leavetypes",
-                    localField: "type",
-                    foreignField: "_id",
-                    as: "type",
-                },
-            },
-            {
-                $match: {
-                    "type.isPaid": false,
+                    "typeSnapshot.isPaid": false,
                 },
             },
         ]);
@@ -240,11 +235,11 @@ class PayrollController {
 
         const deductionsOnLeave = [];
         for (const leave of leaveRequests) {
-            const type = leave.type[0];
+            const type = leave.typeSnapshot;
             const quantity = leave.quantity;
             const amount = quantity * perDaySalary;
             deductionsOnLeave.push({
-                reason: type.name,
+                reason: type?.name || "Unpaid Leave",
                 amount,
             });
         }

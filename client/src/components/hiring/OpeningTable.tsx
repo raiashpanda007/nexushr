@@ -35,16 +35,21 @@ const STATUS_STYLES: Record<string, string> = {
         "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800",
 };
 
-function getDepartmentName(departmentId: Opening["departmentId"]): string {
-    if (!departmentId) return "—";
-    if (typeof departmentId === "object") return departmentId.name;
+function getDepartmentName(opening: Opening): string {
+    if (opening.departmentSnapshot?.name) return opening.departmentSnapshot.name;
+    const d = opening.departmentId;
+    if (d && typeof d === "object") return (d as any).name;
     return "—";
 }
 
-function getManagerName(mgr: Opening["HiringManager"]): string {
-    if (!mgr) return "—";
-    if (typeof mgr === "object")
-        return `${mgr.firstName} ${mgr.lastName}`;
+function getManagerName(opening: Opening): string {
+    if (opening.hiringManagerSnapshot) {
+        const { firstName, lastName } = opening.hiringManagerSnapshot;
+        return `${firstName} ${lastName}`.trim();
+    }
+    const mgr = opening.HiringManager;
+    if (mgr && typeof mgr === "object")
+        return `${(mgr as any).firstName} ${(mgr as any).lastName}`;
     return "—";
 }
 
@@ -146,10 +151,10 @@ export default function OpeningTable({
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">
-                                    {getDepartmentName(opening.departmentId)}
+                                    {getDepartmentName(opening)}
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">
-                                    {getManagerName(opening.HiringManager)}
+                                    {getManagerName(opening)}
                                 </TableCell>
                                 <TableCell>
                                     <Badge

@@ -10,15 +10,99 @@ const LeaveRequestSchema = new mongoose.Schema(
       required: true
     },
 
+    requestedBySnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+      firstName: {
+        type: String,
+        trim: true,
+      },
+      lastName: {
+        type: String,
+        trim: true,
+      },
+      email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+      },
+      profilePhoto: {
+        type: String,
+      },
+      deptId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Departments",
+      },
+      deptName: {
+        type: String,
+        trim: true,
+      },
+    },
+
     respondedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Users"
+    },
+
+    respondedBySnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+      firstName: {
+        type: String,
+        trim: true,
+      },
+      lastName: {
+        type: String,
+        trim: true,
+      },
+      email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+      },
+      profilePhoto: {
+        type: String,
+      },
+      deptId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Departments",
+      },
+      deptName: {
+        type: String,
+        trim: true,
+      },
     },
 
     type: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "LeaveTypes",
       required: true
+    },
+
+    typeSnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LeaveTypes",
+      },
+      name: {
+        type: String,
+        trim: true,
+      },
+      code: {
+        type: String,
+        trim: true,
+      },
+      length: {
+        type: String,
+        enum: ["HALF", "FULL"],
+      },
+      isPaid: {
+        type: Boolean,
+      },
     },
 
     quantity: {
@@ -51,6 +135,8 @@ LeaveRequestSchema.index({ requestedBy: 1 });
 LeaveRequestSchema.index({ respondedBy: 1 });
 LeaveRequestSchema.index({ status: 1 });
 LeaveRequestSchema.index({ from: 1, to: 1 });
+LeaveRequestSchema.index({ "requestedBySnapshot.deptId": 1 });
+LeaveRequestSchema.index({ "typeSnapshot.name": 1 });
 
 
 

@@ -20,6 +20,16 @@ const OpeningSchema = new mongoose.Schema(
       ref: "Departments",
       required: true,
     },
+    departmentSnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Departments",
+      },
+      name: {
+        type: String,
+        trim: true,
+      },
+    },
 
     skills: [
       {
@@ -27,6 +37,10 @@ const OpeningSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: "Skills",
           required: true,
+        },
+        skillName: {
+          type: String,
+          trim: true,
         },
         proficiencyLevel: {
           type: Number,
@@ -40,6 +54,25 @@ const OpeningSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Users",
       required: true,
+    },
+    hiringManagerSnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+      firstName: {
+        type: String,
+        trim: true,
+      },
+      lastName: {
+        type: String,
+        trim: true,
+      },
+      email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+      },
     },
     Status: {
       type: String,
@@ -68,6 +101,18 @@ const OpeningSchema = new mongoose.Schema(
         round: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Rounds",
+        },
+        roundName: {
+          type: String,
+          trim: true,
+        },
+        roundDescription: {
+          type: String,
+          trim: true,
+        },
+        roundType: {
+          type: String,
+          enum: ["INTERVIEW", "TEST", "ASSIGNMENT"],
         },
         rank: {
           type: Number,
@@ -111,6 +156,9 @@ OpeningSchema.pre("save", async function () {
 });
 
 OpeningSchema.index({createdAt: -1, updatedAt: -1});
+OpeningSchema.index({ departmentId: 1 });
+OpeningSchema.index({ "departmentSnapshot.name": 1 });
+OpeningSchema.index({ "skills.skillName": 1 });
 
 
 const Openings = mongoose.model("Openings", OpeningSchema);

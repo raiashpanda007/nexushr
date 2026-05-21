@@ -26,11 +26,39 @@ export interface InterviewGrade {
     score: number;
 }
 
+export interface ApplicantSnapshot {
+    _id: string;
+    name: string;
+    email: string;
+}
+
+export interface RoundSnapshot {
+    _id: string;
+    name: string;
+    description?: string;
+    type: "INTERVIEW" | "TEST" | "ASSIGNMENT";
+    rank?: number | null;
+}
+
+export interface OpeningSnapshot {
+    _id: string;
+    title: string;
+    departmentId?: string;
+    departmentName?: string;
+    hiringManagerId?: string;
+    hiringManagerName?: string;
+    hiringManagerEmail?: string;
+}
+
 export interface Interview {
     _id: string;
-    applicantId: { _id: string; name: string; email: string } | string;
-    roundId: { _id: string; name: string; type: string } | string;
-    reviewers: Reviewer[];
+    applicantId: string;
+    applicantSnapshot?: ApplicantSnapshot;
+    roundId: string;
+    roundSnapshot?: RoundSnapshot;
+    reviewers: string[];
+    reviewersSnapshot?: Reviewer[];
+    openingSnapshot?: OpeningSnapshot;
     feedback?: string;
     status: "SCHEDULED" | "COMPLETED" | "CANCELED";
     reviewDate: string;
@@ -42,16 +70,7 @@ export interface Interview {
     updatedAt?: string;
 }
 
-export interface MyInterview extends Interview {
-    opening?: {
-        _id: string;
-        title: string;
-        departmentId: { _id: string; name: string } | string;
-        HiringManager:
-            | { _id: string; firstName: string; lastName: string; email: string }
-            | string;
-    } | null;
-}
+export type MyInterview = Interview;
 
 export interface Applicant {
     _id: string;
@@ -60,7 +79,10 @@ export interface Applicant {
     phone: string;
     resume: string;
     status: "APPLIED" | "INTERVIEWING" | "OFFERED" | "OFFERING" | "REJECTED";
-    currentRound?: string | Round;
+    currentRound?: string;
+    currentRoundSnapshot?: RoundSnapshot | null;
+    openingId?: string;
+    openingSnapshot?: OpeningSnapshot;
     note?: string;
     createdAt?: string;
 }
@@ -69,19 +91,20 @@ export interface Opening {
     _id: string;
     title: string;
     description: string;
-    departmentId: { _id: string; name: string } | string;
+    departmentId: string;
+    departmentSnapshot?: { _id: string; name: string };
     skills: Array<{
-        skillId: { _id: string; name: string } | string;
+        skillId: string;
+        skillName?: string;
         proficiencyLevel: number;
     }>;
-    HiringManager:
-        | { _id: string; firstName: string; lastName: string; email: string }
-        | string;
+    HiringManager: string;
+    hiringManagerSnapshot?: { _id: string; firstName: string; lastName: string; email: string };
     Status: "OPEN" | "CLOSED" | "PAUSED";
     note?: string;
     questions: Question[];
     rounds: Round[];
-    applicants: Applicant[];
+    applicants: string[];
     expectedJoiningDate?: string | Date;
     salaryRange?: {
         min?: number;
@@ -98,21 +121,16 @@ export interface ApplicantDetail {
     phone: string;
     resume: string;
     status: "APPLIED" | "INTERVIEWING" | "OFFERED" | "OFFERING" | "REJECTED";
-    currentRound?: Round | null;
+    currentRound?: string | null;
+    currentRoundSnapshot?: RoundSnapshot | null;
     note?: string;
     createdAt?: string;
     questions: Array<{
         questionId: { _id: string; questionText: string } | string;
         answer: string;
     }>;
-    openingId: {
-        _id: string;
-        title: string;
-        description: string;
-        departmentId: { _id: string; name: string } | string;
-        HiringManager: { _id: string; firstName: string; lastName: string; email: string } | string;
-        rounds: Round[];
-    };
+    openingId: string;
+    openingSnapshot?: OpeningSnapshot;
 }
 
 // ------ Form-layer types -------

@@ -22,6 +22,12 @@ import { cn } from "@/lib/utils";
 import { useMyReviews } from "@/hooks/hiring/useMyReviews";
 import type { MyInterview, Reviewer } from "@/types/hiring";
 
+function getReviewerName(r: Reviewer): string {
+    if (r.firstName && r.lastName) return `${r.firstName} ${r.lastName}`;
+    if (r.name) return r.name;
+    return r.email;
+}
+
 // ─── Style maps ───────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
@@ -58,44 +64,28 @@ const ResultIcon = ({ result }: { result: string }) => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getReviewerName(r: Reviewer): string {
-    if (r.firstName && r.lastName) return `${r.firstName} ${r.lastName}`;
-    if (r.name) return r.name;
-    return r.email;
+function getRoundName(interview: MyInterview): string {
+    return interview.roundSnapshot?.name ?? "—";
 }
 
-function getRoundName(roundId: MyInterview["roundId"]): string {
-    if (typeof roundId === "object" && roundId !== null) return roundId.name;
-    return "—";
+function getRoundType(interview: MyInterview): string | null {
+    return interview.roundSnapshot?.type ?? null;
 }
 
-function getRoundType(roundId: MyInterview["roundId"]): string | null {
-    if (typeof roundId === "object" && roundId !== null) return roundId.type;
-    return null;
+function getApplicantName(interview: MyInterview): string {
+    return interview.applicantSnapshot?.name ?? "—";
 }
 
-function getApplicantName(applicantId: MyInterview["applicantId"]): string {
-    if (typeof applicantId === "object" && applicantId !== null) return applicantId.name;
-    return "—";
+function getApplicantId(interview: MyInterview): string | null {
+    return interview.applicantSnapshot?._id ?? interview.applicantId ?? null;
 }
 
-function getApplicantId(applicantId: MyInterview["applicantId"]): string | null {
-    if (typeof applicantId === "object" && applicantId !== null) return applicantId._id;
-    if (typeof applicantId === "string") return applicantId;
-    return null;
+function getOpeningTitle(interview: MyInterview): string {
+    return interview.openingSnapshot?.title ?? "—";
 }
 
-function getOpeningTitle(opening: MyInterview["opening"]): string {
-    if (!opening) return "—";
-    return opening.title;
-}
-
-function getDeptName(opening: MyInterview["opening"]): string {
-    if (!opening) return "—";
-    if (typeof opening.departmentId === "object" && opening.departmentId !== null) {
-        return opening.departmentId.name;
-    }
-    return "—";
+function getDeptName(interview: MyInterview): string {
+    return interview.openingSnapshot?.departmentName ?? "—";
 }
 
 // ─── Interview card ───────────────────────────────────────────────────────────
@@ -121,9 +111,9 @@ function InterviewCard({ interview, onMarkResult, isMarking, navigate: navProp }
         minute: "2-digit",
     });
 
-    const roundType = getRoundType(interview.roundId);
+    const roundType = getRoundType(interview);
 
-    const applicantId = getApplicantId(interview.applicantId);
+    const applicantId = getApplicantId(interview);
 
     return (
         <Card
@@ -135,10 +125,10 @@ function InterviewCard({ interview, onMarkResult, isMarking, navigate: navProp }
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
                         <p className="text-base font-semibold text-foreground leading-tight">
-                            {getApplicantName(interview.applicantId)}
+                            {getApplicantName(interview)}
                         </p>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            {getOpeningTitle(interview.opening)}
+                            {getOpeningTitle(interview)}
                         </p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -174,7 +164,7 @@ function InterviewCard({ interview, onMarkResult, isMarking, navigate: navProp }
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="text-sm font-medium text-foreground">
-                                    {getRoundName(interview.roundId)}
+                                    {getRoundName(interview)}
                                 </span>
                                 {roundType && (
                                     <Badge
@@ -200,7 +190,7 @@ function InterviewCard({ interview, onMarkResult, isMarking, navigate: navProp }
                                 Department
                             </p>
                             <p className="text-sm font-medium text-foreground mt-0.5">
-                                {getDeptName(interview.opening)}
+                                {getDeptName(interview)}
                             </p>
                         </div>
                     </div>
@@ -229,7 +219,7 @@ function InterviewCard({ interview, onMarkResult, isMarking, navigate: navProp }
                 </div>
 
                 {/* Reviewers */}
-                {interview.reviewers.length > 0 && (
+                {(interview.reviewersSnapshot?.length ?? interview.reviewers?.length ?? 0) > 0 && (
                     <div className="mt-3">
                         <div className="flex items-center gap-1.5 mb-2">
                             <Users className="h-3.5 w-3.5 text-muted-foreground" />
@@ -238,7 +228,7 @@ function InterviewCard({ interview, onMarkResult, isMarking, navigate: navProp }
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {interview.reviewers.map((r) => (
+                            {(interview.reviewersSnapshot ?? []).map((r) => (
                                 <div
                                     key={r._id}
                                     className="flex items-center gap-1.5 bg-muted/40 border border-border/50 rounded-lg px-2.5 py-1"

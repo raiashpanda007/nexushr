@@ -28,9 +28,12 @@ export default function CreateLeaveBalanceModal({
     leaveTypes,
 }: CreateLeaveBalanceModalProps) {
     const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
+    const [selectedUserLabel, setSelectedUserLabel] = useState<string>("");
     const {
         users,
         loadingUsers,
+        userSearchQuery,
+        setUserSearchQuery,
         selectedUserId,
         setSelectedUserId,
         allocations,
@@ -42,8 +45,6 @@ export default function CreateLeaveBalanceModal({
         handleAllocationChange,
         handleSave
     } = useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existingBalances });
-
-    const selectedUser = users.find((user) => user._id === selectedUserId);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -60,57 +61,67 @@ export default function CreateLeaveBalanceModal({
                     
                     <div className="space-y-2">
                         <Label>Employee</Label>
-                        {loadingUsers ? (
-                            <div className="text-sm text-muted-foreground">Loading users...</div>
-                        ) : (
-                            <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={employeeSearchOpen}
-                                        className={cn(
-                                            "w-full justify-between font-normal",
-                                            !selectedUser && "text-muted-foreground",
-                                            fieldErrors.user && "border-red-500"
+                        <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={employeeSearchOpen}
+                                    className={cn(
+                                        "w-full justify-between font-normal",
+                                        !selectedUserId && "text-muted-foreground",
+                                        fieldErrors.user && "border-red-500"
+                                    )}
+                                >
+                                    <span className="truncate">
+                                        {selectedUserLabel || "Search and select an employee..."}
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                                <Command shouldFilter={false}>
+                                    <CommandInput
+                                        placeholder="Type a name or email..."
+                                        value={userSearchQuery}
+                                        onValueChange={setUserSearchQuery}
+                                    />
+                                    <CommandList>
+                                        {loadingUsers && (
+                                            <div className="py-2 text-center text-sm text-muted-foreground">Searching...</div>
                                         )}
-                                    >
-                                        {selectedUser
-                                            ? `${selectedUser.firstName} ${selectedUser.lastName} (${selectedUser.email})`
-                                            : "Search and select an employee..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                    <Command>
-                                        <CommandInput placeholder="Search by name or email..." />
-                                        <CommandList>
+                                        {!loadingUsers && userSearchQuery.trim() && users.length === 0 && (
                                             <CommandEmpty>No eligible employees found.</CommandEmpty>
-                                            <CommandGroup>
-                                                {users.map((u) => (
-                                                    <CommandItem
-                                                        key={u._id}
-                                                        value={`${u.firstName} ${u.lastName} ${u.email}`}
-                                                        onSelect={() => {
-                                                            setSelectedUserId(u._id);
-                                                            setEmployeeSearchOpen(false);
-                                                        }}
-                                                    >
-                                                        <span className="truncate">{u.firstName} {u.lastName} ({u.email})</span>
-                                                        <Check
-                                                            className={cn(
-                                                                "ml-auto h-4 w-4",
-                                                                selectedUserId === u._id ? "opacity-100" : "opacity-0"
-                                                            )}
-                                                        />
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        )}
+                                        )}
+                                        {!loadingUsers && !userSearchQuery.trim() && (
+                                            <div className="py-2 text-center text-sm text-muted-foreground">Type to search employees</div>
+                                        )}
+                                        <CommandGroup>
+                                            {users.map((u) => (
+                                                <CommandItem
+                                                    key={u._id}
+                                                    value={u._id}
+                                                    onSelect={() => {
+                                                        setSelectedUserId(u._id);
+                                                        setSelectedUserLabel(`${u.firstName} ${u.lastName} (${u.email})`);
+                                                        setUserSearchQuery("");
+                                                        setEmployeeSearchOpen(false);
+                                                    }}
+                                                >
+                                                    <span className="truncate">{u.firstName} {u.lastName} ({u.email})</span>
+                                                    <Check
+                                                        className={cn(
+                                                            "ml-auto h-4 w-4",
+                                                            selectedUserId === u._id ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                         {fieldErrors.user && <p className="text-red-500 text-xs">{fieldErrors.user}</p>}
                     </div>
 

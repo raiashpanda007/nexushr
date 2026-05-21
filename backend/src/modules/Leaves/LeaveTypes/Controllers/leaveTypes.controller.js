@@ -1,6 +1,8 @@
 import LeaveTypeModal from "../Models/leavetypes.model.js"
-import { AsyncHandler, ApiResponse, ApiError } from "../../../../utils/index.js"
+import { AsyncHandler, ApiResponse, ApiError, buildLeaveTypeSnapshot } from "../../../../utils/index.js"
 import Types from "../../../../types/index.js"
+import LeaveBalanceModel from "../../LeavesBalances/Models/leavesBalances.model.js"
+import LeaveRequestModel from "../../LeaveRequests/Models/leaveRequests.model.js"
 
 class LeaveTypeController {
     constructor() {
@@ -38,6 +40,19 @@ class LeaveTypeController {
         if (!leaveType) {
             throw new ApiError(Types.Errors.NotFound, "Leave type not found")
         }
+
+        const typeSnapshot = buildLeaveTypeSnapshot(leaveType);
+        await Promise.all([
+            LeaveBalanceModel.updateMany(
+                { "leaves.type": id },
+                { $set: { "leaves.$[leave].typeSnapshot": typeSnapshot } },
+                { arrayFilters: [{ "leave.type": leaveType._id }] },
+            ),
+            LeaveRequestModel.updateMany(
+                { type: id },
+                { $set: { typeSnapshot } },
+            ),
+        ]);
         return res.status(200).json(new ApiResponse(200, leaveType, "Leave type updated successfully"))
     })
 

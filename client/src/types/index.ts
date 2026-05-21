@@ -17,6 +17,7 @@ export interface Skill {
 
 export interface EmployeeSkill {
     skillId?: string | Skill;
+    skillName?: string;
     _id?: string;
     name?: string;
     amount: number;
@@ -31,6 +32,7 @@ export interface Employee {
     role: string;
     profilePhoto?: string;
     deptId?: string | { _id: string; name: string };
+    deptSnapshot?: { _id: string; name: string };
     skills?: (string | Skill | EmployeeSkill)[];
     note?: string;
     online?: boolean;

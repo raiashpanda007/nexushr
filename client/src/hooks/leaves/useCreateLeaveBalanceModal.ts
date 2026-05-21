@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ApiCaller from "@/utils/ApiCaller";
 import type { UserLeaveBalance } from "@/components/leaves/LeaveBalancesTable";
 import { CreateLeaveBalanceSchema, formatZodErrors } from "@/validations/schemas";
@@ -20,6 +20,7 @@ interface User {
 export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existingBalances }: CreateLeaveBalanceModalProps) {
     const [users, setUsers] = useState<User[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
+    const [userSearchQuery, setUserSearchQuery] = useState("");
     const [selectedUserId, setSelectedUserId] = useState<string>("");
 
     const [allocations, setAllocations] = useState<Array<{ leaveTypeId: string; amount: number }>>([
@@ -30,34 +31,51 @@ export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existin
     const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     useEffect(() => {
-        if (isOpen) {
-            fetchUsers();
-            setSelectedUserId("");
-            setAllocations([{ leaveTypeId: "", amount: 0 }]);
-        }
+        if (!isOpen) return;
+        setSelectedUserId("");
+        setUserSearchQuery("");
+        setUsers([]);
+        setAllocations([{ leaveTypeId: "", amount: 0 }]);
     }, [isOpen]);
 
-    const fetchUsers = async () => {
-        setLoadingUsers(true);
-        try {
-            const result = await ApiCaller<null, { data: User[] }>({
-                requestType: "GET",
-                paths: ["api", "v1", "user", "get-users"],
-            });
+    useEffect(() => {
+        if (!isOpen) return;
+        if (debounceRef.current) clearTimeout(debounceRef.current);
 
-            if (result.ok && result.response.data) {
-                const existingUserIds = new Set(existingBalances.map(b => b.userId));
-                console.log("::: existingUserIds ::: ", result)
-                const usersWithoutBalance = result.response.data.data.filter(u => !existingUserIds.has(u._id));
-                setUsers(usersWithoutBalance);
-            }
-        } catch (error) {
-            console.error("Error fetching users:", error);
-        } finally {
-            setLoadingUsers(false);
+        if (!userSearchQuery.trim()) {
+            setUsers([]);
+            return;
         }
-    };
+
+        debounceRef.current = setTimeout(async () => {
+            setLoadingUsers(true);
+            try {
+                const result = await ApiCaller<null, any>({
+                    requestType: "GET",
+                    paths: ["api", "v1", "search", "employees"],
+                    queryParams: { query: userSearchQuery.trim(), limit: "20" },
+                });
+
+                if (result.ok && Array.isArray(result.response.data)) {
+                    const existingUserIds = new Set(existingBalances.map(b => b.userId));
+                    setUsers(
+                        result.response.data.filter((u: User) => !existingUserIds.has(u._id))
+                    );
+                }
+            } catch (err) {
+                console.error("Error searching employees:", err);
+            } finally {
+                setLoadingUsers(false);
+            }
+        }, 300);
+
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, [userSearchQuery, isOpen, existingBalances]);
 
     const handleAddAllocation = () => {
         setAllocations([...allocations, { leaveTypeId: "", amount: 0 }]);
@@ -84,7 +102,7 @@ export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existin
         setFieldErrors({});
 
         const validAllocations = allocations.filter(a => a.leaveTypeId && a.amount >= 0);
-        
+
         const payload = {
             user: selectedUserId,
             leaves: validAllocations.map(a => ({
@@ -93,7 +111,6 @@ export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existin
             }))
         };
 
-        // Validate with Zod
         const validation = CreateLeaveBalanceSchema.safeParse(payload);
         if (!validation.success) {
             setFieldErrors(formatZodErrors(validation.error));
@@ -126,6 +143,8 @@ export function useCreateLeaveBalanceModal({ isOpen, onClose, onSuccess, existin
     return {
         users,
         loadingUsers,
+        userSearchQuery,
+        setUserSearchQuery,
         selectedUserId,
         setSelectedUserId,
         allocations,

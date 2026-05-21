@@ -72,19 +72,28 @@ const ROUND_TYPE_STYLES: Record<string, string> = {
     ASSIGNMENT: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400",
 };
 
-function getDepartmentName(dep: Opening["departmentId"]): string {
-    if (!dep) return "—";
-    return typeof dep === "object" ? dep.name : "—";
+function getDepartmentName(opening: Opening): string {
+    if (opening.departmentSnapshot?.name) return opening.departmentSnapshot.name;
+    const d = opening.departmentId;
+    if (d && typeof d === "object") return (d as any).name;
+    return "—";
 }
 
-function getManagerName(mgr: Opening["HiringManager"]): string {
-    if (!mgr) return "—";
-    return typeof mgr === "object" ? `${mgr.firstName} ${mgr.lastName}` : "—";
+function getManagerName(opening: Opening): string {
+    if (opening.hiringManagerSnapshot) {
+        const { firstName, lastName } = opening.hiringManagerSnapshot;
+        return `${firstName} ${lastName}`.trim();
+    }
+    const mgr = opening.HiringManager;
+    if (mgr && typeof mgr === "object") return `${(mgr as any).firstName} ${(mgr as any).lastName}`;
+    return "—";
 }
 
-function getManagerEmail(mgr: Opening["HiringManager"]): string {
-    if (!mgr || typeof mgr !== "object") return "";
-    return mgr.email;
+function getManagerEmail(opening: Opening): string {
+    if (opening.hiringManagerSnapshot?.email) return opening.hiringManagerSnapshot.email;
+    const mgr = opening.HiringManager;
+    if (mgr && typeof mgr === "object") return (mgr as any).email ?? "";
+    return "";
 }
 
 function getPaginationButtons(currentPage: number, totalPages: number): (number | string)[] {
@@ -331,7 +340,7 @@ export default function HiringDetails() {
                                     Department
                                 </p>
                                 <p className="text-sm font-semibold text-foreground mt-0.5">
-                                    {getDepartmentName(opening.departmentId)}
+                                    {getDepartmentName(opening)}
                                 </p>
                             </div>
                         </div>
@@ -345,11 +354,11 @@ export default function HiringDetails() {
                                     Hiring Manager
                                 </p>
                                 <p className="text-sm font-semibold text-foreground mt-0.5">
-                                    {getManagerName(opening.HiringManager)}
+                                    {getManagerName(opening)}
                                 </p>
-                                {getManagerEmail(opening.HiringManager) && (
+                                {getManagerEmail(opening) && (
                                     <p className="text-xs text-muted-foreground">
-                                        {getManagerEmail(opening.HiringManager)}
+                                        {getManagerEmail(opening)}
                                     </p>
                                 )}
                             </div>

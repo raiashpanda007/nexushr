@@ -483,11 +483,12 @@ export default function EmployeeDetails() {
     }, [employee?.firstName, employee?.lastName]);
 
     const departmentName = useMemo(() => {
+        if (employee?.deptSnapshot?.name) return employee.deptSnapshot.name;
         const dept = employee?.deptId;
         if (!dept) return "Unassigned";
-        if (typeof dept === "string") return dept;
-        return dept.name;
-    }, [employee?.deptId]);
+        if (typeof dept === "object") return dept.name;
+        return "Unassigned";
+    }, [employee?.deptId, employee?.deptSnapshot]);
 
     const skillNames = useMemo(() => {
         const skills = employee?.skills ?? [];
@@ -502,11 +503,13 @@ export default function EmployeeDetails() {
                 }
 
                 const resolvedSkillName =
-                    typeof skillItem.name === "string"
-                        ? skillItem.name
-                        : typeof skillItem.skillId === "object"
-                            ? skillItem.skillId?.name
-                            : undefined;
+                    typeof skillItem.skillName === "string" && skillItem.skillName
+                        ? skillItem.skillName
+                        : typeof skillItem.name === "string"
+                            ? skillItem.name
+                            : typeof skillItem.skillId === "object"
+                                ? skillItem.skillId?.name
+                                : undefined;
 
                 if (!resolvedSkillName) {
                     return null;

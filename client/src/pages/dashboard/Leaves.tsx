@@ -317,6 +317,9 @@ export default function Leaves() {
                                 <LeaveRequestsTable
                                     requests={filteredLeaveRequests}
                                     onRefresh={() => fetchLeaveRequests(requestsPage)}
+                                    totalCount={requestsPending + requestsAccepted + requestsRejected}
+                                    pendingCount={requestsPending}
+                                    acceptedCount={requestsAccepted}
                                 />
                                 {requestsTotal > 0 && (
                                     <div className="p-4 flex justify-between items-center bg-card border-t border-border rounded-b-xl">

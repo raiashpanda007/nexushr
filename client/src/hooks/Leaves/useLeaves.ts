@@ -8,33 +8,33 @@ import type { LeaveRequest } from "@/components/leaves/LeaveRequestsTable";
 interface RawLeaveBalanceDoc {
     _id: string;
     user: string;
-    userDetails?: {
+    userSnapshot?: {
         _id: string;
         firstName: string;
         lastName: string;
         email: string;
         profilePhoto?: string;
-        department?: { name: string }
+        deptName?: string;
     };
     leaves: Array<{
         type: string;
         amount: number;
-        typeDetails?: { _id: string; name: string };
+        typeSnapshot?: { _id: string; name: string; code?: string };
     }>;
 }
 
 function mapRawToUserLeaveBalance(doc: RawLeaveBalanceDoc): UserLeaveBalance {
     return {
         balanceId: doc._id,
-        userId: doc.userDetails?._id ?? doc.user,
-        firstName: doc.userDetails?.firstName ?? "",
-        lastName: doc.userDetails?.lastName ?? "",
-        email: doc.userDetails?.email ?? "",
-        profilePhoto: doc.userDetails?.profilePhoto,
-        department: doc.userDetails?.department?.name ?? "",
+        userId: doc.userSnapshot?._id ?? doc.user,
+        firstName: doc.userSnapshot?.firstName ?? "",
+        lastName: doc.userSnapshot?.lastName ?? "",
+        email: doc.userSnapshot?.email ?? "",
+        profilePhoto: doc.userSnapshot?.profilePhoto,
+        department: doc.userSnapshot?.deptName ?? "",
         balances: (doc.leaves ?? []).map((l) => ({
-            leaveTypeId: l.typeDetails?._id ?? String(l.type),
-            leaveTypeName: l.typeDetails?.name ?? "Unknown",
+            leaveTypeId: l.typeSnapshot?._id ?? String(l.type),
+            leaveTypeName: l.typeSnapshot?.name ?? "Unknown",
             balance: l.amount,
         })),
     };
@@ -432,8 +432,8 @@ export function useLeaves() {
         if (!search.trim()) return leaveRequests;
         const q = search.toLowerCase();
         return leaveRequests.filter((req) => {
-            const empName = `${req.requestedBy?.firstName} ${req.requestedBy?.lastName}`.toLowerCase();
-            const leaveName = typeof req.type === "object" ? req.type.name.toLowerCase() : String(req.type).toLowerCase();
+            const empName = `${req.requestedBySnapshot?.firstName ?? req.requestedBy?.firstName ?? ''} ${req.requestedBySnapshot?.lastName ?? req.requestedBy?.lastName ?? ''}`.toLowerCase();
+            const leaveName = (req.typeSnapshot?.name ?? (typeof req.type === "object" ? (req.type as any).name : String(req.type)) ?? "").toLowerCase();
             return empName.includes(q) || leaveName.includes(q);
         });
     }, [leaveRequests, search]);

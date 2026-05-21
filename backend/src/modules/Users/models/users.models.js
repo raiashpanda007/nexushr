@@ -41,6 +41,17 @@ const UserSchema = new mongoose.Schema(
       required: true,
     },
 
+    deptSnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Departments",
+      },
+      name: {
+        type: String,
+        trim: true,
+      },
+    },
+
     profilePhoto: {
       type: String,
     },
@@ -66,6 +77,10 @@ const UserSchema = new mongoose.Schema(
           ref: "Skills",
           required: true
         },
+        skillName: {
+          type: String,
+          trim: true,
+        },
         amount: {
           type: Number,
           min: 1,
@@ -85,6 +100,8 @@ const UserSchema = new mongoose.Schema(
 UserSchema.index({ role: 1 });
 UserSchema.index({ deptId: 1 });
 UserSchema.index({ online: 1 });
+UserSchema.index({ "deptSnapshot.name": 1 });
+UserSchema.index({ "skills.skillName": 1 });
 
 
 

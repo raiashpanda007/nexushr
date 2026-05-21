@@ -1,6 +1,8 @@
-import { AsyncHandler, ApiResponse, ApiError } from "../../../../utils/index.js"
+import { AsyncHandler, ApiResponse, ApiError, buildUserSnapshot, buildLeaveTypeSnapshot } from "../../../../utils/index.js"
 import mongoose from "mongoose"
 import LeaveBalanceModel from "../Models/leavesBalances.model.js"
+import UserModel from "../../../Users/models/users.models.js"
+import LeaveTypeModel from "../../LeaveTypes/Models/leavetypes.model.js"
 import Types from "../../../../types/index.js"
 
 class LeaveBalanceController {
@@ -19,7 +21,30 @@ class LeaveBalanceController {
             throw new ApiError(Types.Errors.UnprocessableData, "Invalid data")
         }
         const { user, leaves } = parsedBody.data
-        const leaveBalance = await this.repo.create({ user, leaves })
+        const [userDoc, leaveTypeDocs] = await Promise.all([
+            UserModel.findById(user)
+                .select("firstName lastName email profilePhoto deptSnapshot deptId")
+                .lean(),
+            LeaveTypeModel.find({ _id: { $in: leaves.map((l) => l.type) } })
+                .select("name code length isPaid")
+                .lean(),
+        ]);
+
+        const userSnapshot = buildUserSnapshot(userDoc);
+        const leaveTypeMap = new Map(
+            leaveTypeDocs.map((t) => [String(t._id), buildLeaveTypeSnapshot(t)])
+        );
+
+        const leavesWithSnapshots = leaves.map((l) => ({
+            ...l,
+            typeSnapshot: leaveTypeMap.get(String(l.type)) || null,
+        }));
+
+        const leaveBalance = await this.repo.create({
+            user,
+            userSnapshot,
+            leaves: leavesWithSnapshots,
+        })
         return res.status(201).json(new ApiResponse(201, leaveBalance, "Leave balance created successfully"))
     })
 
@@ -36,7 +61,30 @@ class LeaveBalanceController {
             throw new ApiError(Types.Errors.UnprocessableData, "Invalid data")
         }
         const { user, leaves } = parsedBody.data
-        const leaveBalance = await this.repo.findByIdAndUpdate(id, { user, leaves }, { new: true })
+
+        const updates = {};
+        if (user) {
+            const userDoc = await UserModel.findById(user)
+                .select("firstName lastName email profilePhoto deptSnapshot deptId")
+                .lean();
+            updates.user = user;
+            updates.userSnapshot = buildUserSnapshot(userDoc);
+        }
+
+        if (leaves) {
+            const leaveTypeDocs = await LeaveTypeModel.find({ _id: { $in: leaves.map((l) => l.type) } })
+                .select("name code length isPaid")
+                .lean();
+            const leaveTypeMap = new Map(
+                leaveTypeDocs.map((t) => [String(t._id), buildLeaveTypeSnapshot(t)])
+            );
+            updates.leaves = leaves.map((l) => ({
+                ...l,
+                typeSnapshot: leaveTypeMap.get(String(l.type)) || null,
+            }));
+        }
+
+        const leaveBalance = await this.repo.findByIdAndUpdate(id, updates, { new: true })
         if (!leaveBalance) {
             throw new ApiError(Types.Errors.NotFound, "Leave balance not found")
         }
@@ -84,80 +132,6 @@ class LeaveBalanceController {
     Get = AsyncHandler(async (req, res) => {
         const id = req.params.id
 
-        const pipeline = [
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "user",
-                    foreignField: "_id",
-                    as: "userDetails"
-                }
-            },
-            {
-                $unwind: {
-                    path: "$userDetails",
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
-                $lookup: {
-                    from: "departments",
-                    localField: "userDetails.deptId",
-                    foreignField: "_id",
-                    as: "userDetails.department"
-                }
-            },
-            {
-                $unwind: {
-                    path: "$userDetails.department",
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
-                $lookup: {
-                    from: "leavetypes",
-                    localField: "leaves.type",
-                    foreignField: "_id",
-                    as: "mappedLeaveTypes"
-                }
-            },
-            {
-                $addFields: {
-                    leaves: {
-                        $map: {
-                            input: "$leaves",
-                            as: "leave",
-                            in: {
-                                $mergeObjects: [
-                                    "$$leave",
-                                    {
-                                        typeDetails: {
-                                            $arrayElemAt: [
-                                                {
-                                                    $filter: {
-                                                        input: "$mappedLeaveTypes",
-                                                        as: "type",
-                                                        cond: { $eq: ["$$type._id", "$$leave.type"] }
-                                                    }
-                                                },
-                                                0
-                                            ]
-                                        }
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    mappedLeaveTypes: 0,
-                    "userDetails.passwordHash": 0
-                }
-            }
-        ]
-
         const { page: pageQuery, limit: limitQuery } = req.query;
         let limit = parseInt(limitQuery) || 10;
         let page = parseInt(pageQuery) || 1;
@@ -172,36 +146,32 @@ class LeaveBalanceController {
                 }
             }
 
-            const leaveBalance = await this.repo.aggregate([
-                { $match: { user: new mongoose.Types.ObjectId(id) } },
-                ...pipeline
-            ])
+            const leaveBalance = await this.repo.findOne({ user: id }).lean()
 
-            if (!leaveBalance || leaveBalance.length === 0) {
+            if (!leaveBalance) {
                 throw new ApiError(Types.Errors.NotFound, "Leave balance not found")
             }
-            return res.status(200).json(new ApiResponse(200, leaveBalance[0], "Leave balance fetched successfully"))
+            return res.status(200).json(new ApiResponse(200, leaveBalance, "Leave balance fetched successfully"))
         }
 
         if (req.user.role != "HR") {
             // Employee: return only their own balance. Need pagination logic if ever multiple, but it's usually 1
-            const matchPipeline = [{ $match: { user: new mongoose.Types.ObjectId(req.user.id) } }];
-            let paginatedPipeline = [...matchPipeline, ...pipeline];
+            let queryOptions = this.repo.find({ user: req.user.id }).lean();
             if (limitQuery !== 'all') {
-                paginatedPipeline = [...matchPipeline, { $skip: skip }, { $limit: limit }, ...pipeline];
+                queryOptions = queryOptions.skip(skip).limit(limit);
             }
 
-            const leaveBalances = await this.repo.aggregate(paginatedPipeline);
+            const leaveBalances = await queryOptions;
             const total = await this.repo.countDocuments({ user: req.user.id });
             return res.status(200).json(new ApiResponse(200, { data: leaveBalances, total, page, limit: limitQuery === 'all' ? total : limit }, "Leave balances fetched successfully"));
         }
 
-        let paginatedPipeline = pipeline;
+        let queryOptions = this.repo.find().lean();
         if (limitQuery !== 'all') {
-            paginatedPipeline = [{ $skip: skip }, { $limit: limit }, ...pipeline];
+            queryOptions = queryOptions.skip(skip).limit(limit);
         }
 
-        const leaveBalances = await this.repo.aggregate(paginatedPipeline)
+        const leaveBalances = await queryOptions
         const total = await this.repo.countDocuments();
         return res.status(200).json(new ApiResponse(200, { data: leaveBalances, total, page, limit: limitQuery === 'all' ? total : limit }, "Leave balances fetched successfully"))
     })

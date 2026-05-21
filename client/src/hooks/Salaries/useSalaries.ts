@@ -8,15 +8,22 @@ interface User {
     firstName: string;
     lastName: string;
     email: string;
-    deptId?: {
-        _id: string;
-        name: string;
-    };
+}
+
+interface UserSnapshot {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    profilePhoto?: string;
+    deptId?: string;
+    deptName?: string;
 }
 
 interface Salary {
     _id: string;
-    userId: User;
+    userId: string;
+    userSnapshot?: UserSnapshot;
     base: number;
     hra: number;
     lta: number;
@@ -129,7 +136,7 @@ export function useSalaries() {
             lta: salary.lta,
         });
         setEditEmployeeName(
-            `${salary.userId?.firstName || ''} ${salary.userId?.lastName || ''}`.trim()
+            `${salary.userSnapshot?.firstName || ''} ${salary.userSnapshot?.lastName || ''}`.trim()
         );
         setIsEditModalOpen(true);
     };
@@ -209,8 +216,8 @@ export function useSalaries() {
 
     const filteredSalaries = salaries.filter(salary => {
         if (!searchTerm) return true;
-        const fullName = `${salary.userId?.firstName || ''} ${salary.userId?.lastName || ''}`.toLowerCase();
-        const email = salary.userId?.email?.toLowerCase() || '';
+        const fullName = `${salary.userSnapshot?.firstName || ''} ${salary.userSnapshot?.lastName || ''}`.toLowerCase();
+        const email = salary.userSnapshot?.email?.toLowerCase() || '';
         const search = searchTerm.toLowerCase();
         return fullName.includes(search) || email.includes(search);
     });

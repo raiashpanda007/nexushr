@@ -50,25 +50,24 @@ const ROUND_TYPE_STYLES: Record<string, string> = {
         "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400",
 };
 
-function getDeptName(
-    dep: ApplicantDetail["openingId"]["departmentId"],
-): string {
-    if (!dep) return "—";
-    return typeof dep === "object" ? dep.name : "—";
+function getDeptName(applicant: ApplicantDetail, fullOpening?: any): string {
+    if (applicant.openingSnapshot?.departmentName) return applicant.openingSnapshot.departmentName;
+    if (fullOpening?.departmentSnapshot?.name) return fullOpening.departmentSnapshot.name;
+    return "—";
 }
 
-function getManagerName(
-    mgr: ApplicantDetail["openingId"]["HiringManager"],
-): string {
-    if (!mgr) return "—";
-    return typeof mgr === "object" ? `${mgr.firstName} ${mgr.lastName}` : "—";
+function getManagerName(applicant: ApplicantDetail, fullOpening?: any): string {
+    if (applicant.openingSnapshot?.hiringManagerName) return applicant.openingSnapshot.hiringManagerName;
+    if (fullOpening?.hiringManagerSnapshot) {
+        const { firstName, lastName } = fullOpening.hiringManagerSnapshot;
+        return `${firstName} ${lastName}`.trim();
+    }
+    return "—";
 }
 
-function getManagerEmail(
-    mgr: ApplicantDetail["openingId"]["HiringManager"],
-): string {
-    if (!mgr || typeof mgr !== "object") return "";
-    return mgr.email;
+function getManagerEmail(applicant: ApplicantDetail, fullOpening?: any): string {
+    if (applicant.openingSnapshot?.hiringManagerEmail) return applicant.openingSnapshot.hiringManagerEmail;
+    return fullOpening?.hiringManagerSnapshot?.email ?? "";
 }
 
 // ─── Chevron progress bar ────────────────────────────────────────────────────
@@ -260,6 +259,7 @@ export default function ApplicantDetails() {
     const from = (location.state as any)?.from;
 
     const [applicant, setApplicant] = useState<ApplicantDetail | null>(null);
+    const [fullOpening, setFullOpening] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedRoundIdx, setSelectedRoundIdx] = useState(0);
@@ -285,12 +285,24 @@ export default function ApplicantDetails() {
             if (result.ok) {
                 const data = result.response.data.applicant;
                 setApplicant(data);
-                // Pre-select current round
-                if (data.currentRound && data.openingId?.rounds?.length) {
-                    const idx = data.openingId.rounds.findIndex(
-                        (r) => r._id === (data.currentRound as Round)._id,
-                    );
-                    if (idx >= 0) setSelectedRoundIdx(idx);
+
+                // Fetch full opening for rounds + description
+                const openingId = typeof data.openingId === "string" ? data.openingId : (data.openingId as any)?._id;
+                if (openingId) {
+                    const openingResult = await ApiCaller<null, any>({
+                        requestType: "GET",
+                        paths: ["api", "v1", "hiring", "openings", openingId],
+                    });
+                    if (openingResult.ok) {
+                        const openingData = openingResult.response.data;
+                        setFullOpening(openingData);
+                        const rounds: Round[] = Array.isArray(openingData?.rounds) ? openingData.rounds : [];
+                        const currentRoundId = typeof data.currentRound === "string" ? data.currentRound : (data.currentRound as any)?._id;
+                        if (currentRoundId) {
+                            const idx = rounds.findIndex(r => r._id === currentRoundId);
+                            if (idx >= 0) setSelectedRoundIdx(idx);
+                        }
+                    }
                 }
             } else {
                 setError((result.response as unknown as { message?: string })?.message || "Applicant not found");
@@ -332,12 +344,10 @@ export default function ApplicantDetails() {
         );
     }
 
-    const opening = applicant.openingId;
-    const rounds: Round[] = Array.isArray(opening?.rounds) ? opening.rounds : [];
-    const currentRound =
-        applicant.currentRound && typeof applicant.currentRound === "object"
-            ? (applicant.currentRound as Round)
-            : null;
+    const opening = fullOpening;
+    const openingId = typeof applicant.openingId === "string" ? applicant.openingId : (applicant.openingId as any)?._id;
+    const rounds: Round[] = Array.isArray(fullOpening?.rounds) ? fullOpening.rounds : [];
+    const currentRound = applicant.currentRoundSnapshot ?? null;
 
     // Sort rounds by rank for consistent left-to-right order (smallest rank = left, largest rank = right)
     const sortedRounds = [...rounds].sort((a, b) => {
@@ -382,8 +392,8 @@ export default function ApplicantDetails() {
                     onClick={() => {
                         if (from === 'reviews') {
                             navigate('/reviews');
-                        } else if (opening?._id) {
-                            navigate(`/hiring/${opening._id}`);
+                        } else if (openingId) {
+                            navigate(`/hiring/${openingId}`);
                         } else {
                             navigate(-1);
                         }
@@ -401,10 +411,7 @@ export default function ApplicantDetails() {
                             const nameParts = applicant.name.trim().split(" ");
                             const firstName = nameParts[0] ?? "";
                             const lastName = nameParts.slice(1).join(" ") || "";
-                            const deptId =
-                                opening?.departmentId && typeof opening.departmentId === "object"
-                                    ? opening.departmentId._id
-                                    : undefined;
+                            const deptId = applicant.openingSnapshot?.departmentId ?? opening?.departmentId ?? undefined;
                             navigate("/employee", {
                                 state: {
                                     prefill: { firstName, lastName, email: applicant.email, deptId },
@@ -507,9 +514,9 @@ export default function ApplicantDetails() {
                 <Card className="rounded-2xl border-border/50 shadow-sm">
                     <CardContent className="px-4 py-5 sm:px-5">
                         <h2 className="text-lg font-semibold text-foreground mb-1">
-                            {opening.title}
+                            {applicant.openingSnapshot?.title ?? opening?.title ?? "—"}
                         </h2>
-                        {opening.description && (
+                        {opening?.description && (
                             <p className="text-sm text-muted-foreground leading-relaxed mb-5">
                                 {opening.description}
                             </p>
@@ -525,7 +532,7 @@ export default function ApplicantDetails() {
                                         Department
                                     </p>
                                     <p className="text-sm font-medium text-foreground">
-                                        {getDeptName(opening.departmentId)}
+                                        {getDeptName(applicant, fullOpening)}
                                     </p>
                                 </div>
                             </div>
@@ -538,11 +545,11 @@ export default function ApplicantDetails() {
                                         Hiring Manager
                                     </p>
                                     <p className="text-sm font-medium text-foreground">
-                                        {getManagerName(opening.HiringManager)}
+                                        {getManagerName(applicant, fullOpening)}
                                     </p>
-                                    {getManagerEmail(opening.HiringManager) && (
+                                    {getManagerEmail(applicant, fullOpening) && (
                                         <p className="text-xs text-muted-foreground">
-                                            {getManagerEmail(opening.HiringManager)}
+                                            {getManagerEmail(applicant, fullOpening)}
                                         </p>
                                     )}
                                 </div>
@@ -620,10 +627,7 @@ export default function ApplicantDetails() {
                                         applicantId={applicant._id}
                                         round={selectedRound}
                                         departmentId={
-                                            opening?.departmentId &&
-                                            typeof opening.departmentId === "object"
-                                                ? opening.departmentId._id
-                                                : (opening?.departmentId as string | null) ?? null
+                                            applicant.openingSnapshot?.departmentId ?? (opening?.departmentId as string | null) ?? null
                                         }
                                         onStatusChange={fetchApplicant}
                                         isBlocked={isSelectedRoundBlocked}

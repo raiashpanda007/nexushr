@@ -26,14 +26,16 @@ import EmployeeAvatar from "@/components/employee/EmployeeAvatar";
 
 export interface LeaveRequest {
     _id: string;
-    requestedBy: {
+    requestedBy: string;
+    requestedBySnapshot?: {
         _id: string;
         firstName: string;
         lastName: string;
         email: string;
         profilePhoto?: string;
     };
-    type: { _id: string; name: string } | string;
+    type: string;
+    typeSnapshot?: { _id: string; name: string; code?: string };
     quantity: number;
     from: string;
     to: string;
@@ -44,15 +46,18 @@ export interface LeaveRequest {
 interface LeaveRequestsTableProps {
     requests: LeaveRequest[];
     onRefresh: () => void;
+    totalCount?: number;
+    pendingCount?: number;
+    acceptedCount?: number;
 }
 
 function fmtDate(iso: string) {
     return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function leaveTypeName(type: LeaveRequest["type"]): string {
-    if (typeof type === "object" && type !== null) return type.name;
-    return String(type);
+function leaveTypeName(req: LeaveRequest): string {
+    if (req.typeSnapshot?.name) return req.typeSnapshot.name;
+    return String(req.type);
 }
 
 function StatusBadge({ status }: { status: LeaveRequest["status"] }) {
@@ -81,7 +86,7 @@ function StatusBadge({ status }: { status: LeaveRequest["status"] }) {
     );
 }
 
-export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequestsTableProps) {
+export default function LeaveRequestsTable({ requests, onRefresh, totalCount, pendingCount, acceptedCount }: LeaveRequestsTableProps) {
     const { processingId, handleAction } = useLeaveRequestsTable(onRefresh);
 
     if (requests.length === 0) {
@@ -98,8 +103,9 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
         );
     }
 
-    const pendingCount = requests.filter(r => r.status === "PENDING").length;
-    const acceptedCount = requests.filter(r => r.status === "ACCEPTED").length;
+    const resolvedPendingCount = pendingCount ?? requests.filter(r => r.status === "PENDING").length;
+    const resolvedAcceptedCount = acceptedCount ?? requests.filter(r => r.status === "ACCEPTED").length;
+    const resolvedTotal = totalCount ?? requests.length;
 
     return (
         <Card className="w-full overflow-hidden border-0 shadow-lg gap-0 py-0">
@@ -112,7 +118,7 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                         <div>
                             <CardTitle className="text-lg font-bold">Leave Requests</CardTitle>
                             <p className="text-muted-foreground text-sm mt-0.5">
-                                {requests.length} request{requests.length !== 1 ? "s" : ""} total
+                                {resolvedTotal} request{resolvedTotal !== 1 ? "s" : ""} total
                             </p>
                         </div>
                     </div>
@@ -121,14 +127,14 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                             <Hourglass className="h-3.5 w-3.5 text-muted-foreground" />
                             <div className="text-right">
                                 <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pending</p>
-                                <p className="text-lg font-bold text-foreground">{pendingCount}</p>
+                                <p className="text-lg font-bold text-foreground">{resolvedPendingCount}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2 bg-background/70 rounded-xl px-3 py-2 border border-border/50">
                             <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
                             <div className="text-right">
                                 <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Accepted</p>
-                                <p className="text-lg font-bold text-foreground">{acceptedCount}</p>
+                                <p className="text-lg font-bold text-foreground">{resolvedAcceptedCount}</p>
                             </div>
                         </div>
                     </div>
@@ -176,15 +182,15 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                                 <TableCell>
                                     <div className="flex items-center gap-3">
                                         <EmployeeAvatar
-                                            firstName={req.requestedBy?.firstName}
-                                            lastName={req.requestedBy?.lastName}
-                                            profilePhoto={req.requestedBy?.profilePhoto}
+                                            firstName={req.requestedBySnapshot?.firstName}
+                                            lastName={req.requestedBySnapshot?.lastName}
+                                            profilePhoto={req.requestedBySnapshot?.profilePhoto}
                                         />
                                         <div className="min-w-0">
                                             <p className="font-semibold text-sm truncate">
-                                                {req.requestedBy?.firstName} {req.requestedBy?.lastName}
+                                                {req.requestedBySnapshot?.firstName} {req.requestedBySnapshot?.lastName}
                                             </p>
-                                            <p className="text-xs text-muted-foreground truncate">{req.requestedBy?.email}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{req.requestedBySnapshot?.email}</p>
                                         </div>
                                     </div>
                                 </TableCell>
@@ -193,7 +199,7 @@ export default function LeaveRequestsTable({ requests, onRefresh }: LeaveRequest
                                 <TableCell>
                                     <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full text-xs font-medium border border-primary/20">
                                         <CalendarDays className="h-3 w-3" />
-                                        {leaveTypeName(req.type)}
+                                        {leaveTypeName(req)}
                                     </span>
                                 </TableCell>
 

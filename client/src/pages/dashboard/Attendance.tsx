@@ -97,7 +97,7 @@ const Attendance = () => {
     const todaysAttendance = attendances.find(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
-        return !isNaN(d.getTime()) && isSameDay(d, today) && a.user?._id === userDetails?.id;
+        return !isNaN(d.getTime()) && isSameDay(d, today) && (a.userSnapshot?._id?.toString() ?? a.user?.toString()) === userDetails?.id;
     });
     const lastPunch = todaysAttendance && todaysAttendance.punches?.length > 0
         ? todaysAttendance.punches[todaysAttendance.punches.length - 1]
@@ -251,7 +251,7 @@ const Attendance = () => {
                                         <Input
                                             placeholder="Search by ID or Name..."
                                             value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                                             className="pl-9 border-teal-200 focus-visible:ring-teal-300"
                                         />
                                     </div>
@@ -303,15 +303,15 @@ const Attendance = () => {
                                                         <TableCell>
                                                             <div className="flex items-center gap-3">
                                                                 <EmployeeAvatar
-                                                                    firstName={record.user?.firstName}
-                                                                    lastName={record.user?.lastName}
-                                                                    profilePhoto={record.user?.profilePhoto}
+                                                                    firstName={record.userSnapshot?.firstName}
+                                                                    lastName={record.userSnapshot?.lastName}
+                                                                    profilePhoto={record.userSnapshot?.profilePhoto}
                                                                     className="h-8 w-8"
                                                                     textClassName="text-xs"
                                                                 />
                                                                 <div>
-                                                                    <span className="font-semibold">{record.user?.firstName} {record.user?.lastName}</span>
-                                                                    <div className="text-xs text-muted-foreground">{record.user?._id.slice(-6).toUpperCase()} • {record.user?.deptId?.name || 'N/A'}</div>
+                                                                    <span className="font-semibold">{record.userSnapshot?.firstName} {record.userSnapshot?.lastName}</span>
+                                                                    <div className="text-xs text-muted-foreground">{record.userSnapshot?._id?.slice(-6).toUpperCase() ?? '—'} • {record.userSnapshot?.deptName || 'N/A'}</div>
                                                                 </div>
                                                             </div>
                                                         </TableCell>

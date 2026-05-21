@@ -8,6 +8,37 @@ const SalariesSchema = new mongoose.Schema(
       required: true,
     },
 
+    userSnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+      firstName: {
+        type: String,
+        trim: true,
+      },
+      lastName: {
+        type: String,
+        trim: true,
+      },
+      email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+      },
+      profilePhoto: {
+        type: String,
+      },
+      deptId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Departments",
+      },
+      deptName: {
+        type: String,
+        trim: true,
+      },
+    },
+
     base: {
       type: Number,
       required: true,
@@ -30,6 +61,7 @@ const SalariesSchema = new mongoose.Schema(
 );
 
 SalariesSchema.index({ userId: 1 });
+SalariesSchema.index({ "userSnapshot.deptId": 1 });
 
 
 

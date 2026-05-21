@@ -1,4 +1,12 @@
-import { AsyncHandler, ApiError, ApiResponse } from "../../../utils/index.js";
+import {
+  AsyncHandler,
+  ApiError,
+  ApiResponse,
+  buildDeptSnapshot,
+  buildHiringManagerSnapshot,
+  buildSkillNameMap,
+  applySkillSnapshots,
+} from "../../../utils/index.js";
 import Types from "../../../types/index.js";
 import mongoose from "mongoose";
 import OpeningModel from "../Models/openings.model.js";
@@ -6,16 +14,19 @@ import UserModel from "../../Users/models/users.models.js";
 import QuestionModel from "../Models/questions.model.js";
 import RoundsModel from "../Models/rounds.model.js";
 import ApplicantModel from "../Models/applicants.model.js";
+import InterviewModel from "../Models/interview.model.js";
+import DepartmentModel from "../../Departments/Models/departments.models.js";
+import SkillModel from "../../Skills/models/skills.models.js";
 
 // Transforms stored { round: doc, rank } pairs into a flat sorted Round array
 const normalizeRounds = (rounds) =>
   (rounds || [])
     .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
     .map((r) => ({
-      _id: r.round?._id,
-      name: r.round?.name,
-      description: r.round?.description,
-      type: r.round?.type,
+      _id: r.round?._id || r.round,
+      name: r.roundName || r.round?.name,
+      description: r.roundDescription || r.round?.description,
+      type: r.roundType || r.round?.type,
       rank: r.rank,
     }));
 
@@ -48,6 +59,20 @@ class OpeningsController {
         throw new ApiError(Types.Errors.NotFound, "Hiring manager not found");
       }
 
+      const [department, skillDocs] = await Promise.all([
+        DepartmentModel.findById(openingData.departmentId)
+          .select("name")
+          .lean(),
+        SkillModel.find({ _id: { $in: (openingData.skills || []).map((s) => s.skillId) } })
+          .select("name")
+          .lean(),
+      ]);
+
+      const deptSnapshot = buildDeptSnapshot(department);
+      const skillNameMap = buildSkillNameMap(skillDocs);
+      const skillsSnapshot = applySkillSnapshots(openingData.skills || [], skillNameMap);
+      const hiringManagerSnapshot = buildHiringManagerSnapshot(hiringManager);
+
       let questionIds = [];
       if (
         Array.isArray(openingData.questions) &&
@@ -75,6 +100,9 @@ class OpeningsController {
         roundIds = createdRounds.map((round, idx) => ({
           round: round._id,
           rank: idx + 1,
+          roundName: round.name,
+          roundDescription: round.description,
+          roundType: round.type,
         }));
       }
 
@@ -84,8 +112,10 @@ class OpeningsController {
             title: openingData.title,
             description: openingData.description,
             departmentId: openingData.departmentId,
-            skills: openingData.skills || [],
+            departmentSnapshot: deptSnapshot,
+            skills: skillsSnapshot,
             HiringManager: openingData.HiringManager,
+            hiringManagerSnapshot,
             Status: openingData.status,
             note: openingData.note,
             expectedJoiningDate: openingData.expectedJoiningDate,
@@ -129,11 +159,7 @@ class OpeningsController {
       let queryOptions = this.repo
         .find(filter)
         .sort({ createdAt: -1 })
-        .populate("departmentId", "name")
-        .populate("HiringManager", "firstName lastName email")
-        .populate("questions")
-        .populate({ path: "rounds.round", select: "name description type" })
-        .populate("applicants", "name email phone status currentRound");
+        .lean();
 
       if (limitQuery !== "all") {
         queryOptions = queryOptions.skip(skip).limit(limit);
@@ -163,11 +189,7 @@ class OpeningsController {
     }
     const openingRaw = await this.repo
       .findById(openingId)
-      .populate("departmentId", "name")
-      .populate("HiringManager", "firstName lastName email")
       .populate("questions")
-      .populate({ path: "rounds.round", select: "name description type" })
-      .populate("applicants", "name email phone status")
       .lean();
     if (!openingRaw) {
       throw new ApiError(Types.Errors.NotFound, "Opening not found");
@@ -204,7 +226,19 @@ class OpeningsController {
       throw new ApiError(Types.Errors.NotFound, "Opening not found");
     }
 
-    await this.repo.findByIdAndUpdate(openingId, openingData, { new: true });
+    const updated = await this.repo.findByIdAndUpdate(openingId, openingData, { new: true }).lean();
+    if (updated?.title && openingData.title) {
+      await Promise.all([
+        ApplicantModel.updateMany(
+          { "openingSnapshot._id": updated._id },
+          { $set: { "openingSnapshot.title": updated.title } },
+        ),
+        InterviewModel.updateMany(
+          { "openingSnapshot._id": updated._id },
+          { $set: { "openingSnapshot.title": updated.title } },
+        ),
+      ]);
+    }
     return res
       .status(200)
       .json(new ApiResponse(200, opening, "Opening updated successfully"));
@@ -218,10 +252,9 @@ class OpeningsController {
     }
     const opening = await this.repo
       .findById(openingId)
-      .populate("departmentId", "name")
-      .populate("HiringManager", "firstName lastName")
       .populate("questions")
-      .select("-applicants");
+      .select("-applicants")
+      .lean();
     if (!opening) {
       throw new ApiError(Types.Errors.NotFound, "Opening not found");
     }

@@ -5,32 +5,7 @@ import LeaveTypeModal from "../../Leaves/LeaveTypes/Models/leavetypes.model.js";
 import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
 import mongoose from "mongoose";
 
-const usersLookups = [
-  {
-    $lookup: {
-      from: "departments",
-      localField: "deptId",
-      foreignField: "_id",
-      pipeline: [{ $project: { name: 1 } }],
-      as: "deptId",
-    },
-  },
-  {
-    $unwind: {
-      path: "$deptId",
-      preserveNullAndEmptyArrays: true,
-    },
-  },
-  {
-    $lookup: {
-      from: "skills",
-      localField: "skills",
-      foreignField: "_id",
-      pipeline: [{ $project: { name: 1 } }],
-      as: "skills",
-    },
-  },
-];
+const usersLookups = [];
 
 /**
  * Build extra $match filters from query params for a given config.
@@ -40,7 +15,7 @@ const usersLookups = [
 const MAP = {
   users: {
     model: UserModel,
-    searchFields: ["firstName", "lastName", "email", "role"],
+    searchFields: ["firstName", "lastName", "email", "role", "deptSnapshot.name", "skills.skillName"],
     lookups: usersLookups,
     project: { $project: { passwordHash: 0 } },
     // Supported extra filters: deptId | departmentId
@@ -56,7 +31,7 @@ const MAP = {
   // Alias so the client can hit /search/employees for clarity
   employees: {
     model: UserModel,
-    searchFields: ["firstName", "lastName", "email", "role"],
+    searchFields: ["firstName", "lastName", "email", "role", "deptSnapshot.name", "skills.skillName"],
     lookups: usersLookups,
     project: { $project: { passwordHash: 0 } },
     filters: (query) => {

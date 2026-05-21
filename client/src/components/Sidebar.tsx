@@ -62,7 +62,7 @@ export default function Sidebar() {
             <Separator className="mx-6 !w-auto bg-border/40" />
 
             {/* Navigation */}
-            <nav className="flex flex-col gap-1.5 p-4 flex-1">
+            <nav className="flex flex-col gap-1.5 p-4 flex-1 overflow-y-auto">
                 {items.length === 0 && (
                     <div className="p-4 text-xs text-muted-foreground text-center rounded-lg bg-muted/40 border border-border/40">
                         No menu items for role: {role || "Guest"}

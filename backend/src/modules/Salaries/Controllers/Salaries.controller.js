@@ -1,7 +1,8 @@
 
 import SalariesModel from "../Models/salaries.model.js";
-import { AsyncHandler, ApiResponse, ApiError } from "../../../utils/index.js";
+import { AsyncHandler, ApiResponse, ApiError, buildUserSnapshot } from "../../../utils/index.js";
 import Types from "../../../types/index.js";
+import UserModel from "../../Users/models/users.models.js";
 class SalariesController {
     constructor() {
         this.repo = SalariesModel;
@@ -21,11 +22,16 @@ class SalariesController {
 
         const { baseSalary, hra, lta, userId } = parsedBody.data;
 
+        const userDoc = await UserModel.findById(userId)
+            .select("firstName lastName email profilePhoto deptSnapshot deptId")
+            .lean();
+
         const savedSalary = await SalariesModel.create({
             base: baseSalary,
             hra,
             lta,
-            userId
+            userId,
+            userSnapshot: buildUserSnapshot(userDoc),
         })
 
         console.log("SAVED SALARY :: ", savedSalary);
@@ -71,15 +77,6 @@ class SalariesController {
 
     Get = AsyncHandler(async (req, res) => {
         const id = req.params.id;
-        const populateOptions = {
-            path: "userId",
-            select: "firstName lastName email deptId skills",
-            populate: [
-                { path: "deptId", select: "name" },
-                { path: "skills", select: "name" }
-            ]
-        };
-
         const { page: pageQuery, limit: limitQuery } = req.query;
         let limit = parseInt(limitQuery) || 10;
         let page = parseInt(pageQuery) || 1;
@@ -88,7 +85,7 @@ class SalariesController {
 
         if (!id) {
             if (req.user.role != "HR") {
-                let queryOptions = SalariesModel.find({ userId: req.user.id }).sort({ _id: -1 }).populate(populateOptions);
+                let queryOptions = SalariesModel.find({ userId: req.user.id }).sort({ _id: -1 }).lean();
                 if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
 
                 const salary = await queryOptions;
@@ -101,7 +98,7 @@ class SalariesController {
                 query.userId = req.query.userId;
             }
 
-            let queryOptions = SalariesModel.find(query).sort({ _id: -1 }).populate(populateOptions);
+            let queryOptions = SalariesModel.find(query).sort({ _id: -1 }).lean();
             if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
 
             const salaries = await queryOptions;
@@ -109,7 +106,7 @@ class SalariesController {
             return res.status(200).json(new ApiResponse(200, { data: salaries, total, page, limit: limitQuery === 'all' ? total : limit }, "All salaries fetched successfully"));
         }
 
-        const salary = await SalariesModel.findById(id).populate(populateOptions);
+        const salary = await SalariesModel.findById(id).lean();
 
         if (req.user.role != "HR") {
             if (!salary || salary.userId?._id?.toString() !== req.user.id) {

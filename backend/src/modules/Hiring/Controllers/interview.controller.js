@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { AsyncHandler, ApiError, ApiResponse } from "../../../utils/index.js";
+import { AsyncHandler, ApiError, ApiResponse, buildRoundSnapshot, buildOpeningSnapshot } from "../../../utils/index.js";
 import InterviewModel from "../Models/interview.model.js";
 import OpeningsModel from "../Models/openings.model.js";
 import ApplicantsModel from "../Models/applicants.model.js";
@@ -95,12 +95,27 @@ class InterviewController {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
+      const roundEntry = opening.rounds.find((r) => r.round?.toString() === roundId?.toString());
+      const roundSnapshot = buildRoundSnapshot(round, roundEntry?.rank ?? null);
+      const openingSnapshot = buildOpeningSnapshot(opening);
+      const applicantSnapshot = { _id: applicant._id, name: applicant.name, email: applicant.email };
+      const reviewersSnapshot = reviewerDocs.map((r) => ({
+        _id: r._id,
+        firstName: r.firstName,
+        lastName: r.lastName,
+        email: r.email,
+      }));
+
       const [interview] = await this.repo.create(
         [
           {
             applicantId,
+            applicantSnapshot,
             roundId,
+            roundSnapshot,
             reviewers,
+            reviewersSnapshot,
+            openingSnapshot,
             reviewDate: interviewDate,
             status: status || "SCHEDULED",
             feedback,
@@ -243,48 +258,30 @@ class InterviewController {
         throw new ApiError(400, "Invalid interview ID");
       }
 
-      const interview = await this.repo
-        .findById(interviewId)
-        .populate({
-          path: "applicantId",
-          select: "name email",
-        })
-        .populate({
-          path: "reviewers",
-          select: "name email",
-        });
+      const interview = await this.repo.findById(interviewId).lean();
 
       if (!interview) {
         throw new ApiError(404, "Interview not found");
       }
 
-      const opening = await this.openingsModel.findOne({
-        "rounds.round": interview.roundId,
-      });
+      const opening = await this.openingsModel
+        .findOne({ "rounds.round": interview.roundId })
+        .select("HiringManager")
+        .lean();
       if (!opening) {
         throw new ApiError(404, "Associated opening not found");
       }
 
-      if (
-        !interview.reviewers.includes(req.user.id) ||
-        opening.HiringManager.toString() !== req.user.id ||
-        req.user.role != "HR"
-      ) {
-        throw new ApiError(
-          403,
-          "You do not have permission to view this interview",
-        );
+      const isReviewer = (interview.reviewers || []).some(
+        (r) => r.toString() === req.user.id,
+      );
+      if (!isReviewer && opening.HiringManager.toString() !== req.user.id && req.user.role !== "HR") {
+        throw new ApiError(403, "You do not have permission to view this interview");
       }
 
       return res
         .status(200)
-        .json(
-          new ApiResponse(
-            200,
-            { interview },
-            "Interview retrieved successfully",
-          ),
-        );
+        .json(new ApiResponse(200, { interview }, "Interview retrieved successfully"));
     } else {
       const roundId = req.query.roundId;
       const applicantId = req.query.applicantId;
@@ -294,46 +291,15 @@ class InterviewController {
       if (!roundId) {
         const interviews = await this.repo
           .find({ applicantId: applicantId })
-          .populate({
-            path: "applicantId",
-            select: "name email",
-          })
-          .populate({
-            path: "reviewers",
-            select: "name email",
-          })
-          .populate({
-            path: "roundId",
-            select: "name",
-          })
-          .populate({
-            path: "openingId",
-            select: "title",
-          });
+          .lean();
         return res
           .status(200)
-          .json(
-            new ApiResponse(
-              200,
-              { interviews },
-              "Interviews retrieved successfully",
-            ),
-          );
+          .json(new ApiResponse(200, { interviews }, "Interviews retrieved successfully"));
       }
 
       const interview = await this.repo
-        .findOne({
-          roundId,
-          applicantId,
-        })
-        .populate({
-          path: "applicantId",
-          select: "name email",
-        })
-        .populate({
-          path: "reviewers",
-          select: "name email",
-        });
+        .findOne({ roundId, applicantId })
+        .lean();
 
 
       return res
@@ -359,15 +325,15 @@ class InterviewController {
       throw new ApiError(400, "Invalid update data");
     }
 
-    const interview = await this.repo.findById(interviewId).populate("reviewers", "_id");
+    const interview = await this.repo.findById(interviewId);
     if (!interview) throw new ApiError(404, "Interview not found");
 
     const opening = await this.openingsModel.findOne({ "rounds.round": interview.roundId });
     if (!opening) throw new ApiError(404, "Opening not found");
 
     // Only reviewers, hiring manager, or HR may update
-    const isReviewer = interview.reviewers.some(
-      (r) => r._id.toString() === req.user.id,
+    const isReviewer = (interview.reviewers || []).some(
+      (r) => r.toString() === req.user.id,
     );
     const isHiringManager = opening.HiringManager.toString() === req.user.id;
     const isHR = req.user.role === "HR";
@@ -378,8 +344,9 @@ class InterviewController {
 
     const { reviewers, reviewDate, feedback, grades, result } = parsedBody.data;
 
+    let reviewerDocs = [];
     if (reviewers) {
-      const reviewerDocs = await this.usersModel.find({ _id: { $in: reviewers } });
+      reviewerDocs = await this.usersModel.find({ _id: { $in: reviewers } });
       if (reviewerDocs.length !== reviewers.length) {
         throw new ApiError(404, "One or more reviewers not found");
       }
@@ -390,7 +357,15 @@ class InterviewController {
     session.startTransaction();
     try {
       // Update interview fields
-      if (reviewers) interview.reviewers = reviewers;
+      if (reviewers) {
+        interview.reviewers = reviewers;
+        interview.reviewersSnapshot = reviewerDocs.map((r) => ({
+          _id: r._id,
+          firstName: r.firstName,
+          lastName: r.lastName,
+          email: r.email,
+        }));
+      }
       if (reviewDate !== undefined) interview.reviewDate = new Date(reviewDate);
       if (feedback !== undefined) interview.feedback = feedback;
       if (grades !== undefined) interview.grades = grades;
@@ -483,10 +458,7 @@ class InterviewController {
       throw error;
     }
 
-    const updated = await this.repo
-      .findById(interviewId)
-      .populate({ path: "applicantId", select: "name email" })
-      .populate({ path: "reviewers", select: "firstName lastName email" });
+    const updated = await this.repo.findById(interviewId).lean();
 
     return res
       .status(200)
@@ -505,29 +477,15 @@ class InterviewController {
     );
 
     // Find all interviews where user is a reviewer OR manages the opening's round
-    const interviews = await this.repo
+    const enriched = await this.repo
       .find({
         $or: [
           { reviewers: userId },
           ...(managerRoundIds.length ? [{ roundId: { $in: managerRoundIds } }] : []),
         ],
       })
-      .populate({ path: "applicantId", select: "name email" })
-      .populate({ path: "reviewers", select: "firstName lastName email" })
-      .populate({ path: "roundId", select: "name type" })
-      .sort({ reviewDate: 1 });
-
-    // Attach opening info to each interview
-    const enriched = await Promise.all(
-      interviews.map(async (interview) => {
-        const opening = await this.openingsModel
-          .findOne({ "rounds.round": interview.roundId })
-          .select("title departmentId HiringManager")
-          .populate("departmentId", "name")
-          .populate("HiringManager", "firstName lastName email");
-        return { ...interview.toObject(), opening: opening ?? null };
-      }),
-    );
+      .sort({ reviewDate: 1 })
+      .lean();
 
     return res
       .status(200)

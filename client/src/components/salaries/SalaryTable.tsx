@@ -25,21 +25,20 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-interface User {
+interface UserSnapshot {
     _id: string;
     firstName: string;
     lastName: string;
     email: string;
     profilePhoto?: string;
-    deptId?: {
-        _id: string;
-        name: string;
-    };
+    deptId?: string;
+    deptName?: string;
 }
 
 interface Salary {
     _id: string;
-    userId: User;
+    userId: string;
+    userSnapshot?: UserSnapshot;
     base: number;
     hra: number;
     lta: number;
@@ -155,16 +154,16 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <EmployeeAvatar
-                                                firstName={salary.userId?.firstName}
-                                                lastName={salary.userId?.lastName}
-                                                profilePhoto={salary.userId?.profilePhoto}
+                                                firstName={salary.userSnapshot?.firstName}
+                                                lastName={salary.userSnapshot?.lastName}
+                                                profilePhoto={salary.userSnapshot?.profilePhoto}
                                             />
                                             <div className="min-w-0">
                                                 <p className="font-semibold text-sm truncate">
-                                                    {salary.userId?.firstName} {salary.userId?.lastName}
+                                                    {salary.userSnapshot?.firstName} {salary.userSnapshot?.lastName}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground truncate">
-                                                    {salary.userId?.email}
+                                                    {salary.userSnapshot?.email}
                                                 </p>
                                             </div>
                                         </div>
@@ -172,12 +171,12 @@ const SalaryTable: React.FC<SalaryTableProps> = ({ salaries, isHR, onEdit, onDel
 
                                     {/* Department */}
                                     <TableCell>
-                                        {salary.userId?.deptId ? (
+                                        {salary.userSnapshot?.deptName ? (
                                             <Badge
                                                 variant="secondary"
                                                 className="border-black/40 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800"
                                             >
-                                                {salary.userId.deptId.name}
+                                                {salary.userSnapshot.deptName}
                                             </Badge>
                                         ) : (
                                             <span className="text-muted-foreground text-sm italic">Unassigned</span>

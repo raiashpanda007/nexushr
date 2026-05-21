@@ -1,9 +1,10 @@
 import LeaveRequestModel from "../Models/leaveRequests.model.js";
 import LeaveBalanceModel from "../../LeavesBalances/Models/leavesBalances.model.js";
 import UserModel from "../../../Users/models/users.models.js";
-import { AsyncHandler, ApiResponse, ApiError } from "../../../../utils/index.js"
+import { AsyncHandler, ApiResponse, ApiError, buildUserSnapshot, buildLeaveTypeSnapshot } from "../../../../utils/index.js"
 import Types from "../../../../types/index.js";
 import mongoose from "mongoose";
+import LeaveTypeModel from "../../LeaveTypes/Models/leavetypes.model.js";
 
 
 class LeaveRequestController {
@@ -21,7 +22,13 @@ class LeaveRequestController {
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
-            const leaveBalance = await LeaveBalanceModel.findOne({ user: req.user.id }).session(session);
+            const [leaveBalance, userDoc, leaveTypeDoc] = await Promise.all([
+                LeaveBalanceModel.findOne({ user: req.user.id }).session(session),
+                UserModel.findById(req.user.id)
+                    .select("firstName lastName email profilePhoto deptSnapshot deptId")
+                    .lean(),
+                LeaveTypeModel.findById(type).select("name code length isPaid").lean(),
+            ]);
             if (!leaveBalance) {
                 throw new ApiError(Types.Errors.Forbidden, "No leave balance found for this user");
             }
@@ -34,7 +41,15 @@ class LeaveRequestController {
             typeBalance.amount -= quantity;
             await leaveBalance.save({ session });
 
-            const leaveRequest = new this.repo({ requestedBy: req.user.id, type, quantity, from, to });
+            const leaveRequest = new this.repo({
+                requestedBy: req.user.id,
+                requestedBySnapshot: buildUserSnapshot(userDoc),
+                type,
+                typeSnapshot: buildLeaveTypeSnapshot(leaveTypeDoc),
+                quantity,
+                from,
+                to,
+            });
             await leaveRequest.save({ session });
 
             await session.commitTransaction();
@@ -109,7 +124,7 @@ class LeaveRequestController {
                     filter.requestedBy = new mongoose.Types.ObjectId(userId);
                 }
 
-                let queryOptions = this.repo.find(filter).populate("requestedBy").populate("respondedBy").populate("type").sort({ createdAt: -1 });
+                let queryOptions = this.repo.find(filter).sort({ createdAt: -1 }).lean();
                 if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
 
                 const leaveRequests = await queryOptions;
@@ -117,7 +132,7 @@ class LeaveRequestController {
 
                 return res.status(200).json(new ApiResponse(200, { data: leaveRequests, total, page, limit: limitQuery === 'all' ? total : limit }, "Leave requests fetched successfully"));
             } else {
-                let queryOptions = this.repo.find({ requestedBy: req.user.id }).populate("requestedBy").populate("respondedBy").populate("type").sort({ createdAt: -1 });
+                let queryOptions = this.repo.find({ requestedBy: req.user.id }).sort({ createdAt: -1 }).lean();
                 if (limitQuery !== 'all') queryOptions = queryOptions.skip(skip).limit(limit);
 
                 const leaveRequests = await queryOptions;
@@ -127,13 +142,13 @@ class LeaveRequestController {
             }
         } else {
             if (req.user.role != "HR") {
-                const leaveRequest = await this.repo.findOne({ _id: uid, requestedBy: req.user.id }).populate("requestedBy").populate("respondedBy").populate("type");
+                const leaveRequest = await this.repo.findOne({ _id: uid, requestedBy: req.user.id }).lean();
                 if (!leaveRequest) {
                     throw new ApiError(Types.Errors.NotFound, "Leave request not found");
                 }
                 return res.status(200).json(new ApiResponse(200, leaveRequest, "Leave request fetched successfully"));
             } else {
-                const leaveRequest = await this.repo.findById(uid).populate("requestedBy").populate("respondedBy").populate("type");
+                const leaveRequest = await this.repo.findById(uid).lean();
                 if (!leaveRequest) {
                     throw new ApiError(Types.Errors.NotFound, "Leave request not found");
                 }
@@ -161,7 +176,12 @@ class LeaveRequestController {
                 throw new ApiError(Types.Errors.BadRequest, "Leave request has already been responded to");
             }
 
+            const responderDoc = await UserModel.findById(req.user.id)
+                .select("firstName lastName email profilePhoto deptSnapshot deptId")
+                .lean();
+
             leaveRequest.respondedBy = req.user.id;
+            leaveRequest.respondedBySnapshot = buildUserSnapshot(responderDoc);
             leaveRequest.status = req.body.status;
             await leaveRequest.save({ session });
 
@@ -218,32 +238,12 @@ class LeaveRequestController {
             // Across all departments with leave type breakdown.
             const summaryPipeline = [
                 { $match: matchStage },
-
-                {
-                    $lookup: {
-                        from: "users",
-                        localField: "requestedBy",
-                        foreignField: "_id",
-                        as: "requestedBy"
-                    }
-                },
-                { $unwind: "$requestedBy" },
-
-                {
-                    $lookup: {
-                        from: "leavetypes",
-                        localField: "type",
-                        foreignField: "_id",
-                        as: "type"
-                    }
-                },
-                { $unwind: "$type" },
-
                 {
                     $group: {
                         _id: {
-                            deptId: "$requestedBy.deptId",
-                            type: "$type.name"
+                            deptId: "$requestedBySnapshot.deptId",
+                            deptName: "$requestedBySnapshot.deptName",
+                            type: "$typeSnapshot.name"
                         },
                         count: { $sum: 1 }
                     }
@@ -251,7 +251,10 @@ class LeaveRequestController {
 
                 {
                     $group: {
-                        _id: "$_id.deptId",
+                        _id: {
+                            deptId: "$_id.deptId",
+                            deptName: "$_id.deptName"
+                        },
                         totalLeaves: { $sum: "$count" },
                         leaveTypes: {
                             $push: {
@@ -263,20 +266,10 @@ class LeaveRequestController {
                 },
 
                 {
-                    $lookup: {
-                        from: "departments",
-                        localField: "_id",
-                        foreignField: "_id",
-                        as: "department"
-                    }
-                },
-                { $unwind: { path: "$department", preserveNullAndEmptyArrays: true } },
-
-                {
                     $project: {
                         _id: 0,
-                        departmentId: { $ifNull: ["$_id", "unassigned"] },
-                        department: { $ifNull: ["$department.name", "Unassigned"] },
+                        departmentId: { $ifNull: ["$_id.deptId", "unassigned"] },
+                        department: { $ifNull: ["$_id.deptName", "Unassigned"] },
                         totalLeaves: 1,
                         leaveTypes: 1
                     }
@@ -299,15 +292,15 @@ class LeaveRequestController {
         if (departmentId === "unassigned") {
             departmentMatch = {
                 $or: [
-                    { "requestedBy.deptId": { $exists: false } },
-                    { "requestedBy.deptId": null }
+                    { "requestedBySnapshot.deptId": { $exists: false } },
+                    { "requestedBySnapshot.deptId": null }
                 ]
             };
         } else {
             if (!mongoose.Types.ObjectId.isValid(departmentId)) {
                 throw new ApiError(Types.Errors.BadRequest, "Invalid department id");
             }
-            departmentMatch = { "requestedBy.deptId": new mongoose.Types.ObjectId(departmentId) };
+            departmentMatch = { "requestedBySnapshot.deptId": new mongoose.Types.ObjectId(departmentId) };
         }
 
         // First aggregate the leave requests with user and type details, filtered by department and status if provided
@@ -316,28 +309,7 @@ class LeaveRequestController {
 
         const detailedPipeline = [
             { $match: matchStage },
-
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "requestedBy",
-                    foreignField: "_id",
-                    as: "requestedBy",
-                },
-            },
-            { $unwind: "$requestedBy" },
-
             { $match: departmentMatch },
-
-            {
-                $lookup: {
-                    from: "leavetypes",
-                    localField: "type",
-                    foreignField: "_id",
-                    as: "type",
-                },
-            },
-            { $unwind: "$type" },
 
             {
                 $facet: {
@@ -346,12 +318,12 @@ class LeaveRequestController {
                             $project: {
                                 _id: 0,
                                 user: {
-                                    firstName: "$requestedBy.firstName",
-                                    lastName: "$requestedBy.lastName",
-                                    email: "$requestedBy.email",
+                                    firstName: "$requestedBySnapshot.firstName",
+                                    lastName: "$requestedBySnapshot.lastName",
+                                    email: "$requestedBySnapshot.email",
                                 },
-                                leaveType: "$type.name",
-                                leaveCode: "$type.code",
+                                leaveType: "$typeSnapshot.name",
+                                leaveCode: "$typeSnapshot.code",
                                 from: 1,
                                 to: 1,
                                 quantity: 1,
@@ -366,12 +338,12 @@ class LeaveRequestController {
                         {
                             $group: {
                                 _id: {
-                                    userId: "$requestedBy._id",
-                                    type: "$type.name",
+                                    userId: "$requestedBySnapshot._id",
+                                    type: "$typeSnapshot.name",
                                 },
-                                firstName: { $first: "$requestedBy.firstName" },
-                                lastName: { $first: "$requestedBy.lastName" },
-                                email: { $first: "$requestedBy.email" },
+                                firstName: { $first: "$requestedBySnapshot.firstName" },
+                                lastName: { $first: "$requestedBySnapshot.lastName" },
+                                email: { $first: "$requestedBySnapshot.email" },
                                 count: { $sum: 1 },
                             },
                         },
@@ -407,7 +379,7 @@ class LeaveRequestController {
                     leaveTypeSummary: [
                         {
                             $group: {
-                                _id: "$type.name",
+                                _id: "$typeSnapshot.name",
                                 count: { $sum: 1 },
                             },
                         },

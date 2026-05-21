@@ -219,7 +219,7 @@ export default function InterviewPanel({
                 </div>
 
                 {/* Reviewers */}
-                {interview.reviewers.length > 0 && (
+                {(interview.reviewersSnapshot?.length ?? interview.reviewers?.length ?? 0) > 0 && (
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
@@ -228,7 +228,7 @@ export default function InterviewPanel({
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {interview.reviewers.map((r) => (
+                            {(interview.reviewersSnapshot ?? []).map((r) => (
                                 <div
                                     key={r._id}
                                     className="flex items-center gap-2 bg-muted/40 border border-border/50 rounded-lg px-3 py-1.5"

@@ -1,10 +1,87 @@
-import { ApiError, ApiResponse, AsyncHandler, GenerateUploadUrl } from "../../../utils/index.js";
+import {
+  ApiError,
+  ApiResponse,
+  AsyncHandler,
+  GenerateUploadUrl,
+  buildDeptSnapshot,
+  buildUserSnapshot,
+  buildSkillNameMap,
+  applySkillSnapshots,
+  buildHiringManagerSnapshot,
+} from "../../../utils/index.js";
 import UserModel from "../models/users.models.js";
 import { SessionModel } from "../models/session.model.js";
 import Types from "../../../types/index.js"
 import { GenerateAccessToken, GenerateRefreshToken, VerifyRefreshToken } from "../Encrypts.js"
 import bcrypt from "bcrypt";
 import { v7 as uuid } from "uuid";
+import DepartmentModel from "../../Departments/Models/departments.models.js";
+import SkillModel from "../../Skills/models/skills.models.js";
+import AttendanceModel from "../../Attendance/Models/attendance.model.js";
+import LeaveBalanceModel from "../../Leaves/LeavesBalances/Models/leavesBalances.model.js";
+import LeaveRequestModel from "../../Leaves/LeaveRequests/Models/leaveRequests.model.js";
+import PayrollModel from "../../Payroll/Models/payroll.model.js";
+import SalariesModel from "../../Salaries/Models/salaries.model.js";
+import OpeningModel from "../../Hiring/Models/openings.model.js";
+import InterviewModel from "../../Hiring/Models/interview.model.js";
+import ApplicantModel from "../../Hiring/Models/applicants.model.js";
+
+const getSkillNameMapForUser = async (skills) => {
+  const skillIds = (skills || [])
+    .map((s) => s?.skillId)
+    .filter(Boolean);
+  if (skillIds.length === 0) return new Map();
+
+  const skillDocs = await SkillModel.find({ _id: { $in: skillIds } })
+    .select("name")
+    .lean();
+  return buildSkillNameMap(skillDocs);
+};
+
+const syncUserSnapshots = async (userDoc) => {
+  if (!userDoc) return;
+  const userSnapshot = buildUserSnapshot(userDoc);
+  const managerSnapshot = buildHiringManagerSnapshot(userDoc);
+
+  await Promise.all([
+    AttendanceModel.updateMany({ user: userDoc._id }, { $set: { userSnapshot } }),
+    LeaveBalanceModel.updateMany({ user: userDoc._id }, { $set: { userSnapshot } }),
+    LeaveRequestModel.updateMany({ requestedBy: userDoc._id }, { $set: { requestedBySnapshot: userSnapshot } }),
+    LeaveRequestModel.updateMany({ respondedBy: userDoc._id }, { $set: { respondedBySnapshot: userSnapshot } }),
+    PayrollModel.updateMany({ user: userDoc._id }, { $set: { userSnapshot } }),
+    SalariesModel.updateMany({ userId: userDoc._id }, { $set: { userSnapshot } }),
+    OpeningModel.updateMany({ HiringManager: userDoc._id }, { $set: { hiringManagerSnapshot: managerSnapshot } }),
+    ApplicantModel.updateMany(
+      { "openingSnapshot.hiringManagerId": userDoc._id },
+      {
+        $set: {
+          "openingSnapshot.hiringManagerName":
+            `${managerSnapshot.firstName || ""} ${managerSnapshot.lastName || ""}`.trim(),
+          "openingSnapshot.hiringManagerEmail": managerSnapshot.email,
+        },
+      },
+    ),
+    InterviewModel.updateMany(
+      { "openingSnapshot.hiringManagerId": userDoc._id },
+      {
+        $set: {
+          "openingSnapshot.hiringManagerName":
+            `${managerSnapshot.firstName || ""} ${managerSnapshot.lastName || ""}`.trim(),
+          "openingSnapshot.hiringManagerEmail": managerSnapshot.email,
+        },
+      },
+    ),
+    InterviewModel.updateMany(
+      { reviewers: userDoc._id },
+      {
+        $set: {
+          "reviewersSnapshot.$[reviewer]": managerSnapshot,
+        },
+      },
+      { arrayFilters: [{ "reviewer._id": userDoc._id }] },
+    ),
+  ]);
+};
 
 
 class UserController {
@@ -26,15 +103,23 @@ class UserController {
     }
     const { email, firstName, lastName, password, deptId, skills, profilePhoto, note } = parsedBody.data
 
+    const [department, skillNameMap] = await Promise.all([
+      DepartmentModel.findById(deptId).select("name").lean(),
+      getSkillNameMapForUser(skills),
+    ]);
+
+    const deptSnapshot = buildDeptSnapshot(department);
+    const skillsSnapshot = applySkillSnapshots(skills, skillNameMap);
 
     const savedUser = await UserModel.create({
       email: email,
       firstName: firstName,
       lastName: lastName,
       deptId: deptId,
+      deptSnapshot,
       profilePhoto: profilePhoto,
       note: note,
-      skills: skills,
+      skills: skillsSnapshot,
       passwordHash: password,
       role: "EMPLOYEE"
     })
@@ -59,16 +144,23 @@ class UserController {
 
     const { email, firstName, lastName, password, deptId, skills, profilePhoto, note } = parsedBody.data;
 
+    const [department, skillNameMap] = await Promise.all([
+      DepartmentModel.findById(deptId).select("name").lean(),
+      getSkillNameMapForUser(skills),
+    ]);
 
+    const deptSnapshot = buildDeptSnapshot(department);
+    const skillsSnapshot = applySkillSnapshots(skills, skillNameMap);
 
     const savedUser = await UserModel.create({
       email: email,
       firstName: firstName,
       lastName: lastName,
       deptId: deptId,
+      deptSnapshot,
       profilePhoto: profilePhoto,
       note: note,
-      skills: skills,
+      skills: skillsSnapshot,
       passwordHash: password,
       role: "HR"
     })
@@ -146,17 +238,6 @@ class UserController {
   GetUsers = AsyncHandler(async (req, res) => {
     const userID = req.params.id;
 
-    const populateOptions = [
-      {
-        path: "deptId",
-        select: "name", // only department name
-      },
-      {
-        path: "skills.skillId",
-        select: "name", // only skill name
-      },
-    ];
-
     if (req.user.role === "HR") {
       if (!userID) {
         const { page: pageQuery, limit: limitQuery } = req.query;
@@ -169,9 +250,9 @@ class UserController {
         const users = await UserModel.find()
           .sort({ _id: -1 })
           .select("-passwordHash")
-          .populate(populateOptions)
           .skip(skip)
-          .limit(limit);
+          .limit(limit)
+          .lean();
 
         const total = await UserModel.countDocuments();
 
@@ -182,7 +263,7 @@ class UserController {
 
       const user = await UserModel.findById(userID)
         .select("-passwordHash")
-        .populate(populateOptions);
+        .lean();
 
       if (!user) {
         throw new ApiError(Types.Errors.NotFound, "User not found");
@@ -198,7 +279,7 @@ class UserController {
     if (!userID) {
       const user = await UserModel.findById(req.user.id)
         .select("-passwordHash")
-        .populate(populateOptions);
+        .lean();
 
       return res
         .status(200)
@@ -312,19 +393,37 @@ class UserController {
       throw new ApiError(Types.Errors.NotFound, "User not found");
     }
 
-    user.email = email;
-    user.firstName = firstName;
-    user.lastName = lastName;
-    user.deptId = deptId;
-    user.skills = skills;
-    if (profilePhoto) {
+    let deptSnapshot = user.deptSnapshot;
+    if (deptId) {
+      const department = await DepartmentModel.findById(deptId).select("name").lean();
+      deptSnapshot = buildDeptSnapshot(department);
+      user.deptId = deptId;
+      user.deptSnapshot = deptSnapshot;
+    }
+
+    if (email) user.email = email;
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+
+    if (skills) {
+      const skillNameMap = await getSkillNameMapForUser(skills);
+      user.skills = applySkillSnapshots(skills, skillNameMap);
+    }
+    if (profilePhoto !== undefined) {
       user.profilePhoto = profilePhoto;
     }
-    if (note) {
+    if (note !== undefined) {
       user.note = note;
     }
 
     await user.save();
+
+    const shouldSyncSnapshots = Boolean(
+      email || firstName || lastName || profilePhoto || deptId,
+    );
+    if (shouldSyncSnapshots) {
+      await syncUserSnapshots(user);
+    }
 
     user.passwordHash = undefined;
 

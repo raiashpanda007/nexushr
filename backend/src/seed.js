@@ -16,6 +16,17 @@ import QuestionModel from "./modules/Hiring/Models/questions.model.js";
 import RoundsModel from "./modules/Hiring/Models/rounds.model.js";
 import ApplicantModel from "./modules/Hiring/Models/applicants.model.js";
 import bcrypt from "bcrypt";
+import {
+    buildDeptSnapshot,
+    buildUserSnapshot,
+    buildSkillNameMap,
+    applySkillSnapshots,
+    buildLeaveTypeSnapshot,
+    buildSalarySnapshot,
+    buildHiringManagerSnapshot,
+    buildOpeningSnapshot,
+    buildRoundSnapshot,
+} from "./utils/snapshots.js";
 
 const TARGET = 10000;
 
@@ -36,7 +47,6 @@ const seed = async () => {
             { name: "Finance", description: "Manages company finances and accounting." }
         ];
 
-
         const skills = [
             { name: "Administration", category: "MANAGEMENT" },
             { name: "Java", category: "TECHNICAL" },
@@ -49,14 +59,12 @@ const seed = async () => {
         ];
         const categories = ["MANAGEMENT", "TECHNICAL", "SOFT_SKILL"];
 
-
         const leaveTypes = [
             { name: "Sick Leave", code: "SL", length: "FULL", isPaid: true },
             { name: "Casual Leave", code: "CL", length: "FULL", isPaid: true },
             { name: "Annual Leave", code: "AL", length: "FULL", isPaid: true },
             { name: "Loss Of Pay", code: "LOP", length: "FULL", isPaid: false }
         ];
-
 
         // 1. Seed Departments
         console.log("\n--- Seeding Departments ---");
@@ -70,8 +78,7 @@ const seed = async () => {
             finalDepartments.push(dept);
         }
 
-        // Ensure departments limited to 10 human-friendly names
-        const moreDeptNames = ["Operations","Research","Design","Product"];
+        const moreDeptNames = ["Operations", "Research", "Design", "Product"];
         for (const name of moreDeptNames) {
             let d = await DepartmentModal.findOne({ name });
             if (!d) {
@@ -93,16 +100,18 @@ const seed = async () => {
             finalSkills.push(skill);
         }
 
-        // Ensure skills limited to 10 human-friendly names (add until ~10)
-        const moreSkillNames = ["Node.js","TypeScript"];
+        const moreSkillNames = ["Node.js", "TypeScript"];
         for (const name of moreSkillNames) {
             let sk = await SkillModal.findOne({ name });
             if (!sk) {
-                sk = await SkillModal.create({ name, category: categories[Math.floor(Math.random()*categories.length)] });
+                sk = await SkillModal.create({ name, category: categories[Math.floor(Math.random() * categories.length)] });
                 console.log(`Created Skill: ${sk.name}`);
             }
             if (!finalSkills.find(fs => fs._id.equals(sk._id))) finalSkills.push(sk);
         }
+
+        // Pre-build skill name map for inline snapshot use
+        const skillNameMap = buildSkillNameMap(finalSkills);
 
         // 3. Seed Leave Types
         console.log("\n--- Seeding Leave Types ---");
@@ -116,10 +125,9 @@ const seed = async () => {
             finalLeaveTypes.push(leaveType);
         }
 
-        // Ensure leave types limited to 10 human-friendly names (add until ~10)
-        const moreLeaveNames = ["Maternity Leave","Paternity Leave","Bereavement Leave","Comp-Off","Study Leave","Unpaid Leave"];
-        for (let i=0;i<moreLeaveNames.length;i++){
-            const code = `LT${i+10}`;
+        const moreLeaveNames = ["Maternity Leave", "Paternity Leave", "Bereavement Leave", "Comp-Off", "Study Leave", "Unpaid Leave"];
+        for (let i = 0; i < moreLeaveNames.length; i++) {
+            const code = `LT${i + 10}`;
             let lt = await LeaveTypeModal.findOne({ name: moreLeaveNames[i] });
             if (!lt) {
                 lt = await LeaveTypeModal.create({ name: moreLeaveNames[i], code, length: "FULL", isPaid: Math.random() > 0.2 });
@@ -128,27 +136,24 @@ const seed = async () => {
             if (!finalLeaveTypes.find(f => f._id.equals(lt._id))) finalLeaveTypes.push(lt);
         }
 
-        // Utility: Generate Attendance Records for a user
+        // Helper: Generate Attendance Records for a user
         const generateAttendanceHistory = async (user) => {
             const today = new Date();
-            // Generate attendance for the last 15 days
+            const userSnap = buildUserSnapshot(user);
             for (let i = 1; i <= 15; i++) {
                 const date = new Date(today);
                 date.setDate(today.getDate() - i);
                 date.setUTCHours(0, 0, 0, 0);
 
-                // Skip weekends roughly
                 if (date.getDay() === 0 || date.getDay() === 6) continue;
 
                 const existingAttendance = await AttendanceModel.findOne({ user: user._id, date });
                 if (!existingAttendance) {
-                    // Randomize punches: IN around 9 AM +/- 1 hr
                     const inHour = 8 + Math.floor(Math.random() * 3);
                     const inMinute = Math.floor(Math.random() * 60);
                     const inTime = new Date(date);
                     inTime.setHours(inHour, inMinute, 0, 0);
 
-                    // OUT around 5 PM +/- 2 hrs
                     const outHour = 16 + Math.floor(Math.random() * 4);
                     const outMinute = Math.floor(Math.random() * 60);
                     const outTime = new Date(date);
@@ -159,7 +164,6 @@ const seed = async () => {
                         { type: 'OUT', time: outTime }
                     ];
 
-                    // Sometimes add a lunch break
                     if (Math.random() > 0.5) {
                         const lunchOut = new Date(date);
                         lunchOut.setHours(13, 0, 0, 0);
@@ -172,6 +176,7 @@ const seed = async () => {
 
                     await AttendanceModel.create({
                         user: user._id,
+                        userSnapshot: userSnap,
                         date,
                         punches,
                         totalMinutes: Math.floor(diffMinutes)
@@ -184,10 +189,13 @@ const seed = async () => {
         const seedUserData = async (user, salaryData) => {
             if (!user) return;
 
+            const userSnap = buildUserSnapshot(user);
+
             let salary = await SalariesModel.findOne({ userId: user._id });
             if (!salary) {
                 salary = await SalariesModel.create({
                     userId: user._id,
+                    userSnapshot: userSnap,
                     base: salaryData.base,
                     hra: salaryData.hra,
                     lta: salaryData.lta
@@ -198,20 +206,22 @@ const seed = async () => {
             if (!balance) {
                 const leavesData = finalLeaveTypes.map(lt => ({
                     type: lt._id,
+                    typeSnapshot: buildLeaveTypeSnapshot(lt),
                     amount: 15
                 }));
                 balance = await LeaveBalanceModel.create({
                     user: user._id,
+                    userSnapshot: userSnap,
                     leaves: leavesData
                 });
             }
 
-            // Generate dense attendance data
             await generateAttendanceHistory(user);
 
-            // Generate Leave Request
             const selectedLeave = balance.leaves[Math.floor(Math.random() * balance.leaves.length)];
             const leaveTypeId = selectedLeave.type;
+            const leaveTypeDoc = finalLeaveTypes.find(lt => lt._id.equals(leaveTypeId));
+
             const fromDate = new Date();
             fromDate.setUTCHours(0, 0, 0, 0);
             fromDate.setDate(fromDate.getDate() + 1);
@@ -225,7 +235,9 @@ const seed = async () => {
                 try {
                     await LeaveRequestModel.create({
                         requestedBy: user._id,
+                        requestedBySnapshot: userSnap,
                         type: leaveTypeId,
+                        typeSnapshot: buildLeaveTypeSnapshot(leaveTypeDoc),
                         quantity: 2,
                         from: fromDate,
                         to: toDate,
@@ -236,16 +248,17 @@ const seed = async () => {
                 }
             }
 
-            // Generate Payroll
             const currentDate = new Date();
             let payroll = await PayrollModal.findOne({ user: user._id, month: currentDate.getMonth() + 1, year: currentDate.getFullYear() });
             if (!payroll) {
                 try {
                     await PayrollModal.create({
                         user: user._id,
+                        userSnapshot: userSnap,
                         bonus: [{ reason: "Performance", amount: 1000 }],
                         deduction: [{ reason: "Tax", amount: 500 }],
                         salary: salary._id,
+                        salarySnapshot: buildSalarySnapshot(salary),
                         month: currentDate.getMonth() + 1,
                         year: currentDate.getFullYear()
                     });
@@ -258,16 +271,22 @@ const seed = async () => {
         // 4. Create Admin (HR) User
         const adminEmail = "admin@nexushr.com";
         let admin = await UserModel.findOne({ email: adminEmail });
+        const hrDept = finalDepartments.find(d => d.name === "Human Resources") || finalDepartments[0];
 
         if (!admin) {
+            const adminSkills = applySkillSnapshots(
+                finalSkills.slice(0, 2).map((s, idx) => ({ skillId: s._id, amount: idx + 3 })),
+                skillNameMap
+            );
             admin = await UserModel.create({
                 email: adminEmail,
                 firstName: "Admin",
                 lastName: "User",
                 passwordHash: "password123",
                 role: "HR",
-                deptId: finalDepartments.find(d => d.name === "Human Resources")?._id,
-                skills: finalSkills.slice(0, 2).map((s, idx) => ({ skillId: s._id, amount: idx + 3 })),
+                deptId: hrDept._id,
+                deptSnapshot: buildDeptSnapshot(hrDept),
+                skills: adminSkills,
                 online: true
             });
             console.log(`\nCREATED ADMIN USER: ${adminEmail}`);
@@ -299,11 +318,10 @@ const seed = async () => {
 
             if (!user) {
                 const dept = finalDepartments.find(d => d.name === emp.dept) || finalDepartments[0];
-                const empSkills = [
+                const rawSkills = [
                     { skillId: finalSkills[i % finalSkills.length]._id, amount: 2 + (i % 4) },
                     { skillId: finalSkills[(i + 1) % finalSkills.length]._id, amount: 2 + ((i + 1) % 4) }
                 ];
-
                 user = await UserModel.create({
                     email,
                     firstName: emp.first,
@@ -311,7 +329,8 @@ const seed = async () => {
                     passwordHash: "password123",
                     role: "EMPLOYEE",
                     deptId: dept._id,
-                    skills: empSkills,
+                    deptSnapshot: buildDeptSnapshot(dept),
+                    skills: applySkillSnapshots(rawSkills, skillNameMap),
                     online: false
                 });
                 console.log(`Created Employee: ${email}`);
@@ -323,7 +342,6 @@ const seed = async () => {
         // --- Bulk fill collections to reach TARGET documents each ---
         console.log(`\n--- Ensuring each collection has at least ${TARGET} documents ---`);
 
-        // Helper to insert in batches
         const batchInsert = async (Model, docs, batchSize = 1000) => {
             for (let i = 0; i < docs.length; i += batchSize) {
                 const slice = docs.slice(i, i + batchSize);
@@ -371,7 +389,7 @@ const seed = async () => {
             await batchInsert(LeaveTypeModal, docs);
         }
 
-        // 4) Users (create enough unique emails)
+        // 4) Users (create enough unique emails, with deptSnapshot + skillName)
         const userCount = await UserModel.countDocuments();
         if (userCount < TARGET) {
             const need = TARGET - userCount;
@@ -394,9 +412,10 @@ const seed = async () => {
                     passwordHash: bulkPasswordHash,
                     role: 'EMPLOYEE',
                     deptId: dept._id,
+                    deptSnapshot: buildDeptSnapshot(dept),
                     skills: [
-                        { skillId: skl1._id, amount: 2 + (i % 4) },
-                        { skillId: skl2._id, amount: 2 + ((i + 1) % 4) }
+                        { skillId: skl1._id, skillName: skl1.name, amount: 2 + (i % 4) },
+                        { skillId: skl2._id, skillName: skl2.name, amount: 2 + ((i + 1) % 4) }
                     ],
                     online: false
                 });
@@ -408,10 +427,11 @@ const seed = async () => {
             if (usersBatch.length) await batchInsert(UserModel, usersBatch);
         }
 
-        // Refresh users list (limit to TARGET for downstream refs)
+        // Refresh users list for downstream refs — includes deptSnapshot now
         const users = await UserModel.find().limit(TARGET).lean();
+        const userSnapshotMap = new Map(users.map(u => [u._id.toString(), buildUserSnapshot(u)]));
 
-        // 5) Salaries - ensure one per user up to TARGET
+        // 5) Salaries — one per user with userSnapshot
         const salaryCount = await SalariesModel.countDocuments();
         if (salaryCount < TARGET) {
             const need = TARGET - salaryCount;
@@ -419,50 +439,76 @@ const seed = async () => {
             const docs = [];
             for (let i = 0; i < need; i++) {
                 const user = users[(i + salaryCount) % users.length];
-                docs.push({ userId: user._id, base: 30000 + Math.floor(Math.random() * 70000), hra: 10000 + Math.floor(Math.random() * 20000), lta: 2000 + Math.floor(Math.random() * 8000) });
+                docs.push({
+                    userId: user._id,
+                    userSnapshot: userSnapshotMap.get(user._id.toString()),
+                    base: 30000 + Math.floor(Math.random() * 70000),
+                    hra: 10000 + Math.floor(Math.random() * 20000),
+                    lta: 2000 + Math.floor(Math.random() * 8000)
+                });
                 if (docs.length >= 1000) { await batchInsert(SalariesModel, docs); docs.length = 0; }
             }
             if (docs.length) await batchInsert(SalariesModel, docs);
         }
 
-        // 6) Leave Balances
+        // 6) Leave Balances — with userSnapshot + typeSnapshot
         const lbCount = await LeaveBalanceModel.countDocuments();
         if (lbCount < TARGET) {
             const need = TARGET - lbCount;
             console.log(`Creating ${need} leave balance docs...`);
             const docs = [];
-            const allLeaveTypes = await LeaveTypeModal.find().limit(50);
+            const allLeaveTypes = await LeaveTypeModal.find().limit(50).lean();
+            const ltSnapshotMap = new Map(allLeaveTypes.map(lt => [lt._id.toString(), buildLeaveTypeSnapshot(lt)]));
             for (let i = 0; i < need; i++) {
                 const user = users[(i + lbCount) % users.length];
                 const leaves = [];
                 for (let j = 0; j < Math.min(5, allLeaveTypes.length); j++) {
-                    leaves.push({ type: allLeaveTypes[(i + j) % allLeaveTypes.length]._id, amount: 10 + (j % 10) });
+                    const lt = allLeaveTypes[(i + j) % allLeaveTypes.length];
+                    leaves.push({
+                        type: lt._id,
+                        typeSnapshot: ltSnapshotMap.get(lt._id.toString()),
+                        amount: 10 + (j % 10)
+                    });
                 }
-                docs.push({ user: user._id, leaves });
+                docs.push({
+                    user: user._id,
+                    userSnapshot: userSnapshotMap.get(user._id.toString()),
+                    leaves
+                });
                 if (docs.length >= 1000) { await batchInsert(LeaveBalanceModel, docs); docs.length = 0; }
             }
             if (docs.length) await batchInsert(LeaveBalanceModel, docs);
         }
 
-        // 7) Leave Requests
+        // 7) Leave Requests — with requestedBySnapshot + typeSnapshot
         const lrCount = await LeaveRequestModel.countDocuments();
         if (lrCount < TARGET) {
             const need = TARGET - lrCount;
             console.log(`Creating ${need} leave requests...`);
             const docs = [];
-            const allLT = await LeaveTypeModal.find().limit(100);
+            const allLT = await LeaveTypeModal.find().limit(100).lean();
+            const allLTSnapshotMap = new Map(allLT.map(lt => [lt._id.toString(), buildLeaveTypeSnapshot(lt)]));
             for (let i = 0; i < need; i++) {
                 const user = users[(i + lrCount) % users.length];
                 const lt = allLT[i % allLT.length];
-                const from = new Date(); from.setDate(from.getDate() + (i % 30)); from.setUTCHours(0,0,0,0);
+                const from = new Date(); from.setDate(from.getDate() + (i % 30)); from.setUTCHours(0, 0, 0, 0);
                 const to = new Date(from); to.setDate(from.getDate() + (1 + (i % 5)));
-                docs.push({ requestedBy: user._id, type: lt._id, quantity: 1 + (i % 5), from, to, status: ["PENDING","APPROVED","REJECTED"][i % 3] });
+                docs.push({
+                    requestedBy: user._id,
+                    requestedBySnapshot: userSnapshotMap.get(user._id.toString()),
+                    type: lt._id,
+                    typeSnapshot: allLTSnapshotMap.get(lt._id.toString()),
+                    quantity: 1 + (i % 5),
+                    from,
+                    to,
+                    status: ["PENDING", "ACCEPTED", "REJECTED"][i % 3]
+                });
                 if (docs.length >= 1000) { await batchInsert(LeaveRequestModel, docs); docs.length = 0; }
             }
             if (docs.length) await batchInsert(LeaveRequestModel, docs);
         }
 
-        // 8) Attendance
+        // 8) Attendance — with userSnapshot
         const attCount = await AttendanceModel.countDocuments();
         if (attCount < TARGET) {
             const need = TARGET - attCount;
@@ -470,28 +516,44 @@ const seed = async () => {
             const docs = [];
             for (let i = 0; i < need; i++) {
                 const user = users[(i + attCount) % users.length];
-                const date = new Date(); date.setDate(date.getDate() - (i % 365)); date.setUTCHours(0,0,0,0);
-                const inTime = new Date(date); inTime.setHours(9 + (i % 3), Math.floor(Math.random()*60), 0, 0);
-                const outTime = new Date(date); outTime.setHours(17 + (i % 2), Math.floor(Math.random()*60), 0, 0);
+                const date = new Date(); date.setDate(date.getDate() - (i % 365)); date.setUTCHours(0, 0, 0, 0);
+                const inTime = new Date(date); inTime.setHours(9 + (i % 3), Math.floor(Math.random() * 60), 0, 0);
+                const outTime = new Date(date); outTime.setHours(17 + (i % 2), Math.floor(Math.random() * 60), 0, 0);
                 const punches = [{ type: 'IN', time: inTime }, { type: 'OUT', time: outTime }];
                 const diffMinutes = (outTime.getTime() - inTime.getTime()) / 60000;
-                docs.push({ user: user._id, date, punches, totalMinutes: Math.max(0, Math.floor(diffMinutes)) });
+                docs.push({
+                    user: user._id,
+                    userSnapshot: userSnapshotMap.get(user._id.toString()),
+                    date,
+                    punches,
+                    totalMinutes: Math.max(0, Math.floor(diffMinutes))
+                });
                 if (docs.length >= 1000) { await batchInsert(AttendanceModel, docs); docs.length = 0; }
             }
             if (docs.length) await batchInsert(AttendanceModel, docs);
         }
 
-        // 9) Payroll
+        // 9) Payroll — with userSnapshot + salarySnapshot
         const payrollCount = await PayrollModal.countDocuments();
         if (payrollCount < TARGET) {
             const need = TARGET - payrollCount;
             console.log(`Creating ${need} payroll docs...`);
             const docs = [];
             const salaries = await SalariesModel.find().limit(TARGET).lean();
+            const salarySnapshotMap = new Map(salaries.map(s => [s._id.toString(), buildSalarySnapshot(s)]));
             for (let i = 0; i < need; i++) {
                 const user = users[(i + payrollCount) % users.length];
                 const salary = salaries[i % salaries.length];
-                docs.push({ user: user._id, bonus: [{ reason: 'Auto', amount: Math.floor(Math.random()*2000) }], deduction: [{ reason: 'Tax', amount: Math.floor(Math.random()*500) }], salary: salary?._id, month: ((i % 12) + 1), year: 2026 });
+                docs.push({
+                    user: user._id,
+                    userSnapshot: userSnapshotMap.get(user._id.toString()),
+                    bonus: [{ reason: 'Auto', amount: Math.floor(Math.random() * 2000) }],
+                    deduction: [{ reason: 'Tax', amount: Math.floor(Math.random() * 500) }],
+                    salary: salary?._id,
+                    salarySnapshot: salary ? salarySnapshotMap.get(salary._id.toString()) : null,
+                    month: ((i % 12) + 1),
+                    year: 2026
+                });
                 if (docs.length >= 1000) { await batchInsert(PayrollModal, docs); docs.length = 0; }
             }
             if (docs.length) await batchInsert(PayrollModal, docs);
@@ -505,32 +567,36 @@ const seed = async () => {
             const docs = [];
             for (let i = 0; i < need; i++) {
                 const daysFromNow = (i % 365) - 180;
-                const d = new Date(); d.setDate(d.getDate() + daysFromNow); d.setUTCHours(0,0,0,0);
-                docs.push({ name: `Event_${eventCount + i + 1}`, description: `Auto-generated event ${eventCount + i + 1}`, type: ['MEETING','HOLIDAY','OTHER','BIRTHDAY','ANNIVERSARY'][i%5], forAll: Math.random()>0.5, time: '09:00 AM', date: d, respectedToDepartments: [], resepectedEmplooyees: [] });
+                const d = new Date(); d.setDate(d.getDate() + daysFromNow); d.setUTCHours(0, 0, 0, 0);
+                docs.push({ name: `Event_${eventCount + i + 1}`, description: `Auto-generated event ${eventCount + i + 1}`, type: ['MEETING', 'HOLIDAY', 'OTHER', 'BIRTHDAY', 'ANNIVERSARY'][i % 5], forAll: Math.random() > 0.5, time: '09:00 AM', date: d, respectedToDepartments: [], resepectedEmplooyees: [] });
                 if (docs.length >= 1000) { await batchInsert(EventModel, docs); docs.length = 0; }
             }
             if (docs.length) await batchInsert(EventModel, docs);
         }
 
-        // Assets - ensure at least 100 assets exist (schema requires many fields)
+        // Assets
         const assetCount = await AssetModel.countDocuments();
         if (assetCount < 100) {
             const need = 100 - assetCount;
             console.log(`Creating ${need} asset docs...`);
             const docs = [];
             const assetNames = ["Laptop","Monitor","Keyboard","Mouse","Docking Station","Phone","Tablet","Printer","Scanner","Projector","Headset","Webcam","Router","Switch","Server","UPS","Desk","Chair","Cabinet","Whiteboard"];
-            const statuses = ["AVAILABLE","ASSIGNED","MAINTENANCE","DISPOSED"];
+            const statuses = ["AVAILABLE", "ASSIGNED", "MAINTENANCE", "DISPOSED"];
             for (let i = 0; i < need; i++) {
                 const idx = assetCount + i + 1;
                 const name = `${assetNames[i % assetNames.length]} ${idx}`;
-                const photoURL = `https://placehold.co/600x400?text=Asset+${idx}`;
-                const description = `Auto-generated asset ${name}`;
-                const status = statuses[i % statuses.length];
                 const purchaseDate = new Date(); purchaseDate.setDate(purchaseDate.getDate() - (i % 365));
-                const purchasePrice = 100 + Math.floor(Math.random() * 5000);
-                const warrantyPeriod = `${1 + (i % 5)} year(s)`;
-                const notes = `Generated asset record ${idx}`;
-                docs.push({ name, photoURL, description, status, currentOwner: null, purchaseDate, purchasePrice, warrantyPeriod, notes });
+                docs.push({
+                    name,
+                    photoURL: `https://placehold.co/600x400?text=Asset+${idx}`,
+                    description: `Auto-generated asset ${name}`,
+                    status: statuses[i % statuses.length],
+                    currentOwner: null,
+                    purchaseDate,
+                    purchasePrice: 100 + Math.floor(Math.random() * 5000),
+                    warrantyPeriod: `${1 + (i % 5)} year(s)`,
+                    notes: `Generated asset record ${idx}`
+                });
                 if (docs.length >= 1000) { await batchInsert(AssetModel, docs); docs.length = 0; }
             }
             if (docs.length) await batchInsert(AssetModel, docs);
@@ -583,9 +649,7 @@ const seed = async () => {
 
                 if (ev.deptName) {
                     const dpt = finalDepartments.find(d => d.name === ev.deptName);
-                    if (dpt) {
-                        eventPayload.respectedToDepartments.push(dpt._id);
-                    }
+                    if (dpt) eventPayload.respectedToDepartments.push(dpt._id);
                 }
 
                 await EventModel.create(eventPayload);
@@ -642,7 +706,7 @@ const seed = async () => {
             finalRounds.push(round);
         }
 
-        // 7. Seed Job Openings (at most 20)
+        // 8. Seed Job Openings (at most 20) — with departmentSnapshot, hiringManagerSnapshot, skillName
         console.log("\n--- Seeding Job Openings ---");
         const openingTitles = [
             { title: "Senior Software Engineer", dept: "Engineering", desc: "Lead engineering role with 5+ years experience" },
@@ -671,34 +735,29 @@ const seed = async () => {
             const op = openingTitles[i];
             const existingOpening = await Openings.findOne({ title: op.title });
             if (!existingOpening) {
-                // Find department
                 const dept = finalDepartments.find(d => d.name === op.dept) || finalDepartments[0];
-                
-                // Find a hiring manager from that department
+
                 const hiringManager = await UserModel.findOne({ deptId: dept._id, role: 'EMPLOYEE' }).lean();
                 if (!hiringManager) {
                     console.log(`Skipping opening ${op.title}: no hiring manager found in department`);
                     continue;
                 }
 
-                // Select 2-3 random skills
                 const skillCount = 2 + Math.floor(Math.random() * 2);
-                const selectedSkills = [];
+                const rawSkills = [];
                 for (let j = 0; j < skillCount; j++) {
-                    selectedSkills.push({
+                    rawSkills.push({
                         skillId: finalSkills[(i + j) % finalSkills.length]._id,
                         proficiencyLevel: 3 + Math.floor(Math.random() * 3)
                     });
                 }
 
-                // Select 2-4 random questions
                 const questionCount = 2 + Math.floor(Math.random() * 3);
                 const selectedQuestions = [];
                 for (let j = 0; j < questionCount; j++) {
                     selectedQuestions.push(finalQuestions[(i * 7 + j) % finalQuestions.length]._id);
                 }
 
-                // Select 1-3 random rounds with sequential ranks
                 const roundCount = 1 + Math.floor(Math.random() * 3);
                 const selectedRounds = [];
                 const roundDetails = [];
@@ -706,7 +765,10 @@ const seed = async () => {
                     const selectedRound = finalRounds[(i * 5 + j) % finalRounds.length];
                     selectedRounds.push({
                         round: selectedRound._id,
-                        rank: j + 1  // Rank starts from 1 (left to right progression)
+                        rank: j + 1,
+                        roundName: selectedRound.name,
+                        roundDescription: selectedRound.description,
+                        roundType: selectedRound.type,
                     });
                     roundDetails.push(`${j + 1}. ${selectedRound.name}`);
                 }
@@ -715,8 +777,10 @@ const seed = async () => {
                     title: op.title,
                     description: op.desc,
                     departmentId: dept._id,
-                    skills: selectedSkills,
+                    departmentSnapshot: buildDeptSnapshot(dept),
+                    skills: applySkillSnapshots(rawSkills, skillNameMap),
                     HiringManager: hiringManager._id,
+                    hiringManagerSnapshot: buildHiringManagerSnapshot(hiringManager),
                     Status: ['OPEN', 'OPEN', 'OPEN', 'PAUSED', 'CLOSED'][Math.floor(Math.random() * 5)],
                     note: `Opening for ${op.title} in ${dept.name}`,
                     questions: selectedQuestions,
@@ -729,15 +793,24 @@ const seed = async () => {
             }
         }
 
-        // 8. Seed Applicants for each Opening (2-3 applicants each)
+        // 9. Seed Applicants for each Opening — with openingSnapshot + currentRoundSnapshot
         console.log("\n--- Seeding Applicants for Openings (2-3 each) ---");
         const openingsList = await Openings.find().limit(20).lean();
         for (const op of openingsList) {
             try {
                 const existingApplicantsCount = await ApplicantModel.countDocuments({ openingId: op._id });
-                const targetForOpening = 2 + Math.floor(Math.random() * 2); // 2-3
+                const targetForOpening = 2 + Math.floor(Math.random() * 2);
                 const needed = Math.max(0, targetForOpening - existingApplicantsCount);
                 if (needed <= 0) continue;
+
+                const openingSnap = buildOpeningSnapshot(op);
+                const firstRoundEntry = op.rounds?.[0] ?? null;
+                const firstRoundDoc = firstRoundEntry
+                    ? finalRounds.find(r => r._id.equals(firstRoundEntry.round))
+                    : null;
+                const firstRoundSnapshot = firstRoundDoc
+                    ? buildRoundSnapshot(firstRoundDoc, firstRoundEntry.rank ?? 1)
+                    : null;
 
                 const createdApplicants = [];
                 for (let k = 0; k < needed; k++) {
@@ -748,7 +821,6 @@ const seed = async () => {
                     const phone = `9${Math.floor(100000000 + Math.random() * 900000000)}`;
                     const resume = `https://placehold.co/600x800?text=Resume+${idx}`;
 
-                    // assemble questions (1-3) from opening questions or global finalQuestions
                     const qPool = (op.questions && op.questions.length) ? op.questions : finalQuestions.map(q => q._id);
                     const qCount = Math.min(qPool.length || 0, 1 + Math.floor(Math.random() * 3));
                     const questions = [];
@@ -756,14 +828,23 @@ const seed = async () => {
                         questions.push({ questionId: qPool[(k + qq) % (qPool.length || 1)], answer: 'Sample answer' });
                     }
 
-                    const currentRound = (op.rounds && op.rounds.length) ? op.rounds[0].round : null;
+                    const currentRound = firstRoundEntry?.round ?? null;
                     try {
-                        const applicant = await ApplicantModel.create({ name, email, phone, resume, openingId: op._id, questions, currentRound });
+                        const applicant = await ApplicantModel.create({
+                            name,
+                            email,
+                            phone,
+                            resume,
+                            openingId: op._id,
+                            openingSnapshot: openingSnap,
+                            questions,
+                            currentRound: currentRound || null,
+                            currentRoundSnapshot: firstRoundSnapshot || null,
+                        });
                         createdApplicants.push(applicant);
-                        // add to opening applicants array
                         await Openings.findByIdAndUpdate(op._id, { $push: { applicants: applicant._id } });
                     } catch (err) {
-                        // likely duplicate email/phone or validation error - skip
+                        // likely duplicate email/phone — skip
                     }
                 }
 

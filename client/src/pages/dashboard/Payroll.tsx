@@ -273,10 +273,10 @@ const Payroll = () => {
                                                     <CheckCircle2 size={14} className="mr-1" /> Processed
                                                 </Badge>
                                                 <Button size="sm" variant="outline" className="gap-2 shadow-sm" onClick={() => GeneratePdf({
-                                                    employeeName: getUserName(p.user),
-                                                    base: Number(p.salary?.base) || 0,
-                                                    hra: Number(p.salary?.hra) || 0,
-                                                    lta: Number(p.salary?.lta) || 0,
+                                                    employeeName: getUserName((p as any).userSnapshot ?? p.user),
+                                                    base: Number((p as any).salarySnapshot?.base ?? (p.salary as any)?.base) || 0,
+                                                    hra: Number((p as any).salarySnapshot?.hra ?? (p.salary as any)?.hra) || 0,
+                                                    lta: Number((p as any).salarySnapshot?.lta ?? (p.salary as any)?.lta) || 0,
                                                     bonus: p.bonus || [],
                                                     deduction: p.deduction || [],
                                                     createdAt: p.createdAt,
@@ -527,7 +527,7 @@ const Payroll = () => {
                                                     <TableRow key={p._id} className="hover:bg-emerald-50/40 transition-colors">
                                                         <TableCell className="font-medium">
                                                             <div className="flex items-center gap-2">
-                                                                {getUserName(p.user)}
+                                                                {getUserName((p as any).userSnapshot ?? p.user)}
                                                             </div>
                                                         </TableCell>
                                                         <TableCell>

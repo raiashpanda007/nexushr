@@ -8,6 +8,36 @@ const PayrollSchema = new mongoose.Schema(
       ref: "Users",
       required: true
     },
+    userSnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+      firstName: {
+        type: String,
+        trim: true,
+      },
+      lastName: {
+        type: String,
+        trim: true,
+      },
+      email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+      },
+      profilePhoto: {
+        type: String,
+      },
+      deptId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Departments",
+      },
+      deptName: {
+        type: String,
+        trim: true,
+      },
+    },
     bonus: [
       {
         reason: {
@@ -41,6 +71,21 @@ const PayrollSchema = new mongoose.Schema(
       ref: "Salaries",
       required: true
     },
+    salarySnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Salaries",
+      },
+      base: {
+        type: Number,
+      },
+      hra: {
+        type: Number,
+      },
+      lta: {
+        type: Number,
+      },
+    },
     month: {
       type: Number,
       required: true,
@@ -61,6 +106,8 @@ const PayrollSchema = new mongoose.Schema(
 
 
 PayrollSchema.index({ user: 1 });
+PayrollSchema.index({ user: 1, year: 1, month: 1 }, { unique: true });
+PayrollSchema.index({ "userSnapshot.deptId": 1 });
 
 
 PayrollSchema.pre("save", async function () {

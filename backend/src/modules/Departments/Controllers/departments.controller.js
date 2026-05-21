@@ -1,6 +1,15 @@
 import DepartmentModal from "../Models/departments.models.js";
-import { ApiError, AsyncHandler, ApiResponse } from "../../../utils/index.js"
+import { ApiError, AsyncHandler, ApiResponse, buildDeptSnapshot } from "../../../utils/index.js"
 import Types from "../../../types/index.js"
+import UserModel from "../../Users/models/users.models.js"
+import AttendanceModel from "../../Attendance/Models/attendance.model.js"
+import LeaveBalanceModel from "../../Leaves/LeavesBalances/Models/leavesBalances.model.js"
+import LeaveRequestModel from "../../Leaves/LeaveRequests/Models/leaveRequests.model.js"
+import PayrollModel from "../../Payroll/Models/payroll.model.js"
+import SalariesModel from "../../Salaries/Models/salaries.model.js"
+import OpeningModel from "../../Hiring/Models/openings.model.js"
+import ApplicantModel from "../../Hiring/Models/applicants.model.js"
+import InterviewModel from "../../Hiring/Models/interview.model.js"
 class DepartmentsController {
 
     constructor() {
@@ -37,6 +46,47 @@ class DepartmentsController {
         if (!department) {
             throw new ApiError(Types.Errors.NotFound, "Department not found")
         }
+
+        const deptSnapshot = buildDeptSnapshot(department);
+        await Promise.all([
+            UserModel.updateMany({ deptId: id }, { $set: { deptSnapshot } }),
+            AttendanceModel.updateMany(
+                { "userSnapshot.deptId": id },
+                { $set: { "userSnapshot.deptName": deptSnapshot.name } },
+            ),
+            LeaveBalanceModel.updateMany(
+                { "userSnapshot.deptId": id },
+                { $set: { "userSnapshot.deptName": deptSnapshot.name } },
+            ),
+            LeaveRequestModel.updateMany(
+                { "requestedBySnapshot.deptId": id },
+                { $set: { "requestedBySnapshot.deptName": deptSnapshot.name } },
+            ),
+            LeaveRequestModel.updateMany(
+                { "respondedBySnapshot.deptId": id },
+                { $set: { "respondedBySnapshot.deptName": deptSnapshot.name } },
+            ),
+            PayrollModel.updateMany(
+                { "userSnapshot.deptId": id },
+                { $set: { "userSnapshot.deptName": deptSnapshot.name } },
+            ),
+            SalariesModel.updateMany(
+                { "userSnapshot.deptId": id },
+                { $set: { "userSnapshot.deptName": deptSnapshot.name } },
+            ),
+            OpeningModel.updateMany(
+                { departmentId: id },
+                { $set: { departmentSnapshot: deptSnapshot } },
+            ),
+            ApplicantModel.updateMany(
+                { "openingSnapshot.departmentId": id },
+                { $set: { "openingSnapshot.departmentName": deptSnapshot.name } },
+            ),
+            InterviewModel.updateMany(
+                { "openingSnapshot.departmentId": id },
+                { $set: { "openingSnapshot.departmentName": deptSnapshot.name } },
+            ),
+        ]);
         return res.status(200).json(new ApiResponse(200, department, "Department updated successfully"))
     })
 

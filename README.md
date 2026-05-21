@@ -25,6 +25,8 @@
   - [Analytics Worker](#analytics-worker)
   - [Resume Processor (ATS Engine)](#resume-processor-ats-engine)
   - [Mail Worker](#mail-worker)
+  - [Transcoding Worker](#transcoding-worker)
+  - [Transcoding Complete Worker](#transcoding-complete-worker)
 - [Bulk Payroll Processing](#bulk-payroll-processing)
 - [Backend](#backend)
   - [Entry Point & Clustering](#entry-point--clustering)
@@ -217,7 +219,13 @@ NexusHR/
 │   │   └── src/
 │   │       ├── index.js          # Polls SQS, sends via nodemailer (supports attachments)
 │   │       └── utils/Config.js
-│   └── analytics/                 # Analytics aggregation worker
+│   ├── analytics/                 # Analytics aggregation worker
+│   ├── transcoding/               # Dispatches video transcoding jobs to Docker/ECS
+│   │   └── src/
+│   │       └── transcoder.js
+│   └── transcoding-complete/      # Handles transcoding-done callbacks, updates MongoDB
+│       └── src/
+│           └── index.js
 ├── docker/                       # Docker Compose + LocalStack for SQS
 ├── ecosystem.config.js           # PM2 multi-app config
 └── client/
@@ -295,7 +303,7 @@ NexusHR/
 │  payroll-generator (×1)                                      │
 │    └─ Polls SQS → aggregates employees → publishes batches  │
 │                                                              │
-│  payroll-batch (×3)                                          │
+│  payroll-batch (×1)                                          │
 │    └─ Polls SQS → bulk-writes payroll records to MongoDB    │
 │                                                              │
 │  image-worker (×1)                                           │
@@ -309,6 +317,12 @@ NexusHR/
 │                                                              │
 │  analytics (×1)                                              │
 │    └─ Polls SQS → aggregates HR analytics → stores results  │
+│                                                              │
+│  transcoding-worker (×1)                                     │
+│    └─ Polls SQS → spawns Docker/ECS task to transcode video │
+│                                                              │
+│  transcoding-complete (×1)                                   │
+│    └─ Polls SQS → marks video ready + stores HLS URLs       │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -395,13 +409,16 @@ Use the root PM2 ecosystem file to run all services together.
 |---------|----------|-----------|------|
 | Backend API | `nexushr-backend` | 1 | cluster |
 | Payroll Generator | `nexushr-payroll-worker` | 1 | cluster |
-| Payroll Batch Writer | `nexushr-payroll-batch` | 3 | cluster |
+| Payroll Batch Writer | `nexushr-payroll-batch` | 1 | cluster |
 | Image Worker | `nexushr-image-worker` | 1 | cluster |
-| Analytics Worker | `nexushr-analytics` | 1 | cluster |
-| Mail Worker | `nexushr-mails` | 1 | fork |
+| Analytics Worker | `nexushr-analytics-worker` | 1 | cluster |
+| Mail Worker | `nexushr-mails-worker` | 1 | cluster |
+| Resume Processor | `nexushr-resume-processor` | 1 | fork |
+| Transcoding Worker | `nexushr-transcoding-worker` | 1 | fork |
+| Transcoding Complete | `nexushr-transcoding-complete` | 1 | cluster |
 | Client Dev Server | `nexushr-client` | 1 | fork |
 
-The **payroll-batch** worker runs with 3 instances so multiple batches of employee payrolls can be written in parallel for faster processing.
+All workers run as single instances.
 
 ### Start all services
 
@@ -466,7 +483,7 @@ Long-polls the **subscriber SQS queue** for bulk payroll messages from the backe
 
 ### Payroll Batch
 
-**`workers/payroll-batch/src/payroll.batch.js`** — Runs **3 instances** via PM2.
+**`workers/payroll-batch/src/payroll.batch.js`** — Runs **1 instance** via PM2.
 
 Long-polls the **publisher SQS queue** for employee batches. On receiving a batch:
 
@@ -544,6 +561,27 @@ Long-polls the AWS SQS queue for ATS resume scoring events from the backend. On 
 - **Tokenizer** (`Tokenizer.js`): Splits on non-alphanumeric characters (preserves `+` and `#` for special skills like `C++`, `C#`), drops tokens < 3 chars, generates n-grams for multi-word matches
 - **Embeddings** (`GenerateEmbeddings.js`): Calls a transformer model (via API or local) to convert tokens and skill names into fixed-size vectors for semantic comparison
 
+### Transcoding Worker
+
+**`workers/transcoding/src/transcoder.js`**
+
+Long-polls a SQS queue for video upload events. On receiving a message with `{ bucketName, objectKey }`:
+
+1. In **local mode**: spawns a Docker container (`raiashpanda007/nexushrtranscoder:latest`) directly via `child_process.spawn`, passing bucket/key/output env vars
+2. In **production mode**: submits an ECS `RunTask` to launch the transcoder container on Fargate
+3. Deletes the SQS message after the task is dispatched
+
+### Transcoding Complete Worker
+
+**`workers/transcoding-complete/src/index.js`**
+
+Long-polls a SQS notification queue for transcoding-finished events. On receiving a completion message:
+
+1. Parses `{ s3Key, hlsMasterUrl, versions }` from the message body
+2. Looks up the video document in MongoDB by `s3Key`
+3. Updates `transcoding_status` to `"ready"`, stores `hlsMasterUrl` and the `versions` map (240p–1080p HLS playlist URLs)
+4. Deletes the SQS message
+
 ---
 
 ## Bulk Payroll Processing
@@ -577,7 +615,7 @@ payroll-generator worker (×1)
        │
        ▼  SQS (publisher queue)
        │
-payroll-batch worker (×3 — competing consumers)
+payroll-batch worker (×1)
   → Polls SQS, receives { employees, month, year, bulkBonus, bulkDeduction }
   → Skips employees that already have payroll for this month/year
   → For each employee:

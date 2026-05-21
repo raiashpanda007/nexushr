@@ -29,6 +29,37 @@ const ApplicantSchema = new mongoose.Schema(
       ref: "Openings",
       required: true,
     },
+    openingSnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Openings",
+      },
+      title: {
+        type: String,
+        trim: true,
+      },
+      departmentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Departments",
+      },
+      departmentName: {
+        type: String,
+        trim: true,
+      },
+      hiringManagerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+      hiringManagerName: {
+        type: String,
+        trim: true,
+      },
+      hiringManagerEmail: {
+        type: String,
+        lowercase: true,
+        trim: true,
+      },
+    },
     status: {
       type: String,
       enum: ["APPLIED", "INTERVIEWING", "OFFERED", "OFFERING", "REJECTED"],
@@ -54,6 +85,28 @@ const ApplicantSchema = new mongoose.Schema(
     currentRound: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Rounds",
+    },
+    currentRoundSnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Rounds",
+      },
+      name: {
+        type: String,
+        trim: true,
+      },
+      description: {
+        type: String,
+        trim: true,
+      },
+      type: {
+        type: String,
+        enum: ["INTERVIEW", "TEST", "ASSIGNMENT"],
+      },
+      rank: {
+        type: Number,
+        min: 1,
+      },
     },
     score: {
       type: Number,

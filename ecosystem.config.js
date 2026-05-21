@@ -45,7 +45,33 @@ module.exports = {
       script: "./src/payroll.batch.js",
       interpreter: "node",
       exec_mode: "cluster",
-      instances: 3,
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: "production"
+      }
+    },
+    {
+      name: "nexushr-resume-processor",
+      cwd: "./workers/resume-processor",
+      script: "./src/resume-processor.js",
+      interpreter: "node",
+      exec_mode: "fork",
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      env: {
+        NODE_ENV: "production"
+      }
+    },
+    {
+      name: "nexushr-transcoding-worker",
+      cwd: "./workers/transcoding",
+      script: "./src/transcoder.js",
+      interpreter: "node",
+      exec_mode: "fork",
+      instances: 1,
       autorestart: true,
       watch: false,
       env: {

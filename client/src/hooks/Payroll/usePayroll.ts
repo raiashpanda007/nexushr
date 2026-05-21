@@ -224,12 +224,12 @@ export function usePayroll() {
 
     const filteredPayrolls = payrolls;
 
-    const getUserName = (userId: any) => {
-        if (!userId) return 'Unknown User';
-        if (typeof userId === 'object' && userId.firstName) {
-            return `${userId.firstName} ${userId.lastName}`;
+    const getUserName = (userSnapshotOrId: any) => {
+        if (!userSnapshotOrId) return 'Unknown User';
+        if (typeof userSnapshotOrId === 'object' && userSnapshotOrId.firstName) {
+            return `${userSnapshotOrId.firstName} ${userSnapshotOrId.lastName}`;
         }
-        const u = users.find(x => x._id === userId);
+        const u = users.find(x => x._id === userSnapshotOrId);
         return u ? `${u.firstName} ${u.lastName}` : 'Unknown User';
     };
 
@@ -237,8 +237,11 @@ export function usePayroll() {
         const totalBonus = (payroll.bonus || []).reduce((acc, curr) => acc + Math.abs(Number(curr.amount) || 0), 0);
         const totalDeduction = (payroll.deduction || []).reduce((acc, curr) => acc + Math.abs(Number(curr.amount) || 0), 0);
         let baseSalary = 0;
-        if (payroll.salary && typeof payroll.salary === 'object') {
-            baseSalary = Number(payroll.salary.base || 0) + Number(payroll.salary.hra || 0) + Number(payroll.salary.lta || 0);
+        const snap = (payroll as any).salarySnapshot;
+        if (snap && typeof snap === 'object') {
+            baseSalary = Number(snap.base || 0) + Number(snap.hra || 0) + Number(snap.lta || 0);
+        } else if (payroll.salary && typeof payroll.salary === 'object') {
+            baseSalary = Number((payroll.salary as any).base || 0) + Number((payroll.salary as any).hra || 0) + Number((payroll.salary as any).lta || 0);
         }
         const netSalary = baseSalary + totalBonus - totalDeduction;
         return { totalBonus, totalDeduction, baseSalary, netSalary };

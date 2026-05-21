@@ -30,6 +30,37 @@ const AttendanceSchema = new mongoose.Schema(
       index: true,
     },
 
+    userSnapshot: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+      firstName: {
+        type: String,
+        trim: true,
+      },
+      lastName: {
+        type: String,
+        trim: true,
+      },
+      email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+      },
+      profilePhoto: {
+        type: String,
+      },
+      deptId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Departments",
+      },
+      deptName: {
+        type: String,
+        trim: true,
+      },
+    },
+
     date: {
       type: Date,
       required: true,
@@ -50,6 +81,7 @@ const AttendanceSchema = new mongoose.Schema(
 );
 
 AttendanceSchema.index({ user: 1, date: 1 }, { unique: true });
+AttendanceSchema.index({ "userSnapshot.deptId": 1 });
 
 
 AttendanceSchema.pre("save", function () {
