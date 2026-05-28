@@ -49,9 +49,11 @@
     - [Assets](#assets-apiv1assets)
     - [Search](#search-apiv1search)
     - [Hiring](#hiring-apiv1hiring)
+    - [Training (LMS)](#training-lms-apiv1training)
 - [Applicant Tracking System (ATS)](#applicant-tracking-system-ats)
 - [Hiring & Interview Workflow](#hiring--interview-workflow)
 - [Asset Management](#asset-management)
+- [Learning Management System (LMS)](#learning-management-system-lms)
 - [Client](#client)
   - [Routing & Role-Based Access](#routing--role-based-access)
   - [Pages](#pages)
@@ -106,6 +108,7 @@ The NexusHR platform empowers Human Resource administrators with a specialized s
 - **Asset Management**: Track company assets (laptops, equipment, etc.) assigned to employees. Supports full CRUD with S3-backed image uploads and a dedicated stats endpoint for asset utilisation.
 - **Full-Text Search**: Cross-entity search across employees, departments, skills, and more via a single `/api/v1/search/:model` endpoint used by every list view that has a search bar.
 - **My Interviews (Reviewer Portal)**: Employees assigned as interviewers can view all their scheduled interviews in a dedicated `/reviews` page, with direct links to applicant profiles.
+- **Learning Management System (LMS)**: Create structured training courses with ranked chapters, multi-type content resources (videos, PDFs, DOCX, rich text, links), MCQ/text assessments with auto-grading, HR analytics dashboards, and per-employee progress tracking. HLS video lectures are delivered at multiple quality levels (240p–1080p) via the transcoding pipeline.
 
 ---
 
@@ -182,6 +185,7 @@ NexusHR/
 │   │       ├── Assets/           # Company asset tracking & assignment
 │   │       ├── Search/           # Cross-entity full-text search
 │   │       ├── Hiring/           # Job openings, applicants, ATS scoring, interviews, offer flow
+│   │       ├── Training/         # LMS — Lessons, Chapters, Assessments, Progress, Enrollment
 │   │       └── Sync/             # Offline batch sync endpoint
 │   └── package.json
 ├── workers/
@@ -251,7 +255,12 @@ NexusHR/
     │   │       ├── Hiring.tsx
     │   │       ├── HiringDetails.tsx
     │   │       ├── ApplicantDetails.tsx
-    │   │       └── Reviews.tsx
+    │   │       ├── Reviews.tsx
+    │   │       ├── Training.tsx          # Course list
+    │   │       ├── CourseDetail.tsx      # Chapter viewer + HLS video + assessments
+    │   │       ├── CreateChapter.tsx     # Chapter creation form
+    │   │       ├── TrainingAssessments.tsx  # My Assessments / Pending Reviews
+    │   │       └── TrainingAnalytics.tsx    # HR training analytics
     │   ├── components/          # Reusable UI components
     │   ├── hooks/               # Feature-specific data hooks
     │   ├── store/               # Redux store + userState slice
@@ -293,6 +302,7 @@ NexusHR/
 │      │                                                       │
 │  Modules: Auth | Users | Skills | Departments | Leaves      │
 │           Salaries | Payroll | Attendance | Sync            │
+│           Events | Assets | Search | Hiring | Training      │
 │      │                                                       │
 │  Mongoose ──── MongoDB        SQS Queue (payroll.queue.js)  │
 └──────────────────────────────────────────────────────────────┘
@@ -1035,6 +1045,68 @@ Applicant answers to screening questions are stored during application and can b
 
 ---
 
+#### Training (LMS) (`/api/v1/training`)
+
+The Training module is subdivided into five sub-routers forming a complete Learning Management System.
+
+**Lessons (Courses)** (`/api/v1/training/lessons`)
+
+> All routes protected by `VerifyMiddleware`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/signed-url` | Get S3 pre-signed URL for video upload (used by the lesson/chapter creation flow) |
+| `POST` | `/` | Create a new course/lesson with name and description (HR only) |
+| `GET` | `/` | List all lessons (paginated, searchable) |
+| `GET` | `/:uid` | Get a single lesson with its chapter list |
+| `PUT` | `/:uid` | Update lesson metadata |
+| `DELETE` | `/:uid` | Delete a lesson |
+
+**Chapters** (`/api/v1/training/chapters`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create a chapter with resources (PDF, DOCX, text, links, video lecture) and attached assessments |
+| `POST` | `/:uid/open` | Mark a chapter as opened by the current user (records `openedAt` in UserProgress) |
+| `GET` | `/` | List all chapters |
+| `GET` | `/:uid` | Get a single chapter with full resource and assessment details |
+| `PUT` | `/:uid` | Update chapter content or resources |
+| `DELETE` | `/:uid` | Delete a chapter |
+
+**Assessments** (`/api/v1/training/assessments`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create an assessment with MCQ and/or TEXT questions, passing score, and optional reviewer |
+| `GET` | `/` | List all assessments |
+| `GET` | `/:uid` | Get a single assessment (with questions and answers for HR, without correct answers for employees) |
+| `PUT` | `/:uid` | Update assessment questions or passing score |
+| `DELETE` | `/:uid` | Delete an assessment |
+
+**Progress** (`/api/v1/training/progress`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/submit` | Submit an assessment attempt. MCQ answers are auto-graded; TEXT answers are marked `pending_review`. |
+| `POST` | `/complete-chapter` | Mark a chapter as completed for the current user |
+| `PATCH` | `/review` | HR/reviewer scores and notes a TEXT-answer attempt |
+| `GET` | `/overview` | HR analytics overview — per-lesson enrollment, completion rates, chapter stats |
+| `GET` | `/my-assessments` | Employee's own assessment history (all attempts, scores, review status) |
+| `GET` | `/pending-reviews` | HR list of TEXT-answer submissions awaiting manual review |
+| `GET` | `/me` | Employee's own progress across all enrolled lessons |
+| `GET` | `/` | Full analytics data for HR (all students, all lessons) |
+
+**Programs** (`/api/v1/training/programs`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/lesson/:lessonId/students/preview-by-skill` | Preview which employees match a given skill/level before enrolling |
+| `GET` | `/lesson/:lessonId/students` | List all students enrolled in a lesson |
+| `POST` | `/lesson/:lessonId/students` | Enroll students by explicit employee IDs |
+| `DELETE` | `/lesson/:lessonId/students/:studentId` | Remove a student from a lesson |
+
+---
+
 ## Hiring & Interview Workflow
 
 End-to-end flow from job posting to employee onboarding:
@@ -1197,6 +1269,123 @@ Scores are visually ranked with badges (Gold for 1st place, Silver for 2nd, Bron
 
 ---
 
+## Learning Management System (LMS)
+
+NexusHR embeds a full-featured LMS that lets HR build and publish structured training content, enroll employees, and track learning outcomes — all within the same platform.
+
+### Data Model
+
+| Entity | Description |
+|--------|-------------|
+| **Lesson** | Top-level course container with a name, description, and an ordered list of chapter refs (ranked by `rank`) |
+| **Chapter** | A single learning unit within a lesson. Holds multi-type resources and zero or more attached assessments. |
+| **Assessment** | A question bank of MCQ and/or TEXT questions with a `passingScore` and an optional designated `reviewer` |
+| **UserProgress** | Per-user, per-lesson record tracking current chapter, completed chapters, chapter-level status (`not_started / in_progress / completed`), and all assessment attempts |
+| **Video** | S3-stored video uploaded by HR; transcoded by the background transcoding pipeline into HLS at 240p / 360p / 720p / 1080p |
+
+### Chapter Resource Types
+
+Each chapter may include any combination of:
+
+| Resource Type | Storage | Description |
+|--------------|---------|-------------|
+| `videoLecture` | S3 → HLS | Uploaded video, transcoded to adaptive-bitrate HLS. Streamed via the in-app HLS player. |
+| `pdfResources` | S3 URL | PDF attachments — downloadable and viewable in-browser |
+| `docxResources` | S3 URL | DOCX attachments for download |
+| `textResources` | MongoDB (inline) | Rich Markdown content rendered in-page |
+| `linkResources` | URL | External reference links |
+
+### Assessment Types & Grading
+
+- **MCQ**: Multiple-choice questions with a `correctAnswer` and `marks` per question. Auto-graded on submission — `score`, `percentage`, and `passed` are computed immediately.
+- **TEXT**: Open-ended questions. Submitted answers are stored with `reviewStatus: "pending_review"` until an HR reviewer manually scores them via `PATCH /api/v1/training/progress/review` and records a `reviewerNote`.
+
+Passing threshold is configurable per assessment (`passingScore` as a 0–100 percentage).
+
+### Student Enrollment
+
+HR can enroll employees into a lesson two ways:
+1. **Preview by skill** — select a skill and proficiency level to see matching employees before committing
+2. **Explicit enrollment** — add employees by ID
+
+### LMS Workflow
+
+```
+HR creates a Lesson (course) with name & description
+       │
+       ▼
+HR creates Chapters within the lesson
+  → Adds resources: Markdown text, PDF/DOCX links, external links, HLS video
+  → Attaches Assessments (MCQ / TEXT questions, passing score)
+       │
+       ▼
+HR enrolls employees (by skill-level preview or explicit selection)
+       │
+       ▼
+Employee opens /training/courses → sees enrolled courses
+  → Opens a Course → navigates Chapter Tree (sidebar)
+  → Reads/watches content → POST /chapters/:uid/open (marks openedAt)
+  → Takes assessment → POST /progress/submit
+      MCQ: auto-graded immediately
+      TEXT: stored as pending_review
+       │
+       ▼
+HR opens /training/assessments → "Pending Reviews" tab
+  → Reads employee's text answers → PATCH /progress/review (adds score + note)
+       │
+       ▼
+Employee sees assessment history in /training/assessments → "My Assessments" tab
+       │
+       ▼
+HR opens /training/analytics
+  → Overview tab: per-lesson enrollment counts, completion rates, per-chapter drop-off charts
+  → Lesson drilldown: table of enrolled students with individual progress and status
+```
+
+### Training Pages (Client)
+
+| Route | Component | Role | Description |
+|-------|-----------|------|-------------|
+| `/training/courses` | `Training.tsx` | Both | Paginated, searchable course list; HR can create new courses |
+| `/training/:id` | `CourseDetail.tsx` | Both | Full course viewer — collapsible chapter tree sidebar, content pane (video, resources), assessment modal |
+| `/training/:id/chapter/create` | `CreateChapter.tsx` | HR | Chapter creation form — resource upload, assessment attachment |
+| `/training/assessments` | `TrainingAssessments.tsx` | Both | "My Assessments" tab (employees); "Pending Reviews" tab (HR) |
+| `/training/analytics` | `TrainingAnalytics.tsx` | HR | Overview analytics, lesson drilldown, per-student progress, assessment attempt history |
+
+### Training Hooks (Client)
+
+| Hook | Description |
+|------|-------------|
+| `useTraining` | Course list with pagination and search |
+| `useCourseDetail` | Chapter tree, content loading, assessment submission, chapter completion |
+| `useCreateChapter` | Chapter creation form state and resource upload |
+| `useTrainingAssessments` | My-Assessments and Pending-Reviews data, filter controls, review modal state |
+| `useTrainingAnalytics` | Analytics overview + lesson drilldown, student/chapter tables, assessment attempt history |
+
+### Video Lecture Pipeline
+
+Video uploads in the LMS go through the same transcoding infrastructure used elsewhere:
+
+```
+HR uploads video via pre-signed S3 URL (POST /training/lessons/signed-url)
+       │  S3 upload event
+       ▼
+transcoding-worker (SQS)
+  → Spawns Docker/ECS container (raiashpanda007/nexushrtranscoder)
+  → Produces HLS master + 240p / 360p / 720p / 1080p renditions
+       │  SQS completion event
+       ▼
+transcoding-complete-worker
+  → Sets video.transcoding_status = "ready"
+  → Stores hlsMasterUrl + per-resolution playlist URLs in MongoDB
+       │
+       ▼
+Chapter VideoLecture ref → HlsVideoPlayer in CourseDetail.tsx
+  → Adaptive bitrate streaming at the student's selected quality
+```
+
+---
+
 ## Client
 
 ### Routing & Role-Based Access
@@ -1235,6 +1424,11 @@ All pages are nested under a shared `<Layout>` component (sidebar + header).
 | `/hiring/:id` | `HiringDetails.tsx` | HR | Opening details — applicant list, ATS scoring, bulk filtering |
 | `/hiring/applicant/:id` | `ApplicantDetails.tsx` | HR | Detailed applicant profile with interview rounds, resume viewer, offer workflow, and "Add as Employee" button |
 | `/reviews` | `Reviews.tsx` | Employee | Reviewer portal — all interviews scheduled for the current user |
+| `/training/courses` | `Training.tsx` | Both | Paginated searchable course list; HR can create courses |
+| `/training/:id` | `CourseDetail.tsx` | Both | Course viewer with chapter tree sidebar, HLS video player, resource pane, assessment modal |
+| `/training/:id/chapter/create` | `CreateChapter.tsx` | HR | Create a chapter with resources and attached assessments |
+| `/training/assessments` | `TrainingAssessments.tsx` | Both | My Assessments (employee) / Pending Reviews (HR) |
+| `/training/analytics` | `TrainingAnalytics.tsx` | HR | Training analytics: enrollment, completion rates, student progress tables |
 
 ---
 
@@ -1253,6 +1447,7 @@ Components live in `src/components/` and are organized by feature:
 - **`hiring/`** — `OfferDialog` (two-step: decide → compose email + PDF attachment), `InterviewPanel`, `CreateOpeningModal`, `OpeningTable`
 - **`assets/`** — Asset table, asset detail modal, stats summary cards
 - **`events/`** — Event calendar, event detail dialog
+- **`training/`** — `LessonTable`, `CreateLessonModal`, `EnrollStudentsModal`, `AssessmentView` (MCQ/TEXT submission), `HlsVideoPlayer` (adaptive bitrate streaming), `ReviewModal` (HR text-answer review)
 
 All components use **shadcn/ui** primitives (Dialog, Select, Popover, Checkbox, etc.) styled with TailwindCSS.
 
@@ -1278,6 +1473,11 @@ Custom hooks in `src/hooks/` abstract all data-fetching logic from page componen
 | `useHiringDetails` | Manages job opening applicants, ATS scoring trigger, result polling, and bulk filtering |
 | `useJobApply` | Public job application form + resume upload + screening questions |
 | `useImageUpload` | Shared S3 image upload hook (signed URL → PUT → store URL); used by employee and asset modals |
+| `useTraining` | Course list with pagination and search |
+| `useCourseDetail` | Chapter tree, content loading, assessment submission, chapter completion tracking |
+| `useCreateChapter` | Chapter creation form state and resource upload |
+| `useTrainingAssessments` | My-Assessments and Pending-Reviews data; filter controls; review modal state |
+| `useTrainingAnalytics` | Overview analytics, lesson drilldown, per-student progress, assessment attempt history |
 
 Hooks that support offline-first pass a `syncState` property to table rows, which renders an **"Unsynced"** badge for locally-cached but not-yet-sent mutations.
 
