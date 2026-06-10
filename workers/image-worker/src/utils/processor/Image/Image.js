@@ -65,7 +65,7 @@ async function ImageProcessor(UserID, Bucket, ObjectKey, DbConnection) {
     try {
       const url = new URL(userDetails.profilePhoto);
 
-      const parts = url.pathname.split("/").filter(Boolean);
+      const parts = decodeURIComponent(url.pathname).split("/").filter(Boolean);
       ProfilePhotoKey = parts.slice(1).join("/");
     } catch {
       ProfilePhotoKey = userDetails.profilePhoto;
